@@ -1,0 +1,8 @@
+test_dir: tests/missouri
+
+setup:
+  - name: "build tisket"
+    command: "cargo build"
+
+env:
+  NO_COLOR: "1"

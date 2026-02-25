@@ -1,0 +1,15 @@
+#!/bin/sh
+# Set up a git repo where the issue has a different status on another branch.
+# Called from the has-issue state directory after the issue already exists.
+git init -b main
+git add -A
+git commit -m "initial"
+
+# Create a branch where the issue has a different status
+git checkout -b feature/working-on-it
+tisket issue edit fix-the-widget --status in_progress
+git add -A
+git commit -m "start work"
+
+# Go back to main
+git checkout main

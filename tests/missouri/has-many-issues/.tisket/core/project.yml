@@ -1,0 +1,9 @@
+name: core
+statuses:
+  active:
+    - backlog
+    - todo
+    - in_progress
+  terminal:
+    - done
+    - cancelled

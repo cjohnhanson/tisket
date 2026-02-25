@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cd /Users/codyhanson/Projects/missouri && cargo build --quiet 2>&1)",
+      "Bash(mkdir:*)",
+      "Bash(/Users/codyhanson/Projects/missouri/target/debug/missouri list:*)",
+      "Bash(chmod +x:*)",
+      "Bash(cargo build:*)",
+      "Bash(/Users/codyhanson/Projects/missouri/target/debug/missouri run:*)",
+      "Bash(cd /Users/codyhanson/Projects/tsktsk/tests/missouri && missouri test 2>&1)",
+      "Bash(cd /Users/codyhanson/Projects/tsktsk/tests/missouri && cargo run --manifest-path ~/Projects/missouri/Cargo.toml -- test 2>&1)",
+      "Bash(cd /Users/codyhanson/Projects/tsktsk/tests/missouri && cargo run --manifest-path ~/Projects/missouri/Cargo.toml -- --help 2>&1)",
+      "Bash(cargo run:*)"
+    ]
+  }
+}

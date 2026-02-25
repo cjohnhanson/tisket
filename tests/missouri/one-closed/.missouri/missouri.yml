@@ -1,0 +1,35 @@
+assertions:
+  - name: "list shows only open issue"
+    command: "tisket issue list -p bugs"
+    stdout: |
+      ID           STATUS   TITLE
+      write-tests  backlog  Write tests
+  - name: "list with --closed shows closed issue"
+    command: "tisket issue list -p bugs --closed"
+    stdout: |
+      ID              STATUS  TITLE
+      fix-the-widget  done    Fix the widget
+  - name: "show closed issue still works"
+    command: "tisket issue show fix-the-widget"
+    stdout: |
+      fix-the-widget (bugs)
+
+        Title:    Fix the widget
+        Status:   done
+  - name: "show open issue still works"
+    command: "tisket issue show write-tests"
+    stdout: |
+      write-tests (bugs)
+
+        Title:    Write tests
+        Status:   backlog
+  - name: "search finds open issues"
+    command: "tisket search backlog"
+    stdout: |
+      ID           STATUS   PROJECT  TITLE        MATCH
+      write-tests  backlog  bugs     Write tests  status
+  - name: "search finds closed issues too"
+    command: "tisket search done"
+    stdout: |
+      ID              STATUS  PROJECT  TITLE           MATCH
+      fix-the-widget  done    bugs     Fix the widget  status

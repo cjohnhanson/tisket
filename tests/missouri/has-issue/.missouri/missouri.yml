@@ -1,0 +1,84 @@
+transitions:
+  - name: "close issue"
+    command: "tisket issue close fix-the-widget"
+    target: "../issue-closed"
+    comparators:
+      files:
+        - path: ".tisket/bugs/.closed/fix-the-widget.md"
+          command: "compare-issue"
+  - name: "edit issue status"
+    command: "tisket issue edit fix-the-widget --status todo"
+    target: "../issue-edited"
+    comparators:
+      files:
+        - path: ".tisket/bugs/fix-the-widget.md"
+          command: "compare-issue"
+  - name: "create second issue"
+    command: "tisket issue create 'Write tests' -p bugs"
+    target: "../has-two-issues"
+    comparators:
+      files:
+        - path: ".tisket/bugs/fix-the-widget.md"
+          command: "compare-issue"
+        - path: ".tisket/bugs/write-tests.md"
+          command: "compare-issue"
+  - name: "set up divergent git branch"
+    command: "setup-divergent-branch"
+    target: "../has-issue-divergent"
+    comparators:
+      files:
+        - path: ".tisket/bugs/fix-the-widget.md"
+          command: "compare-issue"
+
+assertions:
+  - name: "issue list shows issue"
+    command: "tisket issue list -p bugs"
+    stdout: |
+      ID              STATUS   TITLE
+      fix-the-widget  backlog  Fix the widget
+  - name: "issue show works"
+    command: "tisket issue show fix-the-widget"
+    stdout: |
+      fix-the-widget (bugs)
+
+        Title:    Fix the widget
+        Status:   backlog
+  - name: "close nonexistent fails"
+    command: "tisket issue close nonexistent"
+    should_fail: true
+    stderr: "error: issue 'nonexistent' not found\n"
+  - name: "duplicate issue fails"
+    command: "tisket issue create 'Fix the widget' -p bugs"
+    should_fail: true
+    stderr: "error: issue 'fix-the-widget' already exists\n"
+  - name: "show nonexistent fails"
+    command: "tisket issue show nonexistent"
+    should_fail: true
+    stderr: "error: issue 'nonexistent' not found\n"
+  - name: "edit nonexistent fails"
+    command: "tisket issue edit nonexistent --status todo"
+    should_fail: true
+    stderr: "error: issue 'nonexistent' not found\n"
+  - name: "reopen non-closed issue fails"
+    command: "tisket issue reopen fix-the-widget"
+    should_fail: true
+    stderr: "error: issue 'fix-the-widget' is not closed\n"
+  - name: "invalid status fails"
+    command: "tisket issue edit fix-the-widget --status invalid"
+    should_fail: true
+    stderr: "error: 'invalid' is not a valid status for project 'bugs'\n"
+  - name: "search finds issue by title"
+    command: "tisket search widget"
+    stdout: |
+      ID              STATUS   PROJECT  TITLE           MATCH
+      fix-the-widget  backlog  bugs     Fix the widget  title
+  - name: "path prints relative path"
+    command: "tisket issue path fix-the-widget"
+    stdout: ".tisket/bugs/fix-the-widget.md\n"
+  - name: "path for nonexistent fails"
+    command: "tisket issue path nonexistent"
+    should_fail: true
+    stderr: "error: issue 'nonexistent' not found\n"
+  - name: "search no results"
+    command: "tisket search nonexistent-term-xyz"
+    stdout: ""

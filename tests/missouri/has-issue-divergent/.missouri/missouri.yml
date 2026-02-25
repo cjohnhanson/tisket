@@ -1,0 +1,16 @@
+assertions:
+  - name: "list shows asterisk for divergent issue"
+    command: "tisket issue list -p bugs"
+    stdout: |
+      ID              STATUS    TITLE
+      fix-the-widget  backlog*  Fix the widget
+  - name: "show displays other branches with differing fields"
+    command: "tisket issue show fix-the-widget"
+    stdout: |
+      fix-the-widget (bugs)
+
+        Title:    Fix the widget
+        Status:   backlog
+
+        Other branches:
+          feature/working-on-it   status

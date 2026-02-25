@@ -1,0 +1,10 @@
+name: v0.1.0
+statuses:
+  active:
+    - discovery
+    - backlog
+    - todo
+    - in_progress
+  terminal:
+    - done
+    - cancelled

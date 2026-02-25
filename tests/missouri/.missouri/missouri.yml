@@ -1,0 +1,6 @@
+setup:
+  - name: "build tisket"
+    command: "cargo build --manifest-path ../../Cargo.toml"
+
+env:
+  NO_COLOR: "1"
