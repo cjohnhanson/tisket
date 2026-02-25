@@ -1,0 +1,18 @@
+transitions:
+  - name: "tisket init"
+    command: "tisket init"
+    target: "../initialized"
+
+assertions:
+  - name: "issue list fails before init"
+    command: "tisket issue list"
+    should_fail: true
+    stderr: "error: not a tisket repository (tisket.yml not found)\n"
+  - name: "project list fails before init"
+    command: "tisket project list"
+    should_fail: true
+    stderr: "error: not a tisket repository (tisket.yml not found)\n"
+  - name: "prime fails before init"
+    command: "tisket prime"
+    should_fail: true
+    stderr: "error: not a tisket repository (tisket.yml not found)\n"

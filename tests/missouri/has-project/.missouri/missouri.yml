@@ -1,0 +1,31 @@
+transitions:
+  - name: "create issue"
+    command: "tisket issue create 'Fix the widget' -p bugs"
+    target: "../has-issue"
+    comparators:
+      files:
+        - path: ".tisket/bugs/fix-the-widget.md"
+          command: "compare-issue"
+  - name: "create issue with body"
+    command: "create-issue-with-body"
+    target: "../has-issue-with-body"
+    comparators:
+      files:
+        - path: ".tisket/bugs/fix-the-widget.md"
+          command: "compare-issue"
+
+assertions:
+  - name: "project list shows bugs"
+    command: "tisket project list"
+    stdout: "bugs\n"
+  - name: "issue list is empty"
+    command: "tisket issue list -p bugs"
+    stdout: ""
+  - name: "duplicate project fails"
+    command: "tisket project create bugs"
+    should_fail: true
+    stderr: "error: project 'bugs' already exists\n"
+  - name: "issue in nonexistent project fails"
+    command: "tisket issue create 'Something' -p nonexistent"
+    should_fail: true
+    stderr: "error: project 'nonexistent' not found\n"

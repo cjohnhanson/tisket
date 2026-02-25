@@ -1,0 +1,42 @@
+transitions:
+  - name: "close first issue"
+    command: "tisket issue close fix-the-widget"
+    target: "../one-closed"
+    comparators:
+      files:
+        - path: ".tisket/bugs/fix-the-widget.md"
+          ignore: true
+        - path: ".tisket/bugs/write-tests.md"
+          command: "compare-issue"
+        - path: ".tisket/bugs/.closed/fix-the-widget.md"
+          command: "compare-issue"
+
+assertions:
+  - name: "list shows both issues"
+    command: "tisket issue list -p bugs"
+    stdout: |
+      ID              STATUS   TITLE
+      fix-the-widget  backlog  Fix the widget
+      write-tests     backlog  Write tests
+  - name: "show second issue"
+    command: "tisket issue show write-tests"
+    stdout: |
+      write-tests (bugs)
+
+        Title:    Write tests
+        Status:   backlog
+  - name: "duplicate second issue fails"
+    command: "tisket issue create 'Write tests' -p bugs"
+    should_fail: true
+    stderr: "error: issue 'write-tests' already exists\n"
+  - name: "search matches multiple issues"
+    command: "tisket search backlog"
+    stdout: |
+      ID              STATUS   PROJECT  TITLE           MATCH
+      fix-the-widget  backlog  bugs     Fix the widget  status
+      write-tests     backlog  bugs     Write tests     status
+  - name: "search with project filter"
+    command: "tisket search widget -p bugs"
+    stdout: |
+      ID              STATUS   PROJECT  TITLE           MATCH
+      fix-the-widget  backlog  bugs     Fix the widget  title
