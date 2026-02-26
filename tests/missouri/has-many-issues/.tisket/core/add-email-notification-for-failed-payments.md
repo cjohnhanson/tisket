@@ -1,6 +1,6 @@
 ---
 title: "Add email notification for failed payments"
-status: backlog
+status: todo
 priority: 3
 assignee: carol
 labels: [feature]

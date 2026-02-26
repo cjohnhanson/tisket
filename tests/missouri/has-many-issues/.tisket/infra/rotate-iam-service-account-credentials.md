@@ -1,6 +1,6 @@
 ---
 title: "Rotate IAM service account credentials"
-status: backlog
+status: todo
 priority: 2
 assignee:
 labels: [security]

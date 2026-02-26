@@ -1,6 +1,6 @@
 ---
 title: "Write step-by-step data import tutorial"
-status: backlog
+status: todo
 priority:
 assignee: bob
 labels: [docs, tutorial]

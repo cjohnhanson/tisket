@@ -1,6 +1,6 @@
 ---
 title: "Consolidate duplicate user validation logic"
-status: backlog
+status: todo
 priority: 3
 assignee: dave
 labels: [refactor]

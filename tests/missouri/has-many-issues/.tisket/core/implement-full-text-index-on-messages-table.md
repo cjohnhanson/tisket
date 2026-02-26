@@ -1,6 +1,6 @@
 ---
 title: "Implement full-text index on messages table"
-status: backlog
+status: todo
 priority: 2
 assignee: dave
 labels: [database, performance]

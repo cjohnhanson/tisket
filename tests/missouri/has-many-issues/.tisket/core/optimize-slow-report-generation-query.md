@@ -1,6 +1,6 @@
 ---
 title: "Optimize slow report generation query"
-status: backlog
+status: todo
 priority: 3
 assignee: carol
 labels: [performance, database]

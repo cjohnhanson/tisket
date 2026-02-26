@@ -1,6 +1,6 @@
 ---
 title: "Add accessibility labels to icon-only buttons"
-status: backlog
+status: todo
 priority: 3
 assignee:
 labels: [ui, feature]

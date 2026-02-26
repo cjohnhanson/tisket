@@ -15,28 +15,28 @@ assertions:
   - name: "list shows both issues"
     command: "tisket issue list -p bugs"
     stdout: |
-      ID              STATUS   TITLE
-      fix-the-widget  backlog  Fix the widget
-      write-tests     backlog  Write tests
+      ID              STATUS  TITLE
+      fix-the-widget  todo    Fix the widget
+      write-tests     todo    Write tests
   - name: "show second issue"
     command: "tisket issue show write-tests"
     stdout: |
       write-tests (bugs)
 
         Title:    Write tests
-        Status:   backlog
+        Status:   todo
   - name: "duplicate second issue fails"
     command: "tisket issue create 'Write tests' -p bugs"
     should_fail: true
     stderr: "error: issue 'write-tests' already exists\n"
   - name: "search matches multiple issues"
-    command: "tisket search backlog"
+    command: "tisket search todo"
     stdout: |
-      ID              STATUS   PROJECT  TITLE           MATCH
-      fix-the-widget  backlog  bugs     Fix the widget  status
-      write-tests     backlog  bugs     Write tests     status
+      ID              STATUS  PROJECT  TITLE           MATCH
+      fix-the-widget  todo    bugs     Fix the widget  status
+      write-tests     todo    bugs     Write tests     status
   - name: "search with project filter"
     command: "tisket search widget -p bugs"
     stdout: |
-      ID              STATUS   PROJECT  TITLE           MATCH
-      fix-the-widget  backlog  bugs     Fix the widget  title
+      ID              STATUS  PROJECT  TITLE           MATCH
+      fix-the-widget  todo    bugs     Fix the widget  title

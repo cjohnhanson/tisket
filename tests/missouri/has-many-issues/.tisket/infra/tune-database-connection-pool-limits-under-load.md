@@ -1,6 +1,6 @@
 ---
 title: "Tune database connection pool limits under load"
-status: backlog
+status: todo
 priority:
 assignee: alice
 labels: [database, performance]

@@ -1,6 +1,6 @@
 ---
 title: "Add end-to-end tests for user onboarding"
-status: backlog
+status: todo
 priority: 3
 assignee: alice
 labels: [testing, feature]

@@ -1,6 +1,6 @@
 ---
 title: "CRITICAL production memory leak in worker pool"
-status: backlog
+status: todo
 priority: 1
 assignee:
 labels: [bug, urgent, performance]

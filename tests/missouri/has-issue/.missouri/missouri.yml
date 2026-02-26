@@ -34,15 +34,15 @@ assertions:
   - name: "issue list shows issue"
     command: "tisket issue list -p bugs"
     stdout: |
-      ID              STATUS   TITLE
-      fix-the-widget  backlog  Fix the widget
+      ID              STATUS  TITLE
+      fix-the-widget  todo    Fix the widget
   - name: "issue show works"
     command: "tisket issue show fix-the-widget"
     stdout: |
       fix-the-widget (bugs)
 
         Title:    Fix the widget
-        Status:   backlog
+        Status:   todo
   - name: "close nonexistent fails"
     command: "tisket issue close nonexistent"
     should_fail: true
@@ -66,12 +66,12 @@ assertions:
   - name: "invalid status fails"
     command: "tisket issue edit fix-the-widget --status invalid"
     should_fail: true
-    stderr: "error: 'invalid' is not a valid status for project 'bugs'\n"
+    stderr: "error: 'invalid' is not a valid status\n"
   - name: "search finds issue by title"
     command: "tisket search widget"
     stdout: |
-      ID              STATUS   PROJECT  TITLE           MATCH
-      fix-the-widget  backlog  bugs     Fix the widget  title
+      ID              STATUS  PROJECT  TITLE           MATCH
+      fix-the-widget  todo    bugs     Fix the widget  title
   - name: "path prints relative path"
     command: "tisket issue path fix-the-widget"
     stdout: ".tisket/bugs/fix-the-widget.md\n"

@@ -1,6 +1,6 @@
 ---
 title: "Refactor PostgreSQL connection pooling"
-status: backlog
+status: todo
 priority: 2
 assignee: dave
 labels: [refactor, database, performance]

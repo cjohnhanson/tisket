@@ -1,6 +1,6 @@
 ---
 title: "Implement blue-green deployment pipeline"
-status: backlog
+status: todo
 priority: 2
 assignee: eve
 labels: [devops, feature]

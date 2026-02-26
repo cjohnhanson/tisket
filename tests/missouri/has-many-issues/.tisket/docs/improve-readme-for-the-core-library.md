@@ -1,6 +1,6 @@
 ---
 title: "Improve README for the core library"
-status: backlog
+status: todo
 priority:
 assignee: frank
 labels: [docs]

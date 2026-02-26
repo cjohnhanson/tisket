@@ -5,6 +5,7 @@ use grep_regex::RegexMatcher;
 use crate::config::{ProjectConfig, TisketConfig};
 use crate::error::{Error, Result};
 use crate::git::{self, GitContext};
+use crate::issue::Status;
 use crate::issue::{self, Issue};
 use crate::slug::slugify;
 
@@ -19,7 +20,7 @@ pub struct CreateIssueOptions {
     pub assignee: Option<String>,
     pub labels: Option<String>,
     pub depends_on: Option<String>,
-    pub status: Option<String>,
+    pub status: Option<Status>,
 }
 
 pub struct Repo {
@@ -68,9 +69,7 @@ impl Repo {
             return Err(Error::ProjectAlreadyExists(name.into()));
         }
         std::fs::create_dir_all(&project_dir)?;
-        let content = format!(
-            "name: {name}\nstatuses:\n  active:\n    - backlog\n    - todo\n    - in_progress\n  terminal:\n    - done\n    - cancelled\n"
-        );
+        let content = format!("name: {name}\n");
         std::fs::write(project_dir.join("project.yml"), content)?;
         Ok(())
     }
@@ -126,8 +125,7 @@ impl Repo {
             return Err(Error::IssueAlreadyExists(id));
         }
 
-        let mut fm =
-            issue::new_frontmatter(title, &opts.status.unwrap_or_else(|| "backlog".into()));
+        let mut fm = issue::new_frontmatter(title, opts.status.unwrap_or(Status::Todo));
         fm.priority = opts.priority;
         fm.assignee = opts.assignee;
         if let Some(l) = opts.labels {
@@ -170,7 +168,12 @@ impl Repo {
         }
 
         if let Some(status) = status_filter {
-            issues.retain(|i| i.frontmatter.status == status);
+            if let Ok(s) = status.parse::<Status>() {
+                issues.retain(|i| i.frontmatter.status == s);
+            } else {
+                // Invalid status filter matches nothing.
+                issues.clear();
+            }
         }
 
         // Annotate with git divergence info
@@ -324,21 +327,13 @@ impl Repo {
             return Err(Error::IssueClosed(id.into()));
         }
 
-        let project_config = self.load_project(&iss.project)?;
-
         let project_dir = self.tisket_dir().join(&iss.project);
         let issue_path = project_dir.join(format!("{id}.md"));
         let content = std::fs::read_to_string(&issue_path)?;
         let (mut fm, body, scratch) = issue::parse_issue(&content)?;
 
         if let Some(new_status) = status {
-            if !project_config.is_valid_status(new_status) {
-                return Err(Error::InvalidStatus {
-                    status: new_status.into(),
-                    project: iss.project.clone(),
-                });
-            }
-            fm.status = new_status.into();
+            fm.status = new_status.parse::<Status>()?;
         }
 
         issue::update_timestamp(&mut fm);
@@ -353,7 +348,10 @@ impl Repo {
             return Err(Error::IssueAlreadyClosed(id.into()));
         }
 
-        let terminal_status = status.unwrap_or("done");
+        let terminal_status = match status {
+            Some(s) => s.parse::<Status>()?,
+            None => Status::Done,
+        };
         let project_dir = self.tisket_dir().join(&iss.project);
         let issue_path = project_dir.join(format!("{id}.md"));
         let closed_dir = project_dir.join(".closed");
@@ -361,7 +359,7 @@ impl Repo {
 
         let content = std::fs::read_to_string(&issue_path)?;
         let (mut fm, body, scratch) = issue::parse_issue(&content)?;
-        fm.status = terminal_status.into();
+        fm.status = terminal_status;
         issue::update_timestamp(&mut fm);
 
         std::fs::create_dir_all(&closed_dir)?;
@@ -378,14 +376,17 @@ impl Repo {
             return Err(Error::IssueNotClosed(id.into()));
         }
 
-        let reopen_status = status.unwrap_or("backlog");
+        let reopen_status = match status {
+            Some(s) => s.parse::<Status>()?,
+            None => Status::Todo,
+        };
         let project_dir = self.tisket_dir().join(&iss.project);
         let closed_path = project_dir.join(".closed").join(format!("{id}.md"));
         let active_path = project_dir.join(format!("{id}.md"));
 
         let content = std::fs::read_to_string(&closed_path)?;
         let (mut fm, body, scratch) = issue::parse_issue(&content)?;
-        fm.status = reopen_status.into();
+        fm.status = reopen_status;
         issue::update_timestamp(&mut fm);
 
         let new_content = issue::serialize_issue(&fm, &body, &scratch);

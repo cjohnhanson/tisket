@@ -1,6 +1,6 @@
 ---
 title: "Refactor authentication middleware into composable hooks"
-status: backlog
+status: todo
 priority: 3
 assignee: bob
 labels: [refactor, auth]

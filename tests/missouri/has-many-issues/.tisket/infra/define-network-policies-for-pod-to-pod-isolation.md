@@ -1,6 +1,6 @@
 ---
 title: "Define network policies for pod-to-pod isolation"
-status: backlog
+status: todo
 priority: 2
 assignee:
 labels: [security, devops]

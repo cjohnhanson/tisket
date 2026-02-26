@@ -1,6 +1,6 @@
 ---
 title: "Add CD stage for canary deployments to staging"
-status: backlog
+status: todo
 priority: 3
 assignee: bob
 labels: [devops]

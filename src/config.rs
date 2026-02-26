@@ -19,18 +19,4 @@ impl Default for TisketConfig {
 #[derive(Debug, Deserialize, Serialize)]
 pub struct ProjectConfig {
     pub name: String,
-    pub statuses: StatusConfig,
-}
-
-#[derive(Debug, Deserialize, Serialize)]
-pub struct StatusConfig {
-    pub active: Vec<String>,
-    pub terminal: Vec<String>,
-}
-
-impl ProjectConfig {
-    pub fn is_valid_status(&self, status: &str) -> bool {
-        self.statuses.active.iter().any(|s| s == status)
-            || self.statuses.terminal.iter().any(|s| s == status)
-    }
 }

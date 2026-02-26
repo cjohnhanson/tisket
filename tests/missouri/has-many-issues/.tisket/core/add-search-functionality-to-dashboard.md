@@ -1,6 +1,6 @@
 ---
 title: "Add search functionality to dashboard"
-status: backlog
+status: todo
 priority: 3
 assignee: alice
 labels: [feature, search, ui]

@@ -1,6 +1,6 @@
 ---
 title: "Write incident response runbook"
-status: backlog
+status: todo
 priority: 2
 assignee: alice
 labels: [docs]

@@ -1,6 +1,6 @@
 ---
 title: "Write testing strategy guide for API consumers"
-status: backlog
+status: todo
 priority:
 assignee: frank
 labels: [docs, testing, guide]

@@ -1,6 +1,6 @@
 ---
 title: "Create contributor guide for open source repo"
-status: backlog
+status: todo
 priority:
 assignee:
 labels: [docs, guide]

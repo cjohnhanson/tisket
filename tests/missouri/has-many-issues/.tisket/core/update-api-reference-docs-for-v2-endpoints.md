@@ -1,6 +1,6 @@
 ---
 title: "Update API reference docs for v2 endpoints"
-status: backlog
+status: todo
 priority: 3
 assignee: carol
 labels: [docs, api]

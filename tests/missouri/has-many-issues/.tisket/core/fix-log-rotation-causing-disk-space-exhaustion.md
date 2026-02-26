@@ -1,6 +1,6 @@
 ---
 title: "Fix log rotation causing disk space exhaustion"
-status: backlog
+status: todo
 priority: 1
 assignee:
 labels: [bug, urgent, devops]

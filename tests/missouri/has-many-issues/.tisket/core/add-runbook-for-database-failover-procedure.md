@@ -1,6 +1,6 @@
 ---
 title: "Add runbook for database failover procedure"
-status: backlog
+status: todo
 priority: 2
 assignee: dave
 labels: [docs, devops]

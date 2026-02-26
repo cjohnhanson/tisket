@@ -1,6 +1,6 @@
 ---
 title: "Aggregate application logs into centralized sink"
-status: backlog
+status: todo
 priority: 3
 assignee: eve
 labels: [monitoring, devops]

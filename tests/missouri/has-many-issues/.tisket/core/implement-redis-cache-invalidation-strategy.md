@@ -1,6 +1,6 @@
 ---
 title: "Implement Redis cache invalidation strategy"
-status: backlog
+status: todo
 priority: 2
 assignee: alice
 labels: [performance, database]

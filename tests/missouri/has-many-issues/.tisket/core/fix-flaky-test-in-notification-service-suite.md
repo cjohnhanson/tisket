@@ -1,6 +1,6 @@
 ---
 title: "Fix flaky test in notification service suite"
-status: backlog
+status: todo
 priority: 2
 assignee: bob
 labels: [bug, testing]

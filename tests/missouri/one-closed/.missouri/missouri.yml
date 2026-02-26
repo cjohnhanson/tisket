@@ -2,8 +2,8 @@ assertions:
   - name: "list shows only open issue"
     command: "tisket issue list -p bugs"
     stdout: |
-      ID           STATUS   TITLE
-      write-tests  backlog  Write tests
+      ID           STATUS  TITLE
+      write-tests  todo    Write tests
   - name: "list with --closed shows closed issue"
     command: "tisket issue list -p bugs --closed"
     stdout: |
@@ -22,12 +22,12 @@ assertions:
       write-tests (bugs)
 
         Title:    Write tests
-        Status:   backlog
+        Status:   todo
   - name: "search finds open issues"
-    command: "tisket search backlog"
+    command: "tisket search todo"
     stdout: |
-      ID           STATUS   PROJECT  TITLE        MATCH
-      write-tests  backlog  bugs     Write tests  status
+      ID           STATUS  PROJECT  TITLE        MATCH
+      write-tests  todo    bugs     Write tests  status
   - name: "search finds closed issues too"
     command: "tisket search done"
     stdout: |

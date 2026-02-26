@@ -12,5 +12,5 @@ assertions:
       ID              STATUS  TITLE
       fix-the-widget  todo    Fix the widget
   - name: "list other status is empty"
-    command: "tisket issue list -p bugs --status backlog"
+    command: "tisket issue list -p bugs --status discovery"
     stdout: ""

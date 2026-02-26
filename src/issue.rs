@@ -1,12 +1,94 @@
+use std::fmt;
+use std::str::FromStr;
+
 use chrono::Utc;
-use serde::Deserialize;
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 use crate::error::{Error, Result};
+
+/// Fixed workflow statuses. Drives pickup gating, phase transitions, and display.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Status {
+    Discovery,
+    Todo,
+    InProgress,
+    Blocked,
+    Paused,
+    Done,
+    Cancelled,
+}
+
+impl Status {
+    /// Active statuses — issue is open and potentially workable.
+    pub fn is_active(self) -> bool {
+        matches!(
+            self,
+            Self::Discovery | Self::Todo | Self::InProgress | Self::Blocked | Self::Paused
+        )
+    }
+
+    /// Terminal statuses — issue is closed.
+    pub fn is_terminal(self) -> bool {
+        matches!(self, Self::Done | Self::Cancelled)
+    }
+
+    /// Statuses that can be picked up for work.
+    pub fn is_pickable(self) -> bool {
+        matches!(self, Self::Todo | Self::Blocked | Self::Paused)
+    }
+}
+
+impl fmt::Display for Status {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let s = match self {
+            Self::Discovery => "discovery",
+            Self::Todo => "todo",
+            Self::InProgress => "in_progress",
+            Self::Blocked => "blocked",
+            Self::Paused => "paused",
+            Self::Done => "done",
+            Self::Cancelled => "cancelled",
+        };
+        f.write_str(s)
+    }
+}
+
+impl FromStr for Status {
+    type Err = Error;
+
+    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
+        match s {
+            "discovery" => Ok(Self::Discovery),
+            "todo" => Ok(Self::Todo),
+            "in_progress" => Ok(Self::InProgress),
+            "blocked" => Ok(Self::Blocked),
+            "paused" => Ok(Self::Paused),
+            "done" => Ok(Self::Done),
+            "cancelled" => Ok(Self::Cancelled),
+            // Legacy compat
+            "backlog" => Ok(Self::Todo),
+            _ => Err(Error::InvalidStatus { status: s.into() }),
+        }
+    }
+}
+
+impl Serialize for Status {
+    fn serialize<S: Serializer>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error> {
+        serializer.serialize_str(&self.to_string())
+    }
+}
+
+impl<'de> Deserialize<'de> for Status {
+    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> std::result::Result<Self, D::Error> {
+        let s = String::deserialize(deserializer)?;
+        s.parse().map_err(serde::de::Error::custom)
+    }
+}
 
 #[derive(Debug, Deserialize)]
 pub struct IssueFrontmatter {
     pub title: String,
-    pub status: String,
+    pub status: Status,
     pub priority: Option<String>,
     pub assignee: Option<String>,
     #[serde(default)]
@@ -129,11 +211,11 @@ pub fn serialize_issue(fm: &IssueFrontmatter, body: &str, scratch: &str) -> Stri
     s
 }
 
-pub fn new_frontmatter(title: &str, status: &str) -> IssueFrontmatter {
+pub fn new_frontmatter(title: &str, status: Status) -> IssueFrontmatter {
     let now = format!("\"{}\"", Utc::now().format("%Y-%m-%dT%H:%M:%SZ"));
     IssueFrontmatter {
         title: title.into(),
-        status: status.into(),
+        status,
         priority: None,
         assignee: None,
         labels: vec![],

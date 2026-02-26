@@ -1,6 +1,6 @@
 ---
 title: "Add loading skeleton for dashboard widgets"
-status: backlog
+status: todo
 priority: 4
 assignee:
 labels: [ui, enhancement]

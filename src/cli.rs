@@ -121,7 +121,7 @@ pub struct IssueCreateArgs {
     #[arg(short, long)]
     pub depends_on: Option<String>,
 
-    /// Initial status (default: backlog)
+    /// Initial status (default: todo)
     #[arg(short, long)]
     pub status: Option<String>,
 }
@@ -202,7 +202,7 @@ pub struct IssueReopenArgs {
     /// Issue ID (filename without .md)
     pub id: String,
 
-    /// Status to reopen as (default: backlog)
+    /// Status to reopen as (default: todo)
     #[arg(short, long)]
     pub status: Option<String>,
 }
@@ -275,6 +275,10 @@ pub fn run_command(root: &camino::Utf8Path, command: Command) -> crate::Result<(
             match cmd {
                 IssueCommand::Create(a) => {
                     let project = a.project.as_deref().unwrap_or("default");
+                    let status = a
+                        .status
+                        .map(|s| s.parse::<crate::issue::Status>())
+                        .transpose()?;
                     repo.create_issue(
                         &a.title,
                         project,
@@ -283,7 +287,7 @@ pub fn run_command(root: &camino::Utf8Path, command: Command) -> crate::Result<(
                             assignee: a.assignee,
                             labels: a.labels,
                             depends_on: a.depends_on,
-                            status: a.status,
+                            status,
                         },
                     )?;
                     Ok(())
@@ -351,7 +355,8 @@ fn colorize_status(status: &str) -> String {
         "discovery" => base.cyan().to_string(),
         "in_progress" => base.blue().to_string(),
         "cancelled" => base.red().dimmed().to_string(),
-        "backlog" => base.dimmed().to_string(),
+        "blocked" => base.red().to_string(),
+        "paused" => base.dimmed().to_string(),
         "todo" => base.yellow().to_string(),
         "done" => base.green().to_string(),
         _ => base.to_string(),
@@ -425,7 +430,7 @@ fn print_issue_list(issues: &[Issue]) {
             let status = if iss.diverges {
                 format!("{}*", iss.frontmatter.status)
             } else {
-                iss.frontmatter.status.clone()
+                iss.frontmatter.status.to_string()
             };
             vec![iss.id.clone(), status, iss.frontmatter.title.clone()]
         })
@@ -439,7 +444,7 @@ fn print_search_results(results: &[SearchResult]) {
         .map(|r| {
             vec![
                 r.issue.id.clone(),
-                r.issue.frontmatter.status.clone(),
+                r.issue.frontmatter.status.to_string(),
                 r.issue.project.clone(),
                 r.issue.frontmatter.title.clone(),
                 r.matched_fields.join(", "),
@@ -456,7 +461,7 @@ fn print_issue_show(iss: &Issue) {
     println!(
         "  {:<10}{}",
         "Status:",
-        colorize_status(&iss.frontmatter.status)
+        colorize_status(&iss.frontmatter.status.to_string())
     );
     if let Some(p) = &iss.frontmatter.priority {
         println!("  {:<10}{p}", "Priority:");

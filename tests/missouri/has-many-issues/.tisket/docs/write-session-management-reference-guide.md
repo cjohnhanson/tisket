@@ -1,6 +1,6 @@
 ---
 title: "Write session management reference guide"
-status: backlog
+status: todo
 priority:
 assignee:
 labels: [docs, auth]

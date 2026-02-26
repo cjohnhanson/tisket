@@ -3,15 +3,15 @@ assertions:
   - name: "search with regex matches single issue"
     command: "tisket search 'OAuth.*refresh'"
     stdout: |
-      ID                            STATUS   PROJECT  TITLE                         MATCH
-      fix-oauth2-token-refresh-bug  backlog  core     Fix OAuth2 token refresh bug  title
+      ID                            STATUS  PROJECT  TITLE                         MATCH
+      fix-oauth2-token-refresh-bug  todo    core     Fix OAuth2 token refresh bug  title
 
   # --- Search: case sensitivity ---
   - name: "search uppercase CRITICAL matches title"
     command: "tisket search CRITICAL"
     stdout: |
-      ID                                              STATUS   PROJECT  TITLE                                           MATCH
-      critical-production-memory-leak-in-worker-pool  backlog  core     CRITICAL production memory leak in worker pool  title
+      ID                                              STATUS  PROJECT  TITLE                                           MATCH
+      critical-production-memory-leak-in-worker-pool  todo    core     CRITICAL production memory leak in worker pool  title
   - name: "search lowercase critical has no match"
     command: "tisket search critical"
     stdout: ""
@@ -20,32 +20,32 @@ assertions:
   - name: "search term in title and labels"
     command: "tisket search search"
     stdout: |
-      ID                                     STATUS   PROJECT  TITLE                                  MATCH
-      add-search-functionality-to-dashboard  backlog  core     Add search functionality to dashboard  title, labels
+      ID                                     STATUS  PROJECT  TITLE                                  MATCH
+      add-search-functionality-to-dashboard  todo    core     Add search functionality to dashboard  title, labels
 
   # --- Search: cross-project ---
   - name: "search PostgreSQL matches across projects"
     command: "tisket search PostgreSQL"
     stdout: |
-      ID                                      STATUS   PROJECT  TITLE                                   MATCH
-      document-postgresql-backup-procedures   backlog  docs     Document PostgreSQL backup procedures   title
-      refactor-postgresql-connection-pooling  backlog  core     Refactor PostgreSQL connection pooling  title
+      ID                                      STATUS  PROJECT  TITLE                                   MATCH
+      document-postgresql-backup-procedures   todo    docs     Document PostgreSQL backup procedures   title
+      refactor-postgresql-connection-pooling  todo    core     Refactor PostgreSQL connection pooling  title
 
   # --- Search: project filter ---
   - name: "search with project filter restricts results"
     command: "tisket search PostgreSQL -p docs"
     stdout: |
-      ID                                     STATUS   PROJECT  TITLE                                  MATCH
-      document-postgresql-backup-procedures  backlog  docs     Document PostgreSQL backup procedures  title
+      ID                                     STATUS  PROJECT  TITLE                                  MATCH
+      document-postgresql-backup-procedures  todo    docs     Document PostgreSQL backup procedures  title
 
   # --- Search: assignee with project filter ---
   - name: "search assignee in specific project"
     command: "tisket search alice -p infra"
     stdout: |
-      ID                                               STATUS   PROJECT  TITLE                                            MATCH
-      configure-load-balancer-health-check-thresholds  backlog  infra    Configure load balancer health check thresholds  assignee
-      remove-stale-dns-records-from-production-zone    done     infra    Remove stale DNS records from production zone    assignee
-      tune-database-connection-pool-limits-under-load  backlog  infra    Tune database connection pool limits under load  assignee
+      ID                                               STATUS  PROJECT  TITLE                                            MATCH
+      configure-load-balancer-health-check-thresholds  todo    infra    Configure load balancer health check thresholds  assignee
+      remove-stale-dns-records-from-production-zone    done    infra    Remove stale DNS records from production zone    assignee
+      tune-database-connection-pool-limits-under-load  todo    infra    Tune database connection pool limits under load  assignee
 
   # --- Search: closed issue ---
   - name: "search finds closed issues"
@@ -72,7 +72,7 @@ assertions:
       fix-oauth2-token-refresh-bug (core)
 
         Title:    Fix OAuth2 token refresh bug
-        Status:   backlog
+        Status:   todo
         Priority: 1
         Assignee: alice
         Labels:   bug, auth, security
@@ -84,7 +84,7 @@ assertions:
       critical-production-memory-leak-in-worker-pool (core)
 
         Title:    CRITICAL production memory leak in worker pool
-        Status:   backlog
+        Status:   todo
         Priority: 1
         Labels:   bug, urgent, performance
 

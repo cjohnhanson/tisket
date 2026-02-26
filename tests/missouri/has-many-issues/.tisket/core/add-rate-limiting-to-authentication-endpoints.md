@@ -1,6 +1,6 @@
 ---
 title: "Add rate limiting to authentication endpoints"
-status: backlog
+status: todo
 priority: 2
 assignee: frank
 labels: [security, auth]

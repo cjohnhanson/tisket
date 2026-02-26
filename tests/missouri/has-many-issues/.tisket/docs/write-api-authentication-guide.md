@@ -1,6 +1,6 @@
 ---
 title: "Write API authentication guide"
-status: backlog
+status: todo
 priority:
 assignee: carol
 labels: [docs, auth, guide]

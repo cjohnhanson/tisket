@@ -1,6 +1,6 @@
 ---
 title: "Add deprecation notices to legacy API docs"
-status: backlog
+status: todo
 priority: 2
 assignee:
 labels: [docs, api]

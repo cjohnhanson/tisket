@@ -1,6 +1,6 @@
 ---
 title: "Implement Prometheus alerting rules for memory"
-status: backlog
+status: todo
 priority: 2
 assignee: frank
 labels: [monitoring, devops]

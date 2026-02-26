@@ -1,6 +1,6 @@
 ---
 title: "Implement distributed cache locking"
-status: backlog
+status: todo
 priority: 2
 assignee: dave
 labels: [feature, performance]

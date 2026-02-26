@@ -1,6 +1,6 @@
 ---
 title: "Add health check endpoint for load balancer probes"
-status: backlog
+status: todo
 priority: 2
 assignee: alice
 labels: [devops, feature]

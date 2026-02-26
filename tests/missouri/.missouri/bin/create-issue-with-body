@@ -3,7 +3,7 @@ tisket issue create 'Fix the widget' -p bugs
 cat > .tisket/bugs/fix-the-widget.md << 'ISSUE'
 ---
 title: "Fix the widget"
-status: backlog
+status: todo
 priority:
 assignee:
 labels: []

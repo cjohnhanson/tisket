@@ -1,6 +1,6 @@
 ---
 title: "Write tutorial for integrating the payments module"
-status: backlog
+status: todo
 priority: 3
 assignee:
 labels: [docs, tutorial]

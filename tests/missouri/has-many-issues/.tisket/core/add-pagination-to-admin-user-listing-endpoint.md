@@ -1,6 +1,6 @@
 ---
 title: "Add pagination to admin user listing endpoint"
-status: backlog
+status: todo
 priority: 3
 assignee: frank
 labels: [api, feature]

@@ -1,6 +1,6 @@
 ---
 title: "Fix CORS preflight handling for mobile clients"
-status: backlog
+status: todo
 priority: 2
 assignee: eve
 labels: [bug, api]

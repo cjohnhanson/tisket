@@ -1,6 +1,6 @@
 ---
 title: "Add onboarding guide for new developers"
-status: backlog
+status: todo
 priority:
 assignee: alice
 labels: [docs, guide]

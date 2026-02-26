@@ -1,6 +1,6 @@
 ---
 title: "Implement GraphQL subscription handler"
-status: backlog
+status: todo
 priority: 2
 assignee: bob
 labels: [feature, api]

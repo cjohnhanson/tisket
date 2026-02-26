@@ -1,6 +1,6 @@
 ---
 title: "Add changelog entry for v2.4 release"
-status: backlog
+status: todo
 priority:
 assignee:
 labels: [docs]

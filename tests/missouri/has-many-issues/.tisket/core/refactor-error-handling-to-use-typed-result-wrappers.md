@@ -1,6 +1,6 @@
 ---
 title: "Refactor error handling to use typed result wrappers"
-status: backlog
+status: todo
 priority: 3
 assignee:
 labels: [refactor]

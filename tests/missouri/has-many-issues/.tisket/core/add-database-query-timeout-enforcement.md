@@ -1,6 +1,6 @@
 ---
 title: "Add database query timeout enforcement"
-status: backlog
+status: todo
 priority: 2
 assignee:
 labels: [database, performance]

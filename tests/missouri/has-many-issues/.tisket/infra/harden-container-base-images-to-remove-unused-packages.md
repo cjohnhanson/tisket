@@ -1,6 +1,6 @@
 ---
 title: "Harden container base images to remove unused packages"
-status: backlog
+status: todo
 priority: 3
 assignee: carol
 labels: [security, devops]

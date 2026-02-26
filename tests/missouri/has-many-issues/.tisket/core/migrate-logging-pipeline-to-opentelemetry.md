@@ -1,6 +1,6 @@
 ---
 title: "Migrate logging pipeline to OpenTelemetry"
-status: backlog
+status: todo
 priority: 2
 assignee: eve
 labels: [migration, devops]

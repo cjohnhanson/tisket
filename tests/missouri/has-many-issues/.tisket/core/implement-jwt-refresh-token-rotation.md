@@ -1,6 +1,6 @@
 ---
 title: "Implement JWT refresh token rotation"
-status: backlog
+status: todo
 priority: 2
 assignee: carol
 labels: [auth, security]

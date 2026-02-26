@@ -1,6 +1,6 @@
 ---
 title: "Set up container registry with image scanning"
-status: backlog
+status: todo
 priority: 2
 assignee:
 labels: [devops, security]

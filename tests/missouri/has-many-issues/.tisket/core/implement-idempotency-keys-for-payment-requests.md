@@ -1,6 +1,6 @@
 ---
 title: "Implement idempotency keys for payment requests"
-status: backlog
+status: todo
 priority: 2
 assignee: frank
 labels: [feature, api]

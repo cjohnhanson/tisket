@@ -1,6 +1,6 @@
 ---
 title: "Implement form validation error messaging"
-status: backlog
+status: todo
 priority: 3
 assignee: frank
 labels: [ui, feature]
