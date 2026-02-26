@@ -1,6 +1,6 @@
 ---
 title: "Fix Kubernetes pod autoscaler thrashing under load"
-status: backlog
+status: todo
 priority: 1
 assignee: frank
 labels: [bug, devops, performance]

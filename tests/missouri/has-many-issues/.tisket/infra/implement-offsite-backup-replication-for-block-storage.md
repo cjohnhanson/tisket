@@ -1,6 +1,6 @@
 ---
 title: "Implement offsite backup replication for block storage"
-status: backlog
+status: todo
 priority:
 assignee: bob
 labels: [devops]

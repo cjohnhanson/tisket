@@ -27,8 +27,8 @@ pub enum Error {
     #[error("issue '{0}' is closed")]
     IssueClosed(String),
 
-    #[error("'{status}' is not a valid status for project '{project}'")]
-    InvalidStatus { status: String, project: String },
+    #[error("'{status}' is not a valid status")]
+    InvalidStatus { status: String },
 
     #[error("{0}")]
     Io(#[from] std::io::Error),

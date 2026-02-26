@@ -1,6 +1,6 @@
 ---
 title: "Update REST API endpoint reference"
-status: backlog
+status: todo
 priority: 3
 assignee:
 labels: [docs, api]

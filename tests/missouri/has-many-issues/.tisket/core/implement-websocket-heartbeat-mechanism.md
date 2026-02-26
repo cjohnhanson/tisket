@@ -1,6 +1,6 @@
 ---
 title: "Implement WebSocket heartbeat mechanism"
-status: backlog
+status: todo
 priority: 2
 assignee: carol
 labels: [feature, api]

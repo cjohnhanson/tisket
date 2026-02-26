@@ -1,6 +1,6 @@
 ---
 title: "Add structured logging with trace IDs"
-status: backlog
+status: todo
 priority: 3
 assignee: bob
 labels: [feature, devops]

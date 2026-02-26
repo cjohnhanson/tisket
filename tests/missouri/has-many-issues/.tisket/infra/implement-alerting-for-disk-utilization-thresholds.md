@@ -1,6 +1,6 @@
 ---
 title: "Implement alerting for disk utilization thresholds"
-status: backlog
+status: todo
 priority: 3
 assignee:
 labels: [monitoring]

@@ -1,6 +1,6 @@
 ---
 title: "Document CI pipeline configuration options"
-status: backlog
+status: todo
 priority:
 assignee:
 labels: [docs, guide]

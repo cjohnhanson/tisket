@@ -1,6 +1,6 @@
 ---
 title: "Create rate limiting configuration guide"
-status: backlog
+status: todo
 priority:
 assignee: carol
 labels: [docs, api]

@@ -1,6 +1,6 @@
 ---
 title: "Automate database backup verification"
-status: backlog
+status: todo
 priority: 2
 assignee:
 labels: [devops, database]

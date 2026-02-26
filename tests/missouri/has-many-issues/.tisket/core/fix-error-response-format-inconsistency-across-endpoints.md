@@ -1,6 +1,6 @@
 ---
 title: "Fix error response format inconsistency across endpoints"
-status: backlog
+status: todo
 priority: 3
 assignee:
 labels: [bug, api]

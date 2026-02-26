@@ -1,6 +1,6 @@
 ---
 title: "Increase unit test coverage for auth module"
-status: backlog
+status: todo
 priority: 3
 assignee: frank
 labels: [testing, auth]

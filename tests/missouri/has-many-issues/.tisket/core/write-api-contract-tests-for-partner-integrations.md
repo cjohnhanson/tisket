@@ -1,6 +1,6 @@
 ---
 title: "Write API contract tests for partner integrations"
-status: backlog
+status: todo
 priority: 2
 assignee:
 labels: [testing, api, docs]

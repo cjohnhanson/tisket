@@ -1,6 +1,6 @@
 ---
 title: "Implement infinite scroll for activity timeline"
-status: backlog
+status: todo
 priority: 3
 assignee: eve
 labels: [ui, feature]

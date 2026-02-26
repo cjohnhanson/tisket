@@ -1,6 +1,6 @@
 ---
 title: "Create end-to-end tutorial for the reporting feature"
-status: backlog
+status: todo
 priority:
 assignee: bob
 labels: [docs, tutorial]

@@ -1,6 +1,6 @@
 ---
 title: "Automate SSL certificate renewal with certbot"
-status: backlog
+status: todo
 priority: 3
 assignee:
 labels: [security, devops]

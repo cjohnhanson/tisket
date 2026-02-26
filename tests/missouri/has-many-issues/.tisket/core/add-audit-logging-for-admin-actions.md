@@ -1,6 +1,6 @@
 ---
 title: "Add audit logging for admin actions"
-status: backlog
+status: todo
 priority: 2
 assignee: alice
 labels: [security, feature]

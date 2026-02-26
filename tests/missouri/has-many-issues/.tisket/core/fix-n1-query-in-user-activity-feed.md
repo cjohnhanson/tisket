@@ -1,6 +1,6 @@
 ---
 title: "Fix N+1 query in user activity feed"
-status: backlog
+status: todo
 priority: 2
 assignee: bob
 labels: [bug, database, performance]

@@ -1,6 +1,6 @@
 ---
 title: "Fix OAuth2 token refresh bug"
-status: backlog
+status: todo
 priority: 1
 assignee: alice
 labels: [bug, auth, security]

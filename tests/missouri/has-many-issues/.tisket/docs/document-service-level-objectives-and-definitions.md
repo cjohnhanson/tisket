@@ -1,6 +1,6 @@
 ---
 title: "Document service-level objectives and definitions"
-status: backlog
+status: todo
 priority: 4
 assignee:
 labels: [docs]

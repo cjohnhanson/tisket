@@ -1,6 +1,6 @@
 ---
 title: "Migrate Kubernetes cluster to version 1.29"
-status: backlog
+status: todo
 priority: 1
 assignee: dave
 labels: [devops, migration]

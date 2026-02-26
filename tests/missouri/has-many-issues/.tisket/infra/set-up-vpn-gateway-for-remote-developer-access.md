@@ -1,6 +1,6 @@
 ---
 title: "Set up VPN gateway for remote developer access"
-status: backlog
+status: todo
 priority: 2
 assignee:
 labels: [security, devops]

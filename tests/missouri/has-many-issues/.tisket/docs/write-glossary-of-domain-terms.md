@@ -1,6 +1,6 @@
 ---
 title: "Write glossary of domain terms"
-status: backlog
+status: todo
 priority:
 assignee: eve
 labels: [docs]

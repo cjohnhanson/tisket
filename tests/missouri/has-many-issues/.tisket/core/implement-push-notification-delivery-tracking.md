@@ -1,6 +1,6 @@
 ---
 title: "Implement push notification delivery tracking"
-status: backlog
+status: todo
 priority: 3
 assignee: bob
 labels: [feature]

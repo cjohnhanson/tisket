@@ -1,6 +1,6 @@
 ---
 title: "Create user guide for the admin dashboard"
-status: backlog
+status: todo
 priority: 3
 assignee: bob
 labels: [docs, tutorial]

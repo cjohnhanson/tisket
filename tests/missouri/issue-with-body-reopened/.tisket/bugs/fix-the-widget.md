@@ -1,6 +1,6 @@
 ---
 title: "Fix the widget"
-status: backlog
+status: todo
 priority:
 assignee:
 labels: []

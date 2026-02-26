@@ -1,6 +1,6 @@
 ---
 title: "Add troubleshooting section to the CLI reference"
-status: backlog
+status: todo
 priority:
 assignee:
 labels: [docs]

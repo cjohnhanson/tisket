@@ -1,6 +1,6 @@
 ---
 title: "Fix session invalidation on password change"
-status: backlog
+status: todo
 priority: 1
 assignee: bob
 labels: [bug, auth]

@@ -1,6 +1,6 @@
 ---
 title: "Extract payment processing into dedicated service"
-status: backlog
+status: todo
 priority: 2
 assignee: carol
 labels: [refactor, feature]

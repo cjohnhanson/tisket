@@ -1,6 +1,6 @@
 ---
 title: "Document PostgreSQL backup procedures"
-status: backlog
+status: todo
 priority: 2
 assignee: dave
 labels: [docs, database]

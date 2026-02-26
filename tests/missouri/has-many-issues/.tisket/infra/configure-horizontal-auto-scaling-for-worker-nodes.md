@@ -1,6 +1,6 @@
 ---
 title: "Configure horizontal auto-scaling for worker nodes"
-status: backlog
+status: todo
 priority:
 assignee: frank
 labels: [performance, devops]

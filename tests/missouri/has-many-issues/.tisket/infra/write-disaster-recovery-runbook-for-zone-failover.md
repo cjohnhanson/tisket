@@ -1,6 +1,6 @@
 ---
 title: "Write disaster recovery runbook for zone failover"
-status: backlog
+status: todo
 priority: 1
 assignee: dave
 labels: [devops]

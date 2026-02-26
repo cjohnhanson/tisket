@@ -1,6 +1,6 @@
 ---
 title: "Fix dark mode color contrast on tooltip components"
-status: backlog
+status: todo
 priority: 3
 assignee: dave
 labels: [bug, ui]

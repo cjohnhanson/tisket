@@ -1,6 +1,6 @@
 ---
 title: "Fix stale cache entries in user profile service"
-status: backlog
+status: todo
 priority: 2
 assignee: carol
 labels: [bug, performance]

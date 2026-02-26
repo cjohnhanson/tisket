@@ -1,6 +1,6 @@
 ---
 title: "Update migration guide for v3 schema changes"
-status: backlog
+status: todo
 priority: 2
 assignee:
 labels: [docs, migration]

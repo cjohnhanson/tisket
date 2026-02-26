@@ -1,6 +1,6 @@
 ---
 title: "Build CI pipeline for infrastructure-as-code validation"
-status: backlog
+status: todo
 priority: 2
 assignee: carol
 labels: [devops, testing]

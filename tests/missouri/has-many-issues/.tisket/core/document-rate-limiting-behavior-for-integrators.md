@@ -1,6 +1,6 @@
 ---
 title: "Document rate limiting behavior for integrators"
-status: backlog
+status: todo
 priority: 3
 assignee:
 labels: [docs, api]

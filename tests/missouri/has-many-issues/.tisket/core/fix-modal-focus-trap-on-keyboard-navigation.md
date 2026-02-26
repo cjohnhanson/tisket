@@ -1,6 +1,6 @@
 ---
 title: "Fix modal focus trap on keyboard navigation"
-status: backlog
+status: todo
 priority: 2
 assignee: alice
 labels: [bug, ui]

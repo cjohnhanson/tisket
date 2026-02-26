@@ -1,6 +1,6 @@
 ---
 title: "Document error codes returned by the API"
-status: backlog
+status: todo
 priority: 3
 assignee:
 labels: [docs, api]

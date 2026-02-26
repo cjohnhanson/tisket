@@ -1,6 +1,6 @@
 ---
 title: "Add notification preference management API"
-status: backlog
+status: todo
 priority: 3
 assignee:
 labels: [feature, api]

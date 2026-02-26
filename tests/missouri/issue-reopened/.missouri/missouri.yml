@@ -2,12 +2,12 @@ assertions:
   - name: "reopened issue is listed"
     command: "tisket issue list -p bugs"
     stdout: |
-      ID              STATUS   TITLE
-      fix-the-widget  backlog  Fix the widget
+      ID              STATUS  TITLE
+      fix-the-widget  todo    Fix the widget
   - name: "show reflects reopened status"
     command: "tisket issue show fix-the-widget"
     stdout: |
       fix-the-widget (bugs)
 
         Title:    Fix the widget
-        Status:   backlog
+        Status:   todo

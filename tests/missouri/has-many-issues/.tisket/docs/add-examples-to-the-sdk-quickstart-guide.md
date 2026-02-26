@@ -1,6 +1,6 @@
 ---
 title: "Add examples to the SDK quickstart guide"
-status: backlog
+status: todo
 priority:
 assignee: carol
 labels: [docs, tutorial]

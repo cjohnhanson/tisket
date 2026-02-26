@@ -1,6 +1,6 @@
 ---
 title: "Document database migration runbook"
-status: backlog
+status: todo
 priority: 2
 assignee:
 labels: [docs, migration]

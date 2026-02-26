@@ -1,6 +1,6 @@
 ---
 title: "Implement API versioning strategy"
-status: backlog
+status: todo
 priority: 2
 assignee: alice
 labels: [api, refactor]

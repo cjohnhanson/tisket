@@ -1,6 +1,6 @@
 ---
 title: "Add input sanitization to user profile fields"
-status: backlog
+status: todo
 priority: 2
 assignee: carol
 labels: [security, feature]

@@ -1,6 +1,6 @@
 ---
 title: "Add cache warming on application startup"
-status: backlog
+status: todo
 priority: 3
 assignee: frank
 labels: [performance]

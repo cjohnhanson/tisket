@@ -1,6 +1,6 @@
 ---
 title: "Benchmark storage IOPS for high-throughput workloads"
-status: backlog
+status: todo
 priority:
 assignee:
 labels: [performance, devops]

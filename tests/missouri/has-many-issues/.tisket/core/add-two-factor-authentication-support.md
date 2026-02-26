@@ -1,6 +1,6 @@
 ---
 title: "Add two-factor authentication support"
-status: backlog
+status: todo
 priority: 2
 assignee: alice
 labels: [auth, feature]

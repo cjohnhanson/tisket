@@ -1,6 +1,6 @@
 ---
 title: "Add integration tests for payment flow"
-status: backlog
+status: todo
 priority: 2
 assignee: eve
 labels: [testing]

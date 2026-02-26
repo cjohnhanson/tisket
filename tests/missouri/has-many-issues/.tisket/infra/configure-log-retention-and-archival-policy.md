@@ -1,6 +1,6 @@
 ---
 title: "Configure log retention and archival policy"
-status: backlog
+status: todo
 priority:
 assignee: eve
 labels: [devops]

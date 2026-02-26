@@ -1,6 +1,6 @@
 ---
 title: "Fix notification queue backpressure handling"
-status: backlog
+status: todo
 priority: 2
 assignee: dave
 labels: [bug, performance]

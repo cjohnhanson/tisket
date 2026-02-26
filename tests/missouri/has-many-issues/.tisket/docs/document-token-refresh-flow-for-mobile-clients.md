@@ -1,6 +1,6 @@
 ---
 title: "Document token refresh flow for mobile clients"
-status: backlog
+status: todo
 priority:
 assignee: dave
 labels: [docs, auth]

@@ -1,6 +1,6 @@
 ---
 title: "Fix duplicate charge on payment retry"
-status: backlog
+status: todo
 priority: 1
 assignee:
 labels: [bug, urgent]
