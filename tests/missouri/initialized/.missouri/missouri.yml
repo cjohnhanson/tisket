@@ -3,7 +3,7 @@ transitions:
     command: "tisket project create bugs"
     target: "../has-project"
   - name: "populate many issues"
-    command: "bash /Users/codyhanson/Projects/tisket/tests/missouri/populate-issues.sh"
+    command: "populate-issues.sh"
     target: "../has-many-issues"
     comparators:
       files:
