@@ -1,6 +1,9 @@
 setup:
   - name: "build tisket"
-    command: "cargo build --manifest-path ../../Cargo.toml"
+    command: "cargo build --quiet --manifest-path ../../Cargo.toml"
+
+packages:
+  - git
 
 env:
   NO_COLOR: "1"
