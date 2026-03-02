@@ -342,6 +342,28 @@ impl Repo {
         Ok(())
     }
 
+    /// Appends a `## Scratch Notes` section to the issue file if one is not already present.
+    pub fn ensure_scratch_notes(&self, id: &str) -> Result<()> {
+        let iss = self.find_issue(id)?;
+        if iss.closed {
+            return Ok(());
+        }
+        if !iss.scratch.is_empty() {
+            return Ok(());
+        }
+        let project_dir = self.tisket_dir().join(&iss.project);
+        let issue_path = project_dir.join(format!("{id}.md"));
+        let mut content = std::fs::read_to_string(&issue_path)?;
+        if !content.contains("\n## Scratch Notes") {
+            if !content.ends_with('\n') {
+                content.push('\n');
+            }
+            content.push_str("\n## Scratch Notes\n");
+        }
+        std::fs::write(&issue_path, content)?;
+        Ok(())
+    }
+
     pub fn close_issue(&self, id: &str, status: Option<&str>) -> Result<()> {
         let iss = self.find_issue(id)?;
         if iss.closed {
