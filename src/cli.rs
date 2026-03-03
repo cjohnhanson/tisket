@@ -309,7 +309,7 @@ pub fn run_command(root: &camino::Utf8Path, command: Command) -> crate::Result<(
                     Ok(())
                 }
                 IssueCommand::Edit(a) => {
-                    repo.edit_issue(&a.id, a.status.as_deref())?;
+                    repo.edit_issue(&a.id, a.status.as_deref(), None)?;
                     Ok(())
                 }
                 IssueCommand::Close(a) => {
