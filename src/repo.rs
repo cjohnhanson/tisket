@@ -321,7 +321,7 @@ impl Repo {
         }
     }
 
-    pub fn edit_issue(&self, id: &str, status: Option<&str>) -> Result<()> {
+    pub fn edit_issue(&self, id: &str, status: Option<&str>, assignee: Option<&str>) -> Result<()> {
         let iss = self.find_issue(id)?;
         if iss.closed {
             return Err(Error::IssueClosed(id.into()));
@@ -334,6 +334,10 @@ impl Repo {
 
         if let Some(new_status) = status {
             fm.status = new_status.parse::<Status>()?;
+        }
+
+        if let Some(new_assignee) = assignee {
+            fm.assignee = Some(new_assignee.to_string());
         }
 
         issue::update_timestamp(&mut fm);
