@@ -1,0 +1,14 @@
+transitions:
+  - name: "remove label b after adding c gives [a, c]"
+    command: "tisket issue edit alpha-task --remove-label b"
+    target: "../label-added-then-removed"
+    comparators:
+      files:
+        - path: ".tisket/bugs/"
+          ignore: true
+
+assertions:
+  - name: "show alpha-task has labels a, b, c"
+    command: "tisket issue show alpha-task | grep -q 'a, b, c'"
+  - name: "list --label c now shows both issues"
+    command: "test \"$(tisket issue list -p bugs --label c | grep -c task)\" = 2"

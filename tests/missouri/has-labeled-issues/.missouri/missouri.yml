@@ -1,0 +1,44 @@
+transitions:
+  - name: "add label c to issue with labels [a, b]"
+    command: "tisket issue edit alpha-task --add-label c"
+    target: "../label-added"
+    comparators:
+      files:
+        - path: ".tisket/bugs/"
+          ignore: true
+  - name: "remove label b from issue with labels [a, b]"
+    command: "tisket issue edit alpha-task --remove-label b"
+    target: "../label-removed"
+    comparators:
+      files:
+        - path: ".tisket/bugs/"
+          ignore: true
+  - name: "add label a that already exists (noop)"
+    command: "tisket issue edit alpha-task --add-label a"
+    target: "../label-add-noop"
+    comparators:
+      files:
+        - path: ".tisket/bugs/"
+          ignore: true
+  - name: "remove label z that does not exist (noop)"
+    command: "tisket issue edit alpha-task --remove-label z"
+    target: "../label-remove-noop"
+    comparators:
+      files:
+        - path: ".tisket/bugs/"
+          ignore: true
+
+assertions:
+  - name: "show alpha-task has labels a, b"
+    command: "tisket issue show alpha-task | grep -q 'a, b'"
+  - name: "list --label a shows only alpha-task"
+    command: "test \"$(tisket issue list -p bugs --label a | grep -c task)\" = 1"
+  - name: "list --label a includes alpha-task"
+    command: "tisket issue list -p bugs --label a | grep -q 'Alpha task'"
+  - name: "list --label c shows only beta-task"
+    command: "tisket issue list -p bugs --label c | grep -q 'Beta task'"
+  - name: "list --label c does not show alpha-task"
+    command: "tisket issue list -p bugs --label c | grep -qv 'Alpha task'"
+  - name: "list --label nonexistent shows nothing"
+    command: "tisket issue list -p bugs --label nonexistent"
+    stdout: ""
