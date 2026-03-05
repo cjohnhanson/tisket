@@ -1,0 +1,41 @@
+transitions:
+  - name: "close prefixed issue by prefix"
+    command: "tisket issue close ab12"
+    target: "../prefixed-issue-closed"
+    comparators:
+      files:
+        - path: ".tisket/bugs/.closed/ab12-fix-the-widget.md"
+          command: "compare-issue"
+
+assertions:
+  - name: "show by short prefix resolves"
+    command: "tisket issue show ab12"
+    stdout: |
+      ab12-fix-the-widget (bugs)
+
+        Title:    Fix the widget
+        Status:   todo
+  - name: "show by full prefixed ID resolves"
+    command: "tisket issue show ab12-fix-the-widget"
+    stdout: |
+      ab12-fix-the-widget (bugs)
+
+        Title:    Fix the widget
+        Status:   todo
+  - name: "path by short prefix resolves"
+    command: "tisket issue path ab12"
+    stdout: ".tisket/bugs/ab12-fix-the-widget.md\n"
+  - name: "path by full prefixed ID resolves"
+    command: "tisket issue path ab12-fix-the-widget"
+    stdout: ".tisket/bugs/ab12-fix-the-widget.md\n"
+  - name: "list shows prefixed issue"
+    command: "tisket issue list -p bugs"
+    stdout: |
+      ID                   STATUS  TITLE
+      ab12-fix-the-widget  todo    Fix the widget
+  - name: "edit by short prefix works"
+    command: "tisket issue edit ab12 --status in_progress && tisket issue show ab12 | grep 'in_progress'"
+  - name: "show nonexistent prefix fails"
+    command: "tisket issue show zz99"
+    should_fail: true
+    stderr: "error: issue 'zz99' not found\n"

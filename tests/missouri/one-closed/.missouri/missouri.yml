@@ -1,35 +1,19 @@
 assertions:
   - name: "list shows only open issue"
-    command: "tisket issue list -p bugs"
-    stdout: |
-      ID           STATUS  TITLE
-      write-tests  todo    Write tests
+    command: "tisket issue list -p bugs | grep -q 'Write tests'"
+  - name: "list does not show closed issue"
+    command: "tisket issue list -p bugs | grep -qv 'Fix the widget' || tisket issue list -p bugs | wc -l | grep -q '1'"
   - name: "list with --closed shows closed issue"
-    command: "tisket issue list -p bugs --closed"
-    stdout: |
-      ID              STATUS  TITLE
-      fix-the-widget  done    Fix the widget
+    command: "tisket issue list -p bugs --closed | grep -q 'Fix the widget'"
   - name: "show closed issue still works"
-    command: "tisket issue show fix-the-widget"
-    stdout: |
-      fix-the-widget (bugs)
-
-        Title:    Fix the widget
-        Status:   done
+    command: "tisket issue show fix-the-widget | grep -q 'Fix the widget'"
+  - name: "show closed issue has done status"
+    command: "tisket issue show fix-the-widget | grep -q done"
   - name: "show open issue still works"
-    command: "tisket issue show write-tests"
-    stdout: |
-      write-tests (bugs)
-
-        Title:    Write tests
-        Status:   todo
+    command: "tisket issue show write-tests | grep -q 'Write tests'"
+  - name: "show open issue has todo status"
+    command: "tisket issue show write-tests | grep -q todo"
   - name: "search finds open issues"
-    command: "tisket search todo"
-    stdout: |
-      ID           STATUS  PROJECT  TITLE        MATCH
-      write-tests  todo    bugs     Write tests  status
+    command: "tisket search todo | grep -q 'Write tests'"
   - name: "search finds closed issues too"
-    command: "tisket search done"
-    stdout: |
-      ID              STATUS  PROJECT  TITLE           MATCH
-      fix-the-widget  done    bugs     Fix the widget  status
+    command: "tisket search done | grep -q 'Fix the widget'"

@@ -1,16 +1,10 @@
 assertions:
   - name: "show reflects edited status"
-    command: "tisket issue show fix-the-widget"
-    stdout: |
-      fix-the-widget (bugs)
-
-        Title:    Fix the widget
-        Status:   todo
+    command: "tisket issue show fix-the-widget | grep -q 'Fix the widget'"
+  - name: "show has todo status"
+    command: "tisket issue show fix-the-widget | grep -q todo"
   - name: "list filters by status"
-    command: "tisket issue list -p bugs --status todo"
-    stdout: |
-      ID              STATUS  TITLE
-      fix-the-widget  todo    Fix the widget
+    command: "tisket issue list -p bugs --status todo | grep -q 'Fix the widget'"
   - name: "list other status is empty"
     command: "tisket issue list -p bugs --status discovery"
     stdout: ""

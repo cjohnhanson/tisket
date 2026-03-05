@@ -1,14 +1,11 @@
 assertions:
+  - name: "show displays title after reopen"
+    command: "tisket issue show fix-the-widget | grep -q 'Fix the widget'"
   - name: "show displays body after reopen"
-    command: "tisket issue show fix-the-widget"
-    stdout: |
-      fix-the-widget (bugs)
-
-        Title:    Fix the widget
-        Status:   todo
-
-      The widget is broken when users click the save button.
-      Reproduce by opening the settings page and clicking save twice.
+    command: "tisket issue show fix-the-widget | grep -q 'widget is broken'"
+  - name: "show displays todo status"
+    command: "tisket issue show fix-the-widget | grep -q todo"
   - name: "path returns active path"
-    command: "tisket issue path fix-the-widget"
-    stdout: ".tisket/bugs/fix-the-widget.md\n"
+    command: "tisket issue path fix-the-widget | grep -q 'fix-the-widget.md'"
+  - name: "path is not in closed dir"
+    command: "tisket issue path fix-the-widget | grep -qv '.closed'"

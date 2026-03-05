@@ -7,7 +7,7 @@ use crate::error::{Error, Result};
 use crate::git::{self, GitContext};
 use crate::issue::Status;
 use crate::issue::{self, Issue};
-use crate::slug::slugify;
+use crate::slug::{extract_prefix, generate_prefix, slugify};
 
 pub struct SearchResult {
     pub issue: Issue,
@@ -112,6 +112,175 @@ impl Repo {
         Ok(config)
     }
 
+    // -- ID resolution --
+
+    /// Resolve a user-provided ID to the full filename stem.
+    /// Accepts: full ID (e.g. "ab12-fix-the-widget"), short prefix (e.g. "ab12"),
+    /// slug portion (e.g. "fix-the-widget"), or legacy unprefixed ID.
+    pub fn resolve_id(&self, input: &str) -> Result<String> {
+        // First, try exact match (full ID or legacy unprefixed)
+        let projects = self.list_projects()?;
+        for proj in &projects {
+            let project_dir = self.tisket_dir().join(proj);
+            if project_dir.join(format!("{input}.md")).exists() {
+                return Ok(input.to_string());
+            }
+            let closed_dir = project_dir.join(".closed");
+            if closed_dir.join(format!("{input}.md")).exists() {
+                return Ok(input.to_string());
+            }
+        }
+
+        // If input looks like a 4-char prefix, scan for matching files by prefix
+        if input.len() == 4
+            && input
+                .bytes()
+                .all(|b| b.is_ascii_lowercase() || b.is_ascii_digit())
+        {
+            let prefix_dash = format!("{input}-");
+            let mut matches = Vec::new();
+            for proj in &projects {
+                let project_dir = self.tisket_dir().join(proj);
+                Self::scan_prefix_matches(&project_dir, &prefix_dash, &mut matches)?;
+                let closed_dir = project_dir.join(".closed");
+                Self::scan_prefix_matches(&closed_dir, &prefix_dash, &mut matches)?;
+            }
+            match matches.len() {
+                0 => {}
+                1 => return Ok(matches.into_iter().next().unwrap()),
+                _ => {
+                    return Err(Error::AmbiguousPrefix(input.into()));
+                }
+            }
+        }
+
+        // Try matching by slug portion (input matches the slug part of a prefixed filename)
+        let mut slug_matches = Vec::new();
+        for proj in &projects {
+            let project_dir = self.tisket_dir().join(proj);
+            Self::scan_slug_matches(&project_dir, input, &mut slug_matches)?;
+            let closed_dir = project_dir.join(".closed");
+            Self::scan_slug_matches(&closed_dir, input, &mut slug_matches)?;
+        }
+        if slug_matches.len() == 1 {
+            return Ok(slug_matches.into_iter().next().unwrap());
+        }
+
+        Err(Error::IssueNotFound(input.into()))
+    }
+
+    fn scan_prefix_matches(dir: &Utf8Path, prefix_dash: &str, out: &mut Vec<String>) -> Result<()> {
+        if !dir.exists() {
+            return Ok(());
+        }
+        for entry in std::fs::read_dir(dir)? {
+            let entry = entry?;
+            let path = Utf8PathBuf::try_from(entry.path())
+                .map_err(|e| std::io::Error::new(std::io::ErrorKind::InvalidData, e))?;
+            if path.extension() == Some("md") {
+                let stem = path.file_stem().unwrap_or("");
+                if stem.starts_with(prefix_dash) && !out.contains(&stem.to_string()) {
+                    out.push(stem.to_string());
+                }
+            }
+        }
+        Ok(())
+    }
+
+    fn scan_slug_matches(dir: &Utf8Path, slug: &str, out: &mut Vec<String>) -> Result<()> {
+        if !dir.exists() {
+            return Ok(());
+        }
+        for entry in std::fs::read_dir(dir)? {
+            let entry = entry?;
+            let path = Utf8PathBuf::try_from(entry.path())
+                .map_err(|e| std::io::Error::new(std::io::ErrorKind::InvalidData, e))?;
+            if path.extension() == Some("md") {
+                let stem = path.file_stem().unwrap_or("");
+                if let Some((_, file_slug)) = extract_prefix(stem)
+                    && file_slug == slug
+                    && !out.contains(&stem.to_string())
+                {
+                    out.push(stem.to_string());
+                }
+            }
+        }
+        Ok(())
+    }
+
+    /// Collect all existing short-id prefixes across all projects.
+    fn collect_existing_prefixes(&self) -> Result<Vec<String>> {
+        let projects = self.list_projects()?;
+        let mut prefixes = Vec::new();
+        for proj in &projects {
+            let project_dir = self.tisket_dir().join(proj);
+            Self::collect_prefixes_from_dir(&project_dir, &mut prefixes)?;
+            let closed_dir = project_dir.join(".closed");
+            Self::collect_prefixes_from_dir(&closed_dir, &mut prefixes)?;
+        }
+        Ok(prefixes)
+    }
+
+    fn collect_prefixes_from_dir(dir: &Utf8Path, out: &mut Vec<String>) -> Result<()> {
+        if !dir.exists() {
+            return Ok(());
+        }
+        for entry in std::fs::read_dir(dir)? {
+            let entry = entry?;
+            let path = Utf8PathBuf::try_from(entry.path())
+                .map_err(|e| std::io::Error::new(std::io::ErrorKind::InvalidData, e))?;
+            if path.extension() == Some("md") {
+                let stem = path.file_stem().unwrap_or("");
+                if let Some((prefix, _)) = extract_prefix(stem)
+                    && !out.iter().any(|p| p == prefix)
+                {
+                    out.push(prefix.to_string());
+                }
+            }
+        }
+        Ok(())
+    }
+
+    /// Check if a slug already exists (ignoring prefix) across all projects.
+    fn slug_exists(&self, slug: &str) -> Result<bool> {
+        let projects = self.list_projects()?;
+        for proj in &projects {
+            let project_dir = self.tisket_dir().join(proj);
+            if Self::slug_exists_in_dir(&project_dir, slug)? {
+                return Ok(true);
+            }
+            let closed_dir = project_dir.join(".closed");
+            if Self::slug_exists_in_dir(&closed_dir, slug)? {
+                return Ok(true);
+            }
+        }
+        Ok(false)
+    }
+
+    fn slug_exists_in_dir(dir: &Utf8Path, slug: &str) -> Result<bool> {
+        if !dir.exists() {
+            return Ok(false);
+        }
+        for entry in std::fs::read_dir(dir)? {
+            let entry = entry?;
+            let path = Utf8PathBuf::try_from(entry.path())
+                .map_err(|e| std::io::Error::new(std::io::ErrorKind::InvalidData, e))?;
+            if path.extension() == Some("md") {
+                let stem = path.file_stem().unwrap_or("");
+                // Check if this file's slug portion matches
+                if let Some((_, file_slug)) = extract_prefix(stem) {
+                    if file_slug == slug {
+                        return Ok(true);
+                    }
+                } else if stem == slug {
+                    // Legacy unprefixed file
+                    return Ok(true);
+                }
+            }
+        }
+        Ok(false)
+    }
+
     // -- Issues --
 
     pub fn create_issue(
@@ -123,13 +292,20 @@ impl Repo {
         // Verify project exists
         let _project_config = self.load_project(project)?;
 
-        let id = slugify(title);
+        let slug = slugify(title);
+
+        // Check for duplicate slugs (regardless of prefix)
+        if self.slug_exists(&slug)? {
+            return Err(Error::IssueAlreadyExists(slug));
+        }
+
+        // Generate unique prefix
+        let existing_prefixes = self.collect_existing_prefixes()?;
+        let prefix = generate_prefix(&existing_prefixes);
+        let id = format!("{prefix}-{slug}");
+
         let project_dir = self.tisket_dir().join(project);
         let issue_path = project_dir.join(format!("{id}.md"));
-
-        if issue_path.exists() {
-            return Err(Error::IssueAlreadyExists(id));
-        }
 
         let mut fm = issue::new_frontmatter(title, opts.status.unwrap_or(Status::Todo));
         fm.priority = opts.priority;
@@ -234,11 +410,12 @@ impl Repo {
     }
 
     pub fn issue_path(&self, id: &str) -> Result<Utf8PathBuf> {
+        let resolved = self.resolve_id(id)?;
         let projects = self.list_projects()?;
         for proj in &projects {
             let project_dir = self.tisket_dir().join(proj);
 
-            let active_path = project_dir.join(format!("{id}.md"));
+            let active_path = project_dir.join(format!("{resolved}.md"));
             if active_path.exists() {
                 return Ok(active_path
                     .strip_prefix(&self.root)
@@ -246,7 +423,7 @@ impl Repo {
                     .to_owned());
             }
 
-            let closed_path = project_dir.join(".closed").join(format!("{id}.md"));
+            let closed_path = project_dir.join(".closed").join(format!("{resolved}.md"));
             if closed_path.exists() {
                 return Ok(closed_path
                     .strip_prefix(&self.root)
@@ -270,17 +447,18 @@ impl Repo {
     }
 
     pub fn find_issue(&self, id: &str) -> Result<Issue> {
+        let resolved = self.resolve_id(id)?;
         let projects = self.list_projects()?;
         for proj in &projects {
             let project_dir = self.tisket_dir().join(proj);
 
             // Check active
-            let active_path = project_dir.join(format!("{id}.md"));
+            let active_path = project_dir.join(format!("{resolved}.md"));
             if active_path.exists() {
                 let content = std::fs::read_to_string(&active_path)?;
                 let (fm, body, scratch) = issue::parse_issue(&content)?;
                 let mut iss = Issue {
-                    id: id.into(),
+                    id: resolved.clone(),
                     project: proj.clone(),
                     frontmatter: fm,
                     body,
@@ -294,12 +472,12 @@ impl Repo {
             }
 
             // Check closed
-            let closed_path = project_dir.join(".closed").join(format!("{id}.md"));
+            let closed_path = project_dir.join(".closed").join(format!("{resolved}.md"));
             if closed_path.exists() {
                 let content = std::fs::read_to_string(&closed_path)?;
                 let (fm, body, scratch) = issue::parse_issue(&content)?;
                 let mut iss = Issue {
-                    id: id.into(),
+                    id: resolved.clone(),
                     project: proj.clone(),
                     frontmatter: fm,
                     body,
@@ -341,7 +519,7 @@ impl Repo {
         }
 
         let project_dir = self.tisket_dir().join(&iss.project);
-        let issue_path = project_dir.join(format!("{id}.md"));
+        let issue_path = project_dir.join(format!("{}.md", iss.id));
         let content = std::fs::read_to_string(&issue_path)?;
         let (mut fm, body, scratch) = issue::parse_issue(&content)?;
 
@@ -373,7 +551,7 @@ impl Repo {
             return Ok(());
         }
         let project_dir = self.tisket_dir().join(&iss.project);
-        let issue_path = project_dir.join(format!("{id}.md"));
+        let issue_path = project_dir.join(format!("{}.md", iss.id));
         let mut content = std::fs::read_to_string(&issue_path)?;
         if !content.contains("\n## Scratch Notes") {
             if !content.ends_with('\n') {
@@ -396,9 +574,9 @@ impl Repo {
             None => Status::Done,
         };
         let project_dir = self.tisket_dir().join(&iss.project);
-        let issue_path = project_dir.join(format!("{id}.md"));
+        let issue_path = project_dir.join(format!("{}.md", iss.id));
         let closed_dir = project_dir.join(".closed");
-        let closed_path = closed_dir.join(format!("{id}.md"));
+        let closed_path = closed_dir.join(format!("{}.md", iss.id));
 
         let content = std::fs::read_to_string(&issue_path)?;
         let (mut fm, body, scratch) = issue::parse_issue(&content)?;
@@ -424,8 +602,8 @@ impl Repo {
             None => Status::Todo,
         };
         let project_dir = self.tisket_dir().join(&iss.project);
-        let closed_path = project_dir.join(".closed").join(format!("{id}.md"));
-        let active_path = project_dir.join(format!("{id}.md"));
+        let closed_path = project_dir.join(".closed").join(format!("{}.md", iss.id));
+        let active_path = project_dir.join(format!("{}.md", iss.id));
 
         let content = std::fs::read_to_string(&closed_path)?;
         let (mut fm, body, scratch) = issue::parse_issue(&content)?;

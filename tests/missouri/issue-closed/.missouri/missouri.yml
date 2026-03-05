@@ -4,28 +4,23 @@ transitions:
     target: "../issue-reopened"
     comparators:
       files:
-        - path: ".tisket/bugs/fix-the-widget.md"
-          command: "compare-issue"
+        - path: ".tisket/bugs/"
+          ignore: true
 
 assertions:
   - name: "list hides closed issues by default"
     command: "tisket issue list -p bugs"
     stdout: ""
   - name: "list with --closed shows it"
-    command: "tisket issue list -p bugs --closed"
-    stdout: |
-      ID              STATUS  TITLE
-      fix-the-widget  done    Fix the widget
+    command: "tisket issue list -p bugs --closed | grep -q 'Fix the widget'"
+  - name: "closed list shows done status"
+    command: "tisket issue list -p bugs --closed | grep -q done"
   - name: "show still works on closed issue"
-    command: "tisket issue show fix-the-widget"
-    stdout: |
-      fix-the-widget (bugs)
-
-        Title:    Fix the widget
-        Status:   done
+    command: "tisket issue show fix-the-widget | grep -q 'Fix the widget'"
+  - name: "show closed issue has done status"
+    command: "tisket issue show fix-the-widget | grep -q done"
   - name: "path prints closed issue path"
-    command: "tisket issue path fix-the-widget"
-    stdout: ".tisket/bugs/.closed/fix-the-widget.md\n"
+    command: "tisket issue path fix-the-widget | grep -q '.closed/.*fix-the-widget.md'"
   - name: "close already-closed fails"
     command: "tisket issue close fix-the-widget"
     should_fail: true

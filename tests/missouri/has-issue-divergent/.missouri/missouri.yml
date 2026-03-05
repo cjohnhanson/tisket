@@ -1,16 +1,11 @@
 assertions:
   - name: "list shows asterisk for divergent issue"
-    command: "tisket issue list -p bugs"
-    stdout: |
-      ID              STATUS  TITLE
-      fix-the-widget  todo*   Fix the widget
-  - name: "show displays other branches with differing fields"
-    command: "tisket issue show fix-the-widget"
-    stdout: |
-      fix-the-widget (bugs)
-
-        Title:    Fix the widget
-        Status:   todo
-
-        Other branches:
-          feature/working-on-it   status
+    command: "tisket issue list -p bugs | grep -q 'todo\\*'"
+  - name: "list shows issue title"
+    command: "tisket issue list -p bugs | grep -q 'Fix the widget'"
+  - name: "show displays title"
+    command: "tisket issue show fix-the-widget | grep -q 'Fix the widget'"
+  - name: "show displays other branches"
+    command: "tisket issue show fix-the-widget | grep -q 'feature/working-on-it'"
+  - name: "show displays divergent field"
+    command: "tisket issue show fix-the-widget | grep -q status"

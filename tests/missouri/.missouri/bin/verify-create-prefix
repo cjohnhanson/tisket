@@ -1,0 +1,40 @@
+#!/bin/sh
+# Verify that tisket issue create produces a prefixed filename.
+# Usage: verify-create-prefix <title> <project>
+# Creates an issue, checks the filename matches [a-z0-9]{4}-<slug>.md,
+# cleans up, and exits 0 on success, 1 on failure.
+set -e
+
+TITLE="$1"
+PROJECT="$2"
+SLUG=$(echo "$TITLE" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]/-/g' | sed 's/--*/-/g' | sed 's/^-//;s/-$//')
+
+# Create the issue
+OUTPUT=$(tisket issue create "$TITLE" -p "$PROJECT" 2>&1)
+RC=$?
+if [ $RC -ne 0 ]; then
+    echo "create failed: $OUTPUT" >&2
+    exit 1
+fi
+
+# Check that a file matching the prefix pattern exists
+MATCH=$(ls ".tisket/$PROJECT/" | grep -E "^[a-z0-9]{4}-${SLUG}\\.md$" || true)
+if [ -z "$MATCH" ]; then
+    echo "no file matching [a-z0-9]{4}-${SLUG}.md found" >&2
+    ls -la ".tisket/$PROJECT/" >&2
+    # Clean up
+    rm -f ".tisket/$PROJECT/"*"${SLUG}"* ".tisket/$PROJECT/.closed/"*"${SLUG}"* 2>/dev/null
+    exit 1
+fi
+
+# Verify the prefix portion is exactly 4 chars
+PREFIX=$(echo "$MATCH" | sed "s/-${SLUG}\\.md$//")
+if ! echo "$PREFIX" | grep -qE '^[a-z0-9]{4}$'; then
+    echo "prefix '$PREFIX' does not match [a-z0-9]{4}" >&2
+    rm -f ".tisket/$PROJECT/$MATCH"
+    exit 1
+fi
+
+# Clean up
+rm -f ".tisket/$PROJECT/$MATCH"
+exit 0
