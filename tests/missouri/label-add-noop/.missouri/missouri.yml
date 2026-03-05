@@ -1,5 +1,5 @@
 assertions:
   - name: "labels unchanged after adding existing label"
     command: "tisket issue show alpha-task | grep -q 'a, b'"
-  - name: "no duplicate label a"
-    command: "tisket issue show alpha-task | grep 'Labels:' | grep -cv 'a.*a'"
+  - name: "label values are exactly a, b"
+    command: "test \"$(tisket issue show alpha-task | grep 'Labels:' | sed 's/.*Labels: *//')\" = 'a, b'"

@@ -1,5 +1,5 @@
 assertions:
   - name: "show alpha-task has labels a, c"
     command: "tisket issue show alpha-task | grep -q 'a, c'"
-  - name: "label b is gone"
-    command: "tisket issue show alpha-task | grep 'Labels:' | grep -qv 'b'"
+  - name: "label values are exactly a, c"
+    command: "test \"$(tisket issue show alpha-task | grep 'Labels:' | sed 's/.*Labels: *//')\" = 'a, c'"
