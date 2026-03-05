@@ -1,8 +1,8 @@
 assertions:
-  - name: "show alpha-task has only label a"
-    command: "tisket issue show alpha-task | grep 'Labels:' | grep -q 'a'"
-  - name: "show alpha-task does not have label b"
-    command: "tisket issue show alpha-task | grep 'Labels:' | grep -qv 'b'"
+  - name: "show alpha-task has label a after removing b"
+    command: "tisket issue show alpha-task | grep 'Labels:' | grep -qF 'a'"
+  - name: "label values do not contain b"
+    command: "test \"$(tisket issue show alpha-task | grep 'Labels:' | sed 's/.*Labels: *//')\" = 'a'"
   - name: "list --label b shows nothing"
     command: "tisket issue list -p bugs --label b"
     stdout: ""

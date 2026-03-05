@@ -4,7 +4,7 @@ use camino::Utf8PathBuf;
 use clap::Parser;
 use colored::Colorize;
 
-use crate::{CreateIssueOptions, Issue, Repo, SearchResult, git};
+use crate::{git, CreateIssueOptions, Issue, Repo, SearchResult};
 
 #[derive(Parser)]
 #[command(
@@ -150,6 +150,10 @@ pub struct IssueListArgs {
     #[arg(short, long)]
     pub assignee: Option<String>,
 
+    /// Filter by label
+    #[arg(long)]
+    pub label: Option<String>,
+
     /// Include closed issues
     #[arg(long)]
     pub closed: bool,
@@ -209,6 +213,14 @@ pub struct IssueEditArgs {
     /// New labels (replaces existing)
     #[arg(short, long)]
     pub labels: Option<String>,
+
+    /// Add a label (keeps existing)
+    #[arg(long)]
+    pub add_label: Option<String>,
+
+    /// Remove a label (keeps others)
+    #[arg(long)]
+    pub remove_label: Option<String>,
 
     /// New dependencies (replaces existing)
     #[arg(short, long)]
@@ -387,8 +399,12 @@ pub fn run_command(root: &camino::Utf8Path, command: Command) -> crate::Result<(
                     Ok(())
                 }
                 IssueCommand::List(a) => {
-                    let issues =
-                        repo.list_issues(a.project.as_deref(), a.status.as_deref(), a.closed)?;
+                    let issues = repo.list_issues(
+                        a.project.as_deref(),
+                        a.status.as_deref(),
+                        a.label.as_deref(),
+                        a.closed,
+                    )?;
                     match a.format {
                         OutputFormat::Json => print_issue_list_json(&issues)?,
                         OutputFormat::Text => print_issue_list(&issues),
@@ -420,6 +436,8 @@ pub fn run_command(root: &camino::Utf8Path, command: Command) -> crate::Result<(
                         a.due.as_deref(),
                         a.body.as_deref(),
                         a.append.as_deref(),
+                        a.add_label.as_deref(),
+                        a.remove_label.as_deref(),
                     )?;
                     Ok(())
                 }

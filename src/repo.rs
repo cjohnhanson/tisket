@@ -328,6 +328,7 @@ impl Repo {
         &self,
         project: Option<&str>,
         status_filter: Option<&str>,
+        label_filter: Option<&str>,
         closed: bool,
     ) -> Result<Vec<Issue>> {
         let projects = match project {
@@ -357,6 +358,10 @@ impl Repo {
                 // Invalid status filter matches nothing.
                 issues.clear();
             }
+        }
+
+        if let Some(label) = label_filter {
+            issues.retain(|i| i.frontmatter.labels.iter().any(|l| l == label));
         }
 
         // Annotate with git divergence info
@@ -514,6 +519,8 @@ impl Repo {
         due_date: Option<&str>,
         body_replace: Option<&str>,
         body_append: Option<&str>,
+        add_label: Option<&str>,
+        remove_label: Option<&str>,
     ) -> Result<()> {
         let iss = self.find_issue(id)?;
         if iss.closed {
@@ -548,6 +555,16 @@ impl Repo {
                 body.push_str("\n\n");
                 body.push_str(append_text);
             }
+        }
+
+        if let Some(label) = add_label
+            && !fm.labels.iter().any(|l| l == label)
+        {
+            fm.labels.push(label.to_string());
+        }
+
+        if let Some(label) = remove_label {
+            fm.labels.retain(|l| l != label);
         }
 
         issue::update_timestamp(&mut fm);
