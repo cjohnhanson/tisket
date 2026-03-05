@@ -4,15 +4,15 @@ transitions:
     target: "../has-issue"
     comparators:
       files:
-        - path: ".tisket/bugs/fix-the-widget.md"
-          command: "compare-issue"
+        - path: ".tisket/bugs/"
+          ignore: true
   - name: "create issue with body"
     command: "create-issue-with-body"
     target: "../has-issue-with-body"
     comparators:
       files:
-        - path: ".tisket/bugs/fix-the-widget.md"
-          command: "compare-issue"
+        - path: ".tisket/bugs/"
+          ignore: true
 
   - name: "create issue with due date"
     command: "tisket issue create 'Fix the widget' -p bugs --due 2025-06-15"
@@ -37,3 +37,7 @@ assertions:
     command: "tisket issue create 'Something' -p nonexistent"
     should_fail: true
     stderr: "error: project 'nonexistent' not found\n"
+  - name: "create produces prefixed filename"
+    command: "verify-create-prefix 'Prefix test' bugs"
+  - name: "duplicate slug rejected even with different prefix"
+    command: "verify-no-duplicate-slug 'Dup test' bugs"

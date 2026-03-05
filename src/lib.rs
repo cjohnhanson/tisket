@@ -11,4 +11,4 @@ pub use error::{Error, Result};
 pub use git::{BranchStatus, GitContext};
 pub use issue::{Issue, IssueFrontmatter};
 pub use repo::{CreateIssueOptions, Repo, SearchResult};
-pub use slug::slugify;
+pub use slug::{extract_prefix, generate_prefix, has_prefix, slugify};

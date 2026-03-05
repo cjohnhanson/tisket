@@ -1,0 +1,22 @@
+#!/bin/sh
+# Verify that creating two issues with the same title fails on the second attempt.
+# Usage: verify-no-duplicate-slug <title> <project>
+set -e
+
+TITLE="$1"
+PROJECT="$2"
+SLUG=$(echo "$TITLE" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]/-/g' | sed 's/--*/-/g' | sed 's/^-//;s/-$//')
+
+# First create should succeed
+tisket issue create "$TITLE" -p "$PROJECT" > /dev/null 2>&1
+
+# Second create should fail
+if tisket issue create "$TITLE" -p "$PROJECT" > /dev/null 2>&1; then
+    echo "second create should have failed but succeeded" >&2
+    rm -f ".tisket/$PROJECT/"*"${SLUG}"* 2>/dev/null
+    exit 1
+fi
+
+# Clean up
+rm -f ".tisket/$PROJECT/"*"${SLUG}"* 2>/dev/null
+exit 0

@@ -1,0 +1,17 @@
+transitions:
+  - name: "reopen prefixed issue by prefix"
+    command: "tisket issue reopen ab12"
+    target: "../has-prefixed-issue"
+    comparators:
+      files:
+        - path: ".tisket/bugs/ab12-fix-the-widget.md"
+          command: "compare-issue"
+
+assertions:
+  - name: "closed issue visible with --closed flag"
+    command: "tisket issue list -p bugs --closed | grep ab12-fix-the-widget"
+  - name: "show closed issue by prefix"
+    command: "tisket issue show ab12 | grep done"
+  - name: "path for closed issue by prefix"
+    command: "tisket issue path ab12"
+    stdout: ".tisket/bugs/.closed/ab12-fix-the-widget.md\n"

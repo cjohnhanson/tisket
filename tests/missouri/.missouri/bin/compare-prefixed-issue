@@ -1,0 +1,7 @@
+#!/bin/sh
+# Compare two issue files, ignoring timestamps and the prefix portion of the filename.
+# Args: $1 = expected file, $2 = actual file
+# Both files exist — compare content ignoring created/updated timestamps.
+a=$(grep -v '^created:' "$1" | grep -v '^updated:')
+b=$(grep -v '^created:' "$2" | grep -v '^updated:')
+test "$a" = "$b"

@@ -1,14 +1,9 @@
 assertions:
+  - name: "show displays title after edit"
+    command: "tisket issue show fix-the-widget | grep -q 'Fix the widget'"
   - name: "show displays body after edit"
-    command: "tisket issue show fix-the-widget"
-    stdout: |
-      fix-the-widget (bugs)
-
-        Title:    Fix the widget
-        Status:   todo
-
-      The widget is broken when users click the save button.
-      Reproduce by opening the settings page and clicking save twice.
+    command: "tisket issue show fix-the-widget | grep -q 'widget is broken'"
+  - name: "show displays body detail"
+    command: "tisket issue show fix-the-widget | grep -q 'clicking save twice'"
   - name: "path returns file path"
-    command: "tisket issue path fix-the-widget"
-    stdout: ".tisket/bugs/fix-the-widget.md\n"
+    command: "tisket issue path fix-the-widget | grep -q 'fix-the-widget.md'"

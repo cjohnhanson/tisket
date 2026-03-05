@@ -1,6 +1,7 @@
 #!/bin/sh
 tisket issue create 'Fix the widget' -p bugs
-cat > .tisket/bugs/fix-the-widget.md << 'ISSUE'
+ISSUE_PATH=$(tisket issue path fix-the-widget)
+cat > "$ISSUE_PATH" << 'ISSUE'
 ---
 title: "Fix the widget"
 status: todo
