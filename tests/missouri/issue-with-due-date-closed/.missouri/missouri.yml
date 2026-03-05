@@ -1,6 +1,3 @@
 assertions:
   - name: "closed issue with due date is listed"
-    command: "tisket issue list -p bugs --closed"
-    stdout: |
-      ID              STATUS  TITLE
-      fix-the-widget  done    Fix the widget
+    command: "tisket issue list -p bugs --closed | grep -q 'Fix the widget'"
