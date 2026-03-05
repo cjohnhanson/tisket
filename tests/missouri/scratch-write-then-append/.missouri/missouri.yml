@@ -1,0 +1,6 @@
+assertions:
+  - name: "scratch read shows write then append"
+    command: "tisket scratch fix-the-widget read"
+    stdout: "replacement content\nappended after write\n"
+  - name: "body content preserved"
+    command: "tisket issue show fix-the-widget | grep -q 'widget is broken'"

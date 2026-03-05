@@ -1,0 +1,6 @@
+assertions:
+  - name: "scratch read returns empty after clear"
+    command: "tisket scratch fix-the-widget read"
+    stdout: ""
+  - name: "body content preserved after clear"
+    command: "tisket issue show fix-the-widget | grep -q 'widget is broken'"

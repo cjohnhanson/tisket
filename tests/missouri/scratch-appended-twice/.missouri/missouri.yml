@@ -1,0 +1,6 @@
+assertions:
+  - name: "scratch read shows both lines"
+    command: "tisket scratch fix-the-widget read"
+    stdout: "first line of notes\nsecond line of notes\n"
+  - name: "body content preserved"
+    command: "tisket issue show fix-the-widget | grep -q 'widget is broken'"

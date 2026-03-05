@@ -541,6 +541,52 @@ impl Repo {
         Ok(())
     }
 
+    // -- Scratch notes --
+
+    pub fn scratch_read(&self, id: &str) -> Result<String> {
+        let iss = self.find_issue(id)?;
+        Ok(iss.scratch)
+    }
+
+    pub fn scratch_append(&self, id: &str, text: &str) -> Result<()> {
+        let iss = self.find_issue(id)?;
+        let project_dir = self.tisket_dir().join(&iss.project);
+        let issue_path = if iss.closed {
+            project_dir.join(".closed").join(format!("{}.md", iss.id))
+        } else {
+            project_dir.join(format!("{}.md", iss.id))
+        };
+        let content = std::fs::read_to_string(&issue_path)?;
+        let (fm, body, scratch) = issue::parse_issue(&content)?;
+        let new_scratch = if scratch.is_empty() {
+            text.to_string()
+        } else {
+            format!("{scratch}\n{text}")
+        };
+        let new_content = issue::serialize_issue(&fm, &body, &new_scratch);
+        std::fs::write(&issue_path, new_content)?;
+        Ok(())
+    }
+
+    pub fn scratch_write(&self, id: &str, text: &str) -> Result<()> {
+        let iss = self.find_issue(id)?;
+        let project_dir = self.tisket_dir().join(&iss.project);
+        let issue_path = if iss.closed {
+            project_dir.join(".closed").join(format!("{}.md", iss.id))
+        } else {
+            project_dir.join(format!("{}.md", iss.id))
+        };
+        let content = std::fs::read_to_string(&issue_path)?;
+        let (fm, body, _) = issue::parse_issue(&content)?;
+        let new_content = issue::serialize_issue(&fm, &body, text);
+        std::fs::write(&issue_path, new_content)?;
+        Ok(())
+    }
+
+    pub fn scratch_clear(&self, id: &str) -> Result<()> {
+        self.scratch_write(id, "")
+    }
+
     /// Appends a `## Scratch Notes` section to the issue file if one is not already present.
     pub fn ensure_scratch_notes(&self, id: &str) -> Result<()> {
         let iss = self.find_issue(id)?;

@@ -1,0 +1,22 @@
+transitions:
+  - name: "scratch append creates section"
+    command: "tisket scratch fix-the-widget append 'first line of notes'"
+    target: "../scratch-appended"
+    comparators:
+      files:
+        - path: ".tisket/bugs/"
+          ignore: true
+
+assertions:
+  - name: "scratch read returns empty on issue without scratch section"
+    command: "tisket scratch fix-the-widget read"
+    stdout: ""
+  - name: "scratch default (no subcommand) returns empty"
+    command: "tisket scratch fix-the-widget"
+    stdout: ""
+  - name: "scratch read nonexistent issue fails"
+    command: "tisket scratch nonexistent read"
+    should_fail: true
+  - name: "scratch on nonexistent issue fails"
+    command: "tisket scratch nonexistent"
+    should_fail: true
