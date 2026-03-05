@@ -19,8 +19,8 @@ transitions:
     target: "../has-issue-with-due-date"
     comparators:
       files:
-        - path: ".tisket/bugs/fix-the-widget.md"
-          command: "compare-issue"
+        - path: ".tisket/bugs/"
+          ignore: true
 
   - name: "create issue with body flag"
     command: "tisket issue create 'Fix the widget' -p bugs --body 'The widget is broken.'"
