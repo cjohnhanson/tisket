@@ -1,0 +1,11 @@
+assertions:
+  - name: "issue no longer in bugs project"
+    command: "tisket issue list -p bugs --format json | jq -r 'length'"
+    stdout: "0\n"
+  - name: "issue now in default project"
+    command: "tisket issue list -p default --format json | jq -r '.[0].title'"
+    stdout: "Fix the widget\n"
+  - name: "issue show still works by id"
+    command: "tisket issue show fix-the-widget | grep -q 'Fix the widget'"
+  - name: "issue path points to default project"
+    command: "tisket issue path fix-the-widget | grep -q '.tisket/default/fix-the-widget.md'"

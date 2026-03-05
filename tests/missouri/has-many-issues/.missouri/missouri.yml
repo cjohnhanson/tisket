@@ -70,3 +70,33 @@ assertions:
     command: "tisket issue show resolve-deprecated-bcrypt-hashing-algorithm | grep -q 'Resolve deprecated bcrypt'"
   - name: "show closed issue has done status"
     command: "tisket issue show resolve-deprecated-bcrypt-hashing-algorithm | grep -q done"
+
+  # --- JSON output: list --format json with many issues ---
+  - name: "list format json is valid array"
+    command: "tisket issue list -p core --format json | jq -e 'type == \"array\"'"
+  - name: "list format json has multiple issues"
+    command: "test $(tisket issue list -p core --format json | jq 'length') -gt 1"
+  - name: "list format json each issue has id and title"
+    command: "tisket issue list -p core --format json | jq -e 'all(.id and .title)'"
+
+  # --- JSON output: show --format json with all fields ---
+  - name: "show format json has priority"
+    command: "tisket issue show fix-oauth2-token-refresh-bug --format json | jq -r '.priority'"
+    stdout: "1\n"
+  - name: "show format json has assignee"
+    command: "tisket issue show fix-oauth2-token-refresh-bug --format json | jq -r '.assignee'"
+    stdout: "alice\n"
+  - name: "show format json has labels array"
+    command: "tisket issue show fix-oauth2-token-refresh-bug --format json | jq -r '.labels | length'"
+    stdout: "3\n"
+
+  # --- show --field with rich metadata ---
+  - name: "show field priority"
+    command: "tisket issue show fix-oauth2-token-refresh-bug --field priority"
+    stdout: "1\n"
+  - name: "show field assignee"
+    command: "tisket issue show fix-oauth2-token-refresh-bug --field assignee"
+    stdout: "alice\n"
+  - name: "show field labels"
+    command: "tisket issue show fix-oauth2-token-refresh-bug --field labels"
+    stdout: "bug, auth, security\n"
