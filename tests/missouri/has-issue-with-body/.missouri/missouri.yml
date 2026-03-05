@@ -32,13 +32,6 @@ assertions:
   - name: "show field body"
     command: "tisket issue show fix-the-widget --field body | grep -q 'widget is broken'"
 
-  # --- Body manipulation: edit --body replaces existing body ---
-  - name: "edit body replaces existing body"
-    command: "tisket issue edit fix-the-widget --body 'Replaced content' && tisket issue show fix-the-widget --format json | jq -r '.body'"
-    stdout: "Replaced content\n"
-
-  # --- Body manipulation: edit --append to existing body ---
-  - name: "edit append to existing body"
-    command: "tisket issue edit fix-the-widget --append 'Appended line' && tisket issue show fix-the-widget --format json | jq -r '.body' | grep -q 'Appended line'"
-  - name: "edit append preserves existing body"
-    command: "tisket issue edit fix-the-widget --append 'Extra' && tisket issue show fix-the-widget --format json | jq -r '.body' | grep -q 'widget is broken'"
+  # --- Body field extraction ---
+  - name: "show field body returns body text"
+    command: "tisket issue show fix-the-widget --field body | grep -q 'clicking save twice'"

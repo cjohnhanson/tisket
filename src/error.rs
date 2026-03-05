@@ -33,6 +33,9 @@ pub enum Error {
     #[error("'{status}' is not a valid status")]
     InvalidStatus { status: String },
 
+    #[error("unknown field '{0}'")]
+    UnknownField(String),
+
     #[error("{0}")]
     Io(#[from] std::io::Error),
 
