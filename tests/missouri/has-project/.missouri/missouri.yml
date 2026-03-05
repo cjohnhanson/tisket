@@ -14,6 +14,14 @@ transitions:
         - path: ".tisket/bugs/fix-the-widget.md"
           command: "compare-issue"
 
+  - name: "create issue with due date"
+    command: "tisket issue create 'Fix the widget' -p bugs --due 2025-06-15"
+    target: "../has-issue-with-due-date"
+    comparators:
+      files:
+        - path: ".tisket/bugs/fix-the-widget.md"
+          command: "compare-issue"
+
 assertions:
   - name: "project list shows bugs and default"
     command: "tisket project list"

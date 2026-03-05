@@ -18,6 +18,7 @@ pub struct SearchResult {
 pub struct CreateIssueOptions {
     pub priority: Option<String>,
     pub assignee: Option<String>,
+    pub due_date: Option<String>,
     pub labels: Option<String>,
     pub depends_on: Option<String>,
     pub status: Option<Status>,
@@ -133,6 +134,7 @@ impl Repo {
         let mut fm = issue::new_frontmatter(title, opts.status.unwrap_or(Status::Todo));
         fm.priority = opts.priority;
         fm.assignee = opts.assignee;
+        fm.due_date = opts.due_date;
         if let Some(l) = opts.labels {
             fm.labels = l.split(',').map(|s| s.trim().to_string()).collect();
         }
@@ -326,7 +328,13 @@ impl Repo {
         }
     }
 
-    pub fn edit_issue(&self, id: &str, status: Option<&str>, assignee: Option<&str>) -> Result<()> {
+    pub fn edit_issue(
+        &self,
+        id: &str,
+        status: Option<&str>,
+        assignee: Option<&str>,
+        due_date: Option<&str>,
+    ) -> Result<()> {
         let iss = self.find_issue(id)?;
         if iss.closed {
             return Err(Error::IssueClosed(id.into()));
@@ -343,6 +351,10 @@ impl Repo {
 
         if let Some(new_assignee) = assignee {
             fm.assignee = Some(new_assignee.to_string());
+        }
+
+        if let Some(new_due) = due_date {
+            fm.due_date = Some(new_due.to_string());
         }
 
         issue::update_timestamp(&mut fm);
@@ -554,7 +566,7 @@ impl Repo {
         let colon_pos = line.find(':')?;
         let field = line[..colon_pos].trim();
         match field {
-            "title" | "status" | "priority" | "assignee" | "labels" | "depends_on" => {
+            "title" | "status" | "priority" | "assignee" | "due_date" | "labels" | "depends_on" => {
                 Some(field.to_string())
             }
             _ => None,

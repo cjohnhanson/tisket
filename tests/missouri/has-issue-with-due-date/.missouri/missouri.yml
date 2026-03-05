@@ -1,0 +1,35 @@
+assertions:
+  - name: "issue show displays due date"
+    command: "tisket issue show fix-the-widget"
+    stdout: |
+      fix-the-widget (bugs)
+
+        Title:    Fix the widget
+        Status:   todo
+        Due:      2025-06-15
+  - name: "issue list shows issue with due date"
+    command: "tisket issue list -p bugs"
+    stdout: |
+      ID              STATUS  TITLE
+      fix-the-widget  todo    Fix the widget
+  - name: "search finds issue by due_date"
+    command: "tisket search 2025-06-15"
+    stdout: |
+      ID              STATUS  PROJECT  TITLE           MATCH
+      fix-the-widget  todo    bugs     Fix the widget  due_date
+
+transitions:
+  - name: "edit due date"
+    command: "tisket issue edit fix-the-widget --due 2025-12-31"
+    target: "../issue-due-date-edited"
+    comparators:
+      files:
+        - path: ".tisket/bugs/fix-the-widget.md"
+          command: "compare-issue"
+  - name: "close issue with due date"
+    command: "tisket issue close fix-the-widget"
+    target: "../issue-with-due-date-closed"
+    comparators:
+      files:
+        - path: ".tisket/bugs/.closed/fix-the-widget.md"
+          command: "compare-issue"

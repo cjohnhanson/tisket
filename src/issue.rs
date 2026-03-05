@@ -91,6 +91,7 @@ pub struct IssueFrontmatter {
     pub status: Status,
     pub priority: Option<String>,
     pub assignee: Option<String>,
+    pub due_date: Option<String>,
     #[serde(default)]
     pub labels: Vec<String>,
     #[serde(default)]
@@ -171,6 +172,10 @@ pub fn serialize_issue(fm: &IssueFrontmatter, body: &str, scratch: &str) -> Stri
         None => s.push_str("assignee:\n"),
     }
 
+    if let Some(d) = &fm.due_date {
+        s.push_str(&format!("due_date: \"{d}\"\n"));
+    }
+
     if fm.labels.is_empty() {
         s.push_str("labels: []\n");
     } else {
@@ -218,6 +223,7 @@ pub fn new_frontmatter(title: &str, status: Status) -> IssueFrontmatter {
         status,
         priority: None,
         assignee: None,
+        due_date: None,
         labels: vec![],
         depends_on: vec![],
         created: Some(now.clone()),
