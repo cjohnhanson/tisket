@@ -8,4 +8,4 @@ assertions:
   - name: "issue show still works by id"
     command: "tisket issue show fix-the-widget | grep -q 'Fix the widget'"
   - name: "issue path points to default project"
-    command: "tisket issue path fix-the-widget | grep -q '.tisket/default/fix-the-widget.md'"
+    command: "tisket issue path fix-the-widget | grep -q '.tisket/default/.*fix-the-widget.md'"

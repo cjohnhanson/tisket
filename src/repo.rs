@@ -512,6 +512,8 @@ impl Repo {
         status: Option<&str>,
         assignee: Option<&str>,
         due_date: Option<&str>,
+        body_replace: Option<&str>,
+        body_append: Option<&str>,
     ) -> Result<()> {
         let iss = self.find_issue(id)?;
         if iss.closed {
@@ -521,7 +523,7 @@ impl Repo {
         let project_dir = self.tisket_dir().join(&iss.project);
         let issue_path = project_dir.join(format!("{}.md", iss.id));
         let content = std::fs::read_to_string(&issue_path)?;
-        let (mut fm, body, scratch) = issue::parse_issue(&content)?;
+        let (mut fm, mut body, scratch) = issue::parse_issue(&content)?;
 
         if let Some(new_status) = status {
             fm.status = new_status.parse::<Status>()?;
@@ -533,6 +535,19 @@ impl Repo {
 
         if let Some(new_due) = due_date {
             fm.due_date = Some(new_due.to_string());
+        }
+
+        if let Some(new_body) = body_replace {
+            body = new_body.to_string();
+        }
+
+        if let Some(append_text) = body_append {
+            if body.is_empty() {
+                body = append_text.to_string();
+            } else {
+                body.push_str("\n\n");
+                body.push_str(append_text);
+            }
         }
 
         issue::update_timestamp(&mut fm);
@@ -586,6 +601,39 @@ impl Repo {
     pub fn scratch_clear(&self, id: &str) -> Result<()> {
         self.scratch_write(id, "")
     }
+
+    pub fn move_issue(&self, id: &str, target_project: &str) -> Result<()> {
+        let iss = self.find_issue(id)?;
+
+        // Verify target project exists
+        let _ = self.load_project(target_project)?;
+
+        if iss.project == target_project {
+            return Ok(());
+        }
+
+        let source_dir = self.tisket_dir().join(&iss.project);
+        let target_dir = self.tisket_dir().join(target_project);
+
+        let (source_path, target_path) = if iss.closed {
+            let closed_source = source_dir.join(".closed").join(format!("{}.md", iss.id));
+            let closed_target_dir = target_dir.join(".closed");
+            std::fs::create_dir_all(&closed_target_dir)?;
+            (
+                closed_source,
+                closed_target_dir.join(format!("{}.md", iss.id)),
+            )
+        } else {
+            (
+                source_dir.join(format!("{}.md", iss.id)),
+                target_dir.join(format!("{}.md", iss.id)),
+            )
+        };
+
+        std::fs::rename(&source_path, &target_path)?;
+        Ok(())
+    }
+
 
     /// Appends a `## Scratch Notes` section to the issue file if one is not already present.
     pub fn ensure_scratch_notes(&self, id: &str) -> Result<()> {

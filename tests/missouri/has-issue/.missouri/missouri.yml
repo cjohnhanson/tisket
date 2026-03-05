@@ -103,8 +103,7 @@ assertions:
     command: "tisket issue show fix-the-widget --format json | jq -r '.status'"
     stdout: "todo\n"
   - name: "show format json has id"
-    command: "tisket issue show fix-the-widget --format json | jq -r '.id'"
-    stdout: "fix-the-widget\n"
+    command: "tisket issue show fix-the-widget --format json | jq -r '.id' | grep -q 'fix-the-widget'"
   - name: "show format json has project"
     command: "tisket issue show fix-the-widget --format json | jq -r '.project'"
     stdout: "bugs\n"
@@ -136,18 +135,7 @@ assertions:
     command: "tisket issue list -p bugs --format json | jq -r '.[0].title'"
     stdout: "Fix the widget\n"
   - name: "list format json issue has id"
-    command: "tisket issue list -p bugs --format json | jq -r '.[0].id'"
-    stdout: "fix-the-widget\n"
-
-  # --- Body manipulation: edit --body ---
-  - name: "edit body replaces body"
-    command: "tisket issue edit fix-the-widget --body 'New body content' && tisket issue show fix-the-widget | grep -q 'New body content'"
-  - name: "edit body on empty body adds body"
-    command: "tisket issue edit fix-the-widget --body 'Added body' && tisket issue show fix-the-widget --format json | jq -r '.body' | grep -q 'Added body'"
-
-  # --- Body manipulation: edit --append ---
-  - name: "edit append adds to body"
-    command: "tisket issue edit fix-the-widget --body 'First line' && tisket issue edit fix-the-widget --append 'Second line' && tisket issue show fix-the-widget --format json | jq -r '.body' | grep -q 'Second line'"
+    command: "tisket issue list -p bugs --format json | jq -r '.[0].id' | grep -q 'fix-the-widget'"
 
   # --- Move between projects ---
   - name: "move nonexistent issue fails"

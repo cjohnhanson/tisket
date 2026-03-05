@@ -97,6 +97,9 @@ pub enum IssueCommand {
 
     /// Reopen a closed issue
     Reopen(IssueReopenArgs),
+
+    /// Move an issue to a different project
+    Move(IssueMoveArgs),
 }
 
 #[derive(Parser)]
@@ -150,12 +153,30 @@ pub struct IssueListArgs {
     /// Include closed issues
     #[arg(long)]
     pub closed: bool,
+
+    /// Output format (text or json)
+    #[arg(long, default_value = "text")]
+    pub format: OutputFormat,
 }
 
 #[derive(Parser)]
 pub struct IssueShowArgs {
     /// Issue ID (filename without .md)
     pub id: String,
+
+    /// Output format (text or json)
+    #[arg(long, default_value = "text")]
+    pub format: OutputFormat,
+
+    /// Extract a single field value
+    #[arg(long)]
+    pub field: Option<String>,
+}
+
+#[derive(Clone, Debug, clap::ValueEnum)]
+pub enum OutputFormat {
+    Text,
+    Json,
 }
 
 #[derive(Parser)]
@@ -196,6 +217,24 @@ pub struct IssueEditArgs {
     /// Due date (YYYY-MM-DD)
     #[arg(long)]
     pub due: Option<String>,
+
+    /// Replace the entire body below frontmatter
+    #[arg(long)]
+    pub body: Option<String>,
+
+    /// Append text to the body
+    #[arg(long)]
+    pub append: Option<String>,
+}
+
+#[derive(Parser)]
+pub struct IssueMoveArgs {
+    /// Issue ID (filename without .md)
+    pub id: String,
+
+    /// Target project to move the issue to
+    #[arg(long)]
+    pub project: String,
 }
 
 #[derive(Parser)]
@@ -350,12 +389,22 @@ pub fn run_command(root: &camino::Utf8Path, command: Command) -> crate::Result<(
                 IssueCommand::List(a) => {
                     let issues =
                         repo.list_issues(a.project.as_deref(), a.status.as_deref(), a.closed)?;
-                    print_issue_list(&issues);
+                    match a.format {
+                        OutputFormat::Json => print_issue_list_json(&issues)?,
+                        OutputFormat::Text => print_issue_list(&issues),
+                    }
                     Ok(())
                 }
                 IssueCommand::Show(a) => {
                     let iss = repo.find_issue(&a.id)?;
-                    print_issue_show(&iss);
+                    if let Some(field) = &a.field {
+                        print_issue_field(&iss, field)?;
+                    } else {
+                        match a.format {
+                            OutputFormat::Json => print_issue_json(&iss)?,
+                            OutputFormat::Text => print_issue_show(&iss),
+                        }
+                    }
                     Ok(())
                 }
                 IssueCommand::Path(a) => {
@@ -364,7 +413,14 @@ pub fn run_command(root: &camino::Utf8Path, command: Command) -> crate::Result<(
                     Ok(())
                 }
                 IssueCommand::Edit(a) => {
-                    repo.edit_issue(&a.id, a.status.as_deref(), None, a.due.as_deref())?;
+                    repo.edit_issue(
+                        &a.id,
+                        a.status.as_deref(),
+                        None,
+                        a.due.as_deref(),
+                        a.body.as_deref(),
+                        a.append.as_deref(),
+                    )?;
                     Ok(())
                 }
                 IssueCommand::Close(a) => {
@@ -373,6 +429,10 @@ pub fn run_command(root: &camino::Utf8Path, command: Command) -> crate::Result<(
                 }
                 IssueCommand::Reopen(a) => {
                     repo.reopen_issue(&a.id, a.status.as_deref())?;
+                    Ok(())
+                }
+                IssueCommand::Move(a) => {
+                    repo.move_issue(&a.id, &a.project)?;
                     Ok(())
                 }
             }
@@ -507,6 +567,58 @@ fn print_search_results(results: &[SearchResult]) {
         })
         .collect();
     print_columns(&["ID", "STATUS", "PROJECT", "TITLE", "MATCH"], &rows);
+}
+
+fn issue_to_json(iss: &Issue) -> serde_json::Value {
+    serde_json::json!({
+        "id": iss.id,
+        "project": iss.project,
+        "title": iss.frontmatter.title,
+        "status": iss.frontmatter.status.to_string(),
+        "priority": iss.frontmatter.priority,
+        "assignee": iss.frontmatter.assignee,
+        "due_date": iss.frontmatter.due_date,
+        "labels": iss.frontmatter.labels,
+        "depends_on": iss.frontmatter.depends_on,
+        "body": iss.body,
+        "scratch": iss.scratch,
+        "closed": iss.closed,
+    })
+}
+
+fn print_issue_json(iss: &Issue) -> crate::Result<()> {
+    let json = issue_to_json(iss);
+    println!("{}", serde_json::to_string_pretty(&json).unwrap());
+    Ok(())
+}
+
+fn print_issue_list_json(issues: &[Issue]) -> crate::Result<()> {
+    let arr: Vec<serde_json::Value> = issues.iter().map(issue_to_json).collect();
+    println!("{}", serde_json::to_string_pretty(&arr).unwrap());
+    Ok(())
+}
+
+fn print_issue_field(iss: &Issue, field: &str) -> crate::Result<()> {
+    let value = match field {
+        "title" => Some(iss.frontmatter.title.clone()),
+        "status" => Some(iss.frontmatter.status.to_string()),
+        "priority" => iss.frontmatter.priority.clone(),
+        "assignee" => iss.frontmatter.assignee.clone(),
+        "due_date" => iss.frontmatter.due_date.clone(),
+        "labels" => Some(iss.frontmatter.labels.join(", ")),
+        "depends_on" => Some(iss.frontmatter.depends_on.join(", ")),
+        "body" => Some(iss.body.clone()),
+        "scratch" => Some(iss.scratch.clone()),
+        "id" => Some(iss.id.clone()),
+        "project" => Some(iss.project.clone()),
+        _ => {
+            return Err(crate::error::Error::UnknownField(field.into()));
+        }
+    };
+    if let Some(v) = value {
+        println!("{v}");
+    }
+    Ok(())
 }
 
 fn print_issue_show(iss: &Issue) {
