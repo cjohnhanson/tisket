@@ -58,6 +58,11 @@ impl Repo {
         }
         let content = "tisket_dir: .tisket\nadditional_instructions: \"\"\n";
         std::fs::write(&config_path, content)?;
+
+        let default_project_dir = root.join(".tisket").join("default");
+        std::fs::create_dir_all(&default_project_dir)?;
+        std::fs::write(default_project_dir.join("project.yml"), "name: default\n")?;
+
         Ok(())
     }
 

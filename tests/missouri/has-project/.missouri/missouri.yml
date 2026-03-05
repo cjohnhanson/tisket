@@ -15,9 +15,9 @@ transitions:
           command: "compare-issue"
 
 assertions:
-  - name: "project list shows bugs"
+  - name: "project list shows bugs and default"
     command: "tisket project list"
-    stdout: "bugs\n"
+    stdout: "bugs\ndefault\n"
   - name: "issue list is empty"
     command: "tisket issue list -p bugs"
     stdout: ""
