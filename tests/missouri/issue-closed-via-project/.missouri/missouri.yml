@@ -1,0 +1,10 @@
+assertions:
+  - name: "list hides closed issues by default"
+    command: "tisket issue list -p bugs"
+    stdout: ""
+  - name: "list with --closed shows it"
+    command: "tisket issue list -p bugs --closed | grep -q 'Fix the widget'"
+  - name: "show still works on closed issue"
+    command: "tisket issue show fix-the-widget | grep -q 'Fix the widget'"
+  - name: "show closed issue has done status"
+    command: "tisket issue show fix-the-widget | grep -q done"
