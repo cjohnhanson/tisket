@@ -314,9 +314,9 @@ assertions:
   - name: "issue list is empty"
     command: "tisket issue list"
     stdout: ""
-  - name: "project list is empty"
+  - name: "project list shows default"
     command: "tisket project list"
-    stdout: ""
+    stdout: "default\n"
   - name: "create issue in nonexistent project fails"
     command: "tisket issue create 'Something' -p nonexistent"
     should_fail: true
