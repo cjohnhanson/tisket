@@ -674,7 +674,6 @@ impl Repo {
         Ok(())
     }
 
-
     /// Appends a `## Scratch Notes` section to the issue file if one is not already present.
     pub fn ensure_scratch_notes(&self, id: &str) -> Result<()> {
         let iss = self.find_issue(id)?;

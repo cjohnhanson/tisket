@@ -4,7 +4,7 @@ use camino::Utf8PathBuf;
 use clap::Parser;
 use colored::Colorize;
 
-use crate::{git, CreateIssueOptions, EditIssueOptions, Issue, Repo, SearchResult};
+use crate::{CreateIssueOptions, EditIssueOptions, Issue, Repo, SearchResult, git};
 
 #[derive(Parser)]
 #[command(
@@ -36,7 +36,7 @@ pub enum Command {
 
     /// Manage issues
     #[command(subcommand)]
-    Issue(IssueCommand),
+    Issue(Box<IssueCommand>),
 
     /// Search issues
     Search(SearchArgs),
@@ -389,7 +389,7 @@ pub fn run_command(root: &camino::Utf8Path, command: Command) -> crate::Result<(
 
         Command::Issue(cmd) => {
             let repo = Repo::open(root)?;
-            match cmd {
+            match *cmd {
                 IssueCommand::Create(a) => {
                     let project = a.project.as_deref().unwrap_or("default");
                     let status = a
