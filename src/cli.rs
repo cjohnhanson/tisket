@@ -41,6 +41,9 @@ pub enum Command {
     /// Search issues
     Search(SearchArgs),
 
+    /// Read or modify scratch notes for an issue
+    Scratch(ScratchArgs),
+
     /// Manage projects
     #[command(subcommand)]
     Project(ProjectCommand),
@@ -240,6 +243,33 @@ pub struct SearchArgs {
     pub project: Option<String>,
 }
 
+#[derive(Parser)]
+pub struct ScratchArgs {
+    /// Issue ID
+    pub id: String,
+
+    #[command(subcommand)]
+    pub action: Option<ScratchAction>,
+}
+
+#[derive(Parser)]
+pub enum ScratchAction {
+    /// Print scratch notes (default)
+    Read,
+    /// Append text to scratch notes
+    Append(ScratchTextArgs),
+    /// Replace scratch notes with text
+    Write(ScratchTextArgs),
+    /// Clear scratch notes
+    Clear,
+}
+
+#[derive(Parser)]
+pub struct ScratchTextArgs {
+    /// Text to write or append
+    pub text: String,
+}
+
 /// Run tisket with the given arguments.
 pub fn run(args: Args) -> crate::Result<()> {
     let root = if args.root.is_relative() {
@@ -276,6 +306,22 @@ pub fn run_command(root: &camino::Utf8Path, command: Command) -> crate::Result<(
             let results = repo.search(&a.pattern, a.project.as_deref())?;
             print_search_results(&results);
             Ok(())
+        }
+
+        Command::Scratch(a) => {
+            let repo = Repo::open(root)?;
+            match a.action {
+                None | Some(ScratchAction::Read) => {
+                    let scratch = repo.scratch_read(&a.id)?;
+                    if !scratch.is_empty() {
+                        println!("{scratch}");
+                    }
+                    Ok(())
+                }
+                Some(ScratchAction::Append(t)) => repo.scratch_append(&a.id, &t.text),
+                Some(ScratchAction::Write(t)) => repo.scratch_write(&a.id, &t.text),
+                Some(ScratchAction::Clear) => repo.scratch_clear(&a.id),
+            }
         }
 
         Command::Issue(cmd) => {

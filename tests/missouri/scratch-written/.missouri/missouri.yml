@@ -1,0 +1,18 @@
+transitions:
+  - name: "scratch append after write appends"
+    command: "tisket scratch fix-the-widget append 'appended after write'"
+    target: "../scratch-write-then-append"
+    comparators:
+      files:
+        - path: ".tisket/bugs/"
+          ignore: true
+
+assertions:
+  - name: "scratch read shows replacement"
+    command: "tisket scratch fix-the-widget read"
+    stdout: "replacement content\n"
+  - name: "old content is gone"
+    command: "tisket scratch fix-the-widget read | grep -v 'first line'"
+    stdout: "replacement content\n"
+  - name: "body content preserved after write"
+    command: "tisket issue show fix-the-widget | grep -q 'widget is broken'"

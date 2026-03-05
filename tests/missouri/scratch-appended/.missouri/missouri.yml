@@ -1,0 +1,32 @@
+transitions:
+  - name: "scratch append adds to existing"
+    command: "tisket scratch fix-the-widget append 'second line of notes'"
+    target: "../scratch-appended-twice"
+    comparators:
+      files:
+        - path: ".tisket/bugs/"
+          ignore: true
+  - name: "scratch write replaces content"
+    command: "tisket scratch fix-the-widget write 'replacement content'"
+    target: "../scratch-written"
+    comparators:
+      files:
+        - path: ".tisket/bugs/"
+          ignore: true
+  - name: "scratch clear wipes content"
+    command: "tisket scratch fix-the-widget clear"
+    target: "../scratch-cleared"
+    comparators:
+      files:
+        - path: ".tisket/bugs/"
+          ignore: true
+
+assertions:
+  - name: "scratch read shows appended content"
+    command: "tisket scratch fix-the-widget read"
+    stdout: "first line of notes\n"
+  - name: "scratch default shows appended content"
+    command: "tisket scratch fix-the-widget"
+    stdout: "first line of notes\n"
+  - name: "issue show still displays body"
+    command: "tisket issue show fix-the-widget | grep -q 'widget is broken'"
