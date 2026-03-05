@@ -1,0 +1,18 @@
+assertions:
+  - name: "show displays new body"
+    command: "tisket issue show fix-the-widget | grep -q 'Widget needs fixing urgently'"
+  - name: "show format json has body"
+    command: "tisket issue show fix-the-widget --format json | jq -r '.body'"
+    stdout: "Widget needs fixing urgently\n"
+  - name: "show field body"
+    command: "tisket issue show fix-the-widget --field body"
+    stdout: "Widget needs fixing urgently\n"
+
+transitions:
+  - name: "append to body"
+    command: "tisket issue edit fix-the-widget --append 'Check the save handler'"
+    target: "../issue-with-appended-body"
+    comparators:
+      files:
+        - path: ".tisket/bugs/"
+          ignore: true

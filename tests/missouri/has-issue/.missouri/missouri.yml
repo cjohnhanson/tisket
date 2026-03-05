@@ -34,6 +34,22 @@ transitions:
       files:
         - path: ".tisket/bugs/"
           ignore: true
+  - name: "move issue to default project"
+    command: "tisket issue move fix-the-widget --project default"
+    target: "../issue-moved-to-default"
+    comparators:
+      files:
+        - path: ".tisket/bugs/"
+          ignore: true
+        - path: ".tisket/default/"
+          ignore: true
+  - name: "edit to set body"
+    command: "tisket issue edit fix-the-widget --body 'Widget needs fixing urgently'"
+    target: "../issue-with-set-body"
+    comparators:
+      files:
+        - path: ".tisket/bugs/"
+          ignore: true
 
 assertions:
   - name: "issue list shows issue"
@@ -76,3 +92,67 @@ assertions:
   - name: "search no results"
     command: "tisket search nonexistent-term-xyz"
     stdout: ""
+
+  # --- JSON output: show --format json ---
+  - name: "show format json outputs valid json"
+    command: "tisket issue show fix-the-widget --format json | jq -e '.title'"
+  - name: "show format json has title"
+    command: "tisket issue show fix-the-widget --format json | jq -r '.title'"
+    stdout: "Fix the widget\n"
+  - name: "show format json has status"
+    command: "tisket issue show fix-the-widget --format json | jq -r '.status'"
+    stdout: "todo\n"
+  - name: "show format json has id"
+    command: "tisket issue show fix-the-widget --format json | jq -r '.id'"
+    stdout: "fix-the-widget\n"
+  - name: "show format json has project"
+    command: "tisket issue show fix-the-widget --format json | jq -r '.project'"
+    stdout: "bugs\n"
+  - name: "show format json has empty labels array"
+    command: "tisket issue show fix-the-widget --format json | jq -r '.labels | length'"
+    stdout: "0\n"
+  - name: "show format json has empty body"
+    command: "tisket issue show fix-the-widget --format json | jq -r '.body'"
+    stdout: "\n"
+
+  # --- JSON output: show --field ---
+  - name: "show field title"
+    command: "tisket issue show fix-the-widget --field title"
+    stdout: "Fix the widget\n"
+  - name: "show field status"
+    command: "tisket issue show fix-the-widget --field status"
+    stdout: "todo\n"
+  - name: "show field nonexistent fails"
+    command: "tisket issue show fix-the-widget --field nonexistent"
+    should_fail: true
+
+  # --- JSON output: list --format json ---
+  - name: "list format json outputs valid json array"
+    command: "tisket issue list -p bugs --format json | jq -e 'type == \"array\"'"
+  - name: "list format json has one issue"
+    command: "tisket issue list -p bugs --format json | jq -r 'length'"
+    stdout: "1\n"
+  - name: "list format json issue has title"
+    command: "tisket issue list -p bugs --format json | jq -r '.[0].title'"
+    stdout: "Fix the widget\n"
+  - name: "list format json issue has id"
+    command: "tisket issue list -p bugs --format json | jq -r '.[0].id'"
+    stdout: "fix-the-widget\n"
+
+  # --- Body manipulation: edit --body ---
+  - name: "edit body replaces body"
+    command: "tisket issue edit fix-the-widget --body 'New body content' && tisket issue show fix-the-widget | grep -q 'New body content'"
+  - name: "edit body on empty body adds body"
+    command: "tisket issue edit fix-the-widget --body 'Added body' && tisket issue show fix-the-widget --format json | jq -r '.body' | grep -q 'Added body'"
+
+  # --- Body manipulation: edit --append ---
+  - name: "edit append adds to body"
+    command: "tisket issue edit fix-the-widget --body 'First line' && tisket issue edit fix-the-widget --append 'Second line' && tisket issue show fix-the-widget --format json | jq -r '.body' | grep -q 'Second line'"
+
+  # --- Move between projects ---
+  - name: "move nonexistent issue fails"
+    command: "tisket issue move nonexistent --project default"
+    should_fail: true
+  - name: "move to nonexistent project fails"
+    command: "tisket issue move fix-the-widget --project nonexistent"
+    should_fail: true

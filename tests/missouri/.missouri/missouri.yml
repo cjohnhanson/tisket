@@ -4,6 +4,7 @@ setup:
 
 packages:
   - git
+  - jq
 
 env:
   NO_COLOR: "1"

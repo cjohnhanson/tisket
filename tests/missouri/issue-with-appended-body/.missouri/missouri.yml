@@ -1,0 +1,9 @@
+assertions:
+  - name: "show displays original body"
+    command: "tisket issue show fix-the-widget | grep -q 'Widget needs fixing urgently'"
+  - name: "show displays appended text"
+    command: "tisket issue show fix-the-widget | grep -q 'Check the save handler'"
+  - name: "show format json body contains both lines"
+    command: "tisket issue show fix-the-widget --format json | jq -r '.body' | grep -q 'Widget needs fixing urgently'"
+  - name: "show format json body contains appended line"
+    command: "tisket issue show fix-the-widget --format json | jq -r '.body' | grep -q 'Check the save handler'"
