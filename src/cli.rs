@@ -121,6 +121,10 @@ pub struct IssueCreateArgs {
     #[arg(short, long)]
     pub depends_on: Option<String>,
 
+    /// Due date (YYYY-MM-DD)
+    #[arg(long)]
+    pub due: Option<String>,
+
     /// Initial status (default: todo)
     #[arg(short, long)]
     pub status: Option<String>,
@@ -185,6 +189,10 @@ pub struct IssueEditArgs {
     /// New dependencies (replaces existing)
     #[arg(short, long)]
     pub depends_on: Option<String>,
+
+    /// Due date (YYYY-MM-DD)
+    #[arg(long)]
+    pub due: Option<String>,
 }
 
 #[derive(Parser)]
@@ -285,6 +293,7 @@ pub fn run_command(root: &camino::Utf8Path, command: Command) -> crate::Result<(
                         CreateIssueOptions {
                             priority: a.priority.map(|p| p.to_string()),
                             assignee: a.assignee,
+                            due_date: a.due,
                             labels: a.labels,
                             depends_on: a.depends_on,
                             status,
@@ -309,7 +318,7 @@ pub fn run_command(root: &camino::Utf8Path, command: Command) -> crate::Result<(
                     Ok(())
                 }
                 IssueCommand::Edit(a) => {
-                    repo.edit_issue(&a.id, a.status.as_deref(), None)?;
+                    repo.edit_issue(&a.id, a.status.as_deref(), None, a.due.as_deref())?;
                     Ok(())
                 }
                 IssueCommand::Close(a) => {
@@ -468,6 +477,9 @@ fn print_issue_show(iss: &Issue) {
     }
     if let Some(a) = &iss.frontmatter.assignee {
         println!("  {:<10}{a}", "Assignee:");
+    }
+    if let Some(d) = &iss.frontmatter.due_date {
+        println!("  {:<10}{d}", "Due:");
     }
     if !iss.frontmatter.labels.is_empty() {
         println!("  {:<10}{}", "Labels:", iss.frontmatter.labels.join(", "));

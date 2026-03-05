@@ -1,0 +1,9 @@
+assertions:
+  - name: "show reflects updated due date"
+    command: "tisket issue show fix-the-widget"
+    stdout: |
+      fix-the-widget (bugs)
+
+        Title:    Fix the widget
+        Status:   todo
+        Due:      2025-12-31

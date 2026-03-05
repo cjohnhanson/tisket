@@ -140,6 +140,9 @@ pub fn diff_fields(
     if current.assignee != other.frontmatter.assignee {
         diffs.push("assignee".into());
     }
+    if current.due_date != other.frontmatter.due_date {
+        diffs.push("due_date".into());
+    }
     if current.labels != other.frontmatter.labels {
         diffs.push("labels".into());
     }
