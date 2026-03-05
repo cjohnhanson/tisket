@@ -46,7 +46,7 @@ pub fn slugify(title: &str) -> String {
     for c in title.chars() {
         if c.is_alphanumeric() {
             slug.push(c.to_ascii_lowercase());
-        } else if (c == ' ' || c == '-' || c == '_') && !slug.ends_with('-') {
+        } else if !slug.ends_with('-') {
             slug.push('-');
         }
     }
@@ -68,6 +68,15 @@ mod tests {
         assert_eq!(slugify("Hello, World!"), "hello-world");
         assert_eq!(slugify("foo--bar"), "foo-bar");
         assert_eq!(slugify("  leading spaces  "), "leading-spaces");
+    }
+
+    #[test]
+    fn punctuation_replaced_with_hyphens() {
+        assert_eq!(slugify("clc.yaml"), "clc-yaml");
+        assert_eq!(slugify("clc.yaml support"), "clc-yaml-support");
+        assert_eq!(slugify("fix...multiple dots"), "fix-multiple-dots");
+        assert_eq!(slugify("foo@bar#baz"), "foo-bar-baz");
+        assert_eq!(slugify("a.b.c.d"), "a-b-c-d");
     }
 
     #[test]

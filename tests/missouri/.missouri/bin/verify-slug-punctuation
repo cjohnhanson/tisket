@@ -1,0 +1,14 @@
+#!/bin/sh
+# Usage: verify-slug-punctuation <title> <expected-slug> <project>
+# Creates an issue and verifies the slug portion matches expected
+set -e
+title="$1"
+expected_slug="$2"
+project="$3"
+
+tisket issue create "$title" -p "$project" > /dev/null
+# The issue path should contain the expected slug
+path=$(tisket issue path "$expected_slug")
+echo "$path" | grep -q "$expected_slug"
+# Clean up — remove the created file so state is not polluted
+rm -f "$path"

@@ -1,0 +1,5 @@
+assertions:
+  - name: "show displays body from --body-file"
+    command: "tisket issue show fix-the-widget | grep -q 'The widget is broken from a file.'"
+  - name: "issue file contains body text from file"
+    command: "grep -q 'The widget is broken from a file.' .tisket/bugs/*fix-the-widget.md"

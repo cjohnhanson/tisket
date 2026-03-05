@@ -10,5 +10,5 @@ pub use config::{ProjectConfig, TisketConfig};
 pub use error::{Error, Result};
 pub use git::{BranchStatus, GitContext};
 pub use issue::{Issue, IssueFrontmatter};
-pub use repo::{CreateIssueOptions, Repo, SearchResult};
+pub use repo::{CreateIssueOptions, EditIssueOptions, Repo, SearchResult};
 pub use slug::{extract_prefix, generate_prefix, has_prefix, slugify};

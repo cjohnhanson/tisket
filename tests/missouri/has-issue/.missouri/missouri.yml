@@ -50,6 +50,20 @@ transitions:
       files:
         - path: ".tisket/bugs/"
           ignore: true
+  - name: "edit labels"
+    command: "tisket issue edit fix-the-widget -l foo,bar"
+    target: "../issue-labels-edited"
+    comparators:
+      files:
+        - path: ".tisket/bugs/"
+          ignore: true
+  - name: "close with project flag"
+    command: "tisket issue close -p bugs fix-the-widget"
+    target: "../issue-closed-via-project"
+    comparators:
+      files:
+        - path: ".tisket/bugs/"
+          ignore: true
 
 assertions:
   - name: "issue list shows issue"

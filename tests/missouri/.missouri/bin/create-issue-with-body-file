@@ -1,0 +1,6 @@
+#!/bin/sh
+# Creates an issue using --body-file flag
+set -e
+echo "The widget is broken from a file." > /tmp/tisket-body-test.txt
+tisket issue create 'Fix the widget' -p bugs --body-file /tmp/tisket-body-test.txt
+rm -f /tmp/tisket-body-test.txt

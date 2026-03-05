@@ -22,6 +22,22 @@ pub struct CreateIssueOptions {
     pub labels: Option<String>,
     pub depends_on: Option<String>,
     pub status: Option<Status>,
+    pub body: Option<String>,
+}
+
+#[derive(Default)]
+pub struct EditIssueOptions<'a> {
+    pub status: Option<&'a str>,
+    pub assignee: Option<&'a str>,
+    pub due_date: Option<&'a str>,
+    pub title: Option<&'a str>,
+    pub priority: Option<u8>,
+    pub labels: Option<&'a str>,
+    pub add_label: Option<&'a str>,
+    pub remove_label: Option<&'a str>,
+    pub depends_on: Option<&'a str>,
+    pub body: Option<&'a str>,
+    pub append: Option<&'a str>,
 }
 
 pub struct Repo {
@@ -318,7 +334,8 @@ impl Repo {
             fm.depends_on = d.split(',').map(|s| s.trim().to_string()).collect();
         }
 
-        let content = issue::serialize_issue(&fm, "", "");
+        let body = opts.body.as_deref().unwrap_or("");
+        let content = issue::serialize_issue(&fm, body, "");
         std::fs::write(&issue_path, content)?;
 
         Ok(id)
@@ -511,17 +528,7 @@ impl Repo {
         }
     }
 
-    pub fn edit_issue(
-        &self,
-        id: &str,
-        status: Option<&str>,
-        assignee: Option<&str>,
-        due_date: Option<&str>,
-        body_replace: Option<&str>,
-        body_append: Option<&str>,
-        add_label: Option<&str>,
-        remove_label: Option<&str>,
-    ) -> Result<()> {
+    pub fn edit_issue(&self, id: &str, opts: EditIssueOptions<'_>) -> Result<()> {
         let iss = self.find_issue(id)?;
         if iss.closed {
             return Err(Error::IssueClosed(id.into()));
@@ -532,23 +539,31 @@ impl Repo {
         let content = std::fs::read_to_string(&issue_path)?;
         let (mut fm, mut body, scratch) = issue::parse_issue(&content)?;
 
-        if let Some(new_status) = status {
+        if let Some(new_status) = opts.status {
             fm.status = new_status.parse::<Status>()?;
         }
 
-        if let Some(new_assignee) = assignee {
+        if let Some(new_assignee) = opts.assignee {
             fm.assignee = Some(new_assignee.to_string());
         }
 
-        if let Some(new_due) = due_date {
+        if let Some(new_due) = opts.due_date {
             fm.due_date = Some(new_due.to_string());
         }
 
-        if let Some(new_body) = body_replace {
+        if let Some(new_title) = opts.title {
+            fm.title = new_title.to_string();
+        }
+
+        if let Some(p) = opts.priority {
+            fm.priority = Some(p.to_string());
+        }
+
+        if let Some(new_body) = opts.body {
             body = new_body.to_string();
         }
 
-        if let Some(append_text) = body_append {
+        if let Some(append_text) = opts.append {
             if body.is_empty() {
                 body = append_text.to_string();
             } else {
@@ -557,14 +572,22 @@ impl Repo {
             }
         }
 
-        if let Some(label) = add_label
+        if let Some(l) = opts.labels {
+            fm.labels = l.split(',').map(|s| s.trim().to_string()).collect();
+        }
+
+        if let Some(label) = opts.add_label
             && !fm.labels.iter().any(|l| l == label)
         {
             fm.labels.push(label.to_string());
         }
 
-        if let Some(label) = remove_label {
+        if let Some(label) = opts.remove_label {
             fm.labels.retain(|l| l != label);
+        }
+
+        if let Some(d) = opts.depends_on {
+            fm.depends_on = d.split(',').map(|s| s.trim().to_string()).collect();
         }
 
         issue::update_timestamp(&mut fm);

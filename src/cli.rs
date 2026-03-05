@@ -4,7 +4,7 @@ use camino::Utf8PathBuf;
 use clap::Parser;
 use colored::Colorize;
 
-use crate::{git, CreateIssueOptions, Issue, Repo, SearchResult};
+use crate::{git, CreateIssueOptions, EditIssueOptions, Issue, Repo, SearchResult};
 
 #[derive(Parser)]
 #[command(
@@ -134,6 +134,14 @@ pub struct IssueCreateArgs {
     /// Initial status (default: todo)
     #[arg(short, long)]
     pub status: Option<String>,
+
+    /// Issue body text (inline)
+    #[arg(short, long)]
+    pub body: Option<String>,
+
+    /// Read issue body from file
+    #[arg(long)]
+    pub body_file: Option<Utf8PathBuf>,
 }
 
 #[derive(Parser)]
@@ -253,6 +261,10 @@ pub struct IssueMoveArgs {
 pub struct IssueCloseArgs {
     /// Issue ID (filename without .md)
     pub id: String,
+
+    /// Project containing the issue
+    #[arg(short, long)]
+    pub project: Option<String>,
 
     /// Terminal status (default: done)
     #[arg(short, long)]
@@ -384,6 +396,17 @@ pub fn run_command(root: &camino::Utf8Path, command: Command) -> crate::Result<(
                         .status
                         .map(|s| s.parse::<crate::issue::Status>())
                         .transpose()?;
+                    let body = match (a.body, a.body_file) {
+                        (Some(_), Some(_)) => {
+                            return Err(crate::error::Error::Io(std::io::Error::new(
+                                std::io::ErrorKind::InvalidInput,
+                                "cannot specify both --body and --body-file",
+                            )));
+                        }
+                        (Some(b), None) => Some(b),
+                        (None, Some(path)) => Some(std::fs::read_to_string(path)?),
+                        (None, None) => None,
+                    };
                     repo.create_issue(
                         &a.title,
                         project,
@@ -394,6 +417,7 @@ pub fn run_command(root: &camino::Utf8Path, command: Command) -> crate::Result<(
                             labels: a.labels,
                             depends_on: a.depends_on,
                             status,
+                            body,
                         },
                     )?;
                     Ok(())
@@ -431,13 +455,19 @@ pub fn run_command(root: &camino::Utf8Path, command: Command) -> crate::Result<(
                 IssueCommand::Edit(a) => {
                     repo.edit_issue(
                         &a.id,
-                        a.status.as_deref(),
-                        None,
-                        a.due.as_deref(),
-                        a.body.as_deref(),
-                        a.append.as_deref(),
-                        a.add_label.as_deref(),
-                        a.remove_label.as_deref(),
+                        EditIssueOptions {
+                            status: a.status.as_deref(),
+                            assignee: a.assignee.as_deref(),
+                            due_date: a.due.as_deref(),
+                            title: a.title.as_deref(),
+                            priority: a.priority,
+                            labels: a.labels.as_deref(),
+                            add_label: a.add_label.as_deref(),
+                            remove_label: a.remove_label.as_deref(),
+                            depends_on: a.depends_on.as_deref(),
+                            body: a.body.as_deref(),
+                            append: a.append.as_deref(),
+                        },
                     )?;
                     Ok(())
                 }
