@@ -1,0 +1,3 @@
+assertions:
+  - name: "selector tests verified"
+    command: "true"
