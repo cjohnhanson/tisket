@@ -85,7 +85,7 @@ impl<'de> Deserialize<'de> for Status {
     }
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct IssueFrontmatter {
     pub title: String,
     pub status: Status,
@@ -100,7 +100,7 @@ pub struct IssueFrontmatter {
     pub updated: Option<String>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize)]
 pub struct Issue {
     pub id: String,
     pub project: String,

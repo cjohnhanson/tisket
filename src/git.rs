@@ -2,10 +2,12 @@ use std::path::Path;
 
 use camino::Utf8Path;
 
+use serde::Serialize;
+
 use crate::error::{Error, Result};
 use crate::issue::{self, IssueFrontmatter};
 
-#[derive(Debug)]
+#[derive(Debug, Serialize)]
 pub struct BranchStatus {
     pub branch: String,
     pub is_remote: bool,
