@@ -9,6 +9,7 @@ use crate::issue::Status;
 use crate::issue::{self, Issue};
 use crate::slug::{extract_prefix, generate_prefix, slugify};
 
+#[derive(serde::Serialize)]
 pub struct SearchResult {
     pub issue: Issue,
     pub matched_fields: Vec<String>,
