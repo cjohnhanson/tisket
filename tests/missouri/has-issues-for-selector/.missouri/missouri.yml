@@ -1,0 +1,88 @@
+assertions:
+  # --- CLI: --where flag exists ---
+  - name: "issue list --help shows --where flag"
+    command: "tisket issue list --help | grep -q '\\-\\-where'"
+
+  # --- label: selector ---
+  - name: "list --where label:docs shows Docs task"
+    command: "tisket issue list --where label:docs | grep -q 'Docs task'"
+
+  - name: "list --where label:docs shows Blocked docs task"
+    command: "tisket issue list --where label:docs | grep -q 'Blocked docs task'"
+
+  - name: "list --where label:docs excludes Feature task"
+    command: "! tisket issue list --where label:docs | grep -q 'Feature task'"
+
+  - name: "list --where label:docs excludes Admin task (different project)"
+    command: "! tisket issue list --where label:docs | grep -q 'Admin task'"
+
+  - name: "list --where label:docs shows exactly 2 issues"
+    command: "test \"$(tisket issue list --where label:docs | grep -c task)\" = 2"
+
+  - name: "list --where label:feature shows only Feature task"
+    command: "tisket issue list --where label:feature | grep -q 'Feature task'"
+
+  - name: "list --where label:feature excludes Docs task"
+    command: "! tisket issue list --where label:feature | grep -q 'Docs task'"
+
+  - name: "list --where label:nonexistent shows nothing"
+    command: "tisket issue list --where label:nonexistent"
+    stdout: ""
+
+  # --- status: selector ---
+  - name: "list --where status:todo shows Docs task"
+    command: "tisket issue list --where status:todo | grep -q 'Docs task'"
+
+  - name: "list --where status:todo shows Feature task"
+    command: "tisket issue list --where status:todo | grep -q 'Feature task'"
+
+  - name: "list --where status:todo shows Admin task (docs-proj)"
+    command: "tisket issue list --where status:todo | grep -q 'Admin task'"
+
+  - name: "list --where status:todo excludes Blocked docs task"
+    command: "! tisket issue list --where status:todo | grep -q 'Blocked docs task'"
+
+  - name: "list --where status:blocked shows Blocked docs task"
+    command: "tisket issue list --where status:blocked | grep -q 'Blocked docs task'"
+
+  - name: "list --where status:blocked shows exactly 1 issue"
+    command: "test \"$(tisket issue list --where status:blocked | grep -c task)\" = 1"
+
+  # --- project: selector ---
+  - name: "list --where project:v0.1.0 shows Docs task"
+    command: "tisket issue list --where project:v0.1.0 | grep -q 'Docs task'"
+
+  - name: "list --where project:v0.1.0 shows Feature task"
+    command: "tisket issue list --where project:v0.1.0 | grep -q 'Feature task'"
+
+  - name: "list --where project:v0.1.0 shows Blocked docs task"
+    command: "tisket issue list --where project:v0.1.0 | grep -q 'Blocked docs task'"
+
+  - name: "list --where project:v0.1.0 excludes Admin task"
+    command: "! tisket issue list --where project:v0.1.0 | grep -q 'Admin task'"
+
+  - name: "list --where project:docs-proj shows Admin task"
+    command: "tisket issue list --where project:docs-proj | grep -q 'Admin task'"
+
+  - name: "list --where project:docs-proj excludes Docs task"
+    command: "! tisket issue list --where project:docs-proj | grep -q 'Docs task'"
+
+  # --- AND composition: multiple --where flags ---
+  - name: "list --where label:docs --where status:todo shows only Docs task"
+    command: "test \"$(tisket issue list --where label:docs --where status:todo | grep -c task)\" = 1"
+
+  - name: "list --where label:docs --where status:todo includes Docs task"
+    command: "tisket issue list --where label:docs --where status:todo | grep -q 'Docs task'"
+
+  - name: "list --where label:docs --where status:todo excludes Blocked docs task"
+    command: "! tisket issue list --where label:docs --where status:todo | grep -q 'Blocked docs task'"
+
+  - name: "list --where label:docs --where project:v0.1.0 shows Docs task and Blocked docs task"
+    command: "test \"$(tisket issue list --where label:docs --where project:v0.1.0 | grep -c task)\" = 2"
+
+  - name: "list --where label:feature --where project:v0.1.0 shows exactly 1 issue"
+    command: "test \"$(tisket issue list --where label:feature --where project:v0.1.0 | grep -c task)\" = 1"
+
+  - name: "list --where label:admin --where project:v0.1.0 shows nothing (no intersection)"
+    command: "tisket issue list --where label:admin --where project:v0.1.0"
+    stdout: ""
