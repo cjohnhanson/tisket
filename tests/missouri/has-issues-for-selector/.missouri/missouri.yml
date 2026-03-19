@@ -1,3 +1,8 @@
+transitions:
+  - name: "no-op: selector assertions complete"
+    command: "true"
+    target: "../selector-checked"
+
 assertions:
   # --- CLI: --where flag exists ---
   - name: "issue list --help shows --where flag"
