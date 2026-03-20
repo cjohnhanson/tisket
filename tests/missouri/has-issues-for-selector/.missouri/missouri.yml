@@ -2,6 +2,12 @@ transitions:
   - name: "no-op: selector assertions complete"
     command: "true"
     target: "../selector-checked"
+    comparators:
+      files:
+        - path: "tisket.yml"
+          ignore: true
+        - path: ".tisket/"
+          ignore: true
 
 assertions:
   # --- CLI: --where flag exists ---

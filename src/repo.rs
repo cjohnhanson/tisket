@@ -7,6 +7,7 @@ use crate::error::{Error, Result};
 use crate::git::{self, GitContext};
 use crate::issue::Status;
 use crate::issue::{self, Issue};
+use crate::selector::{self, Selector};
 use crate::slug::{extract_prefix, generate_prefix, slugify};
 
 #[derive(serde::Serialize)]
@@ -348,6 +349,7 @@ impl Repo {
         status_filter: Option<&str>,
         label_filter: Option<&str>,
         closed: bool,
+        selectors: &[Selector],
     ) -> Result<Vec<Issue>> {
         let projects = match project {
             Some(p) => {
@@ -380,6 +382,10 @@ impl Repo {
 
         if let Some(label) = label_filter {
             issues.retain(|i| i.frontmatter.labels.iter().any(|l| l == label));
+        }
+
+        if !selectors.is_empty() {
+            issues.retain(|i| selector::matches_all(selectors, i));
         }
 
         // Annotate with git divergence info
