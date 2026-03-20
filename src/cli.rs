@@ -4,7 +4,7 @@ use camino::Utf8PathBuf;
 use clap::Parser;
 use colored::Colorize;
 
-use crate::{CreateIssueOptions, EditIssueOptions, Issue, Repo, SearchResult, git};
+use crate::{CreateIssueOptions, EditIssueOptions, Issue, Repo, SearchResult, Selector, git};
 
 #[derive(Parser)]
 #[command(
@@ -165,6 +165,10 @@ pub struct IssueListArgs {
     /// Include closed issues
     #[arg(long)]
     pub closed: bool,
+
+    /// Filter by selector (namespace:value, repeatable, ANDs together)
+    #[arg(long = "where")]
+    pub r#where: Vec<String>,
 
     /// Output format (text or json)
     #[arg(long, default_value = "text")]
@@ -423,11 +427,17 @@ pub fn run_command(root: &camino::Utf8Path, command: Command) -> crate::Result<(
                     Ok(())
                 }
                 IssueCommand::List(a) => {
+                    let selectors: Vec<Selector> = a
+                        .r#where
+                        .iter()
+                        .filter_map(|s| Selector::parse(s))
+                        .collect();
                     let issues = repo.list_issues(
                         a.project.as_deref(),
                         a.status.as_deref(),
                         a.label.as_deref(),
                         a.closed,
+                        &selectors,
                     )?;
                     match a.format {
                         OutputFormat::Json => print_issue_list_json(&issues)?,
