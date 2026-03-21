@@ -113,33 +113,19 @@ pub struct Issue {
 }
 
 pub fn parse_issue(content: &str) -> Result<(IssueFrontmatter, String, String)> {
-    let content = content.trim();
-    if !content.starts_with("---") {
-        return Err(Error::Io(std::io::Error::new(
-            std::io::ErrorKind::InvalidData,
-            "missing frontmatter delimiter",
-        )));
-    }
-
-    let after_first = &content[3..].trim_start_matches('\n');
-    let end = after_first.find("---").ok_or_else(|| {
-        Error::Io(std::io::Error::new(
-            std::io::ErrorKind::InvalidData,
-            "missing closing frontmatter delimiter",
-        ))
+    let doc = mdstore::document::parse::<IssueFrontmatter>(content).map_err(|e| match e {
+        mdstore::Error::MissingFrontmatter | mdstore::Error::UnclosedFrontmatter => {
+            Error::Io(std::io::Error::new(std::io::ErrorKind::InvalidData, e))
+        }
+        mdstore::Error::Yaml(ye) => Error::Yaml(ye),
     })?;
 
-    let yaml = &after_first[..end];
-    let fm: IssueFrontmatter = serde_yml::from_str(yaml)?;
-
-    // Everything after the closing ---
-    let after_fm = &after_first[end + 3..];
-    let (body, scratch) = split_body_scratch(after_fm);
-
-    Ok((fm, body, scratch))
+    let (body, scratch) = split_body_scratch(&doc.body);
+    Ok((doc.frontmatter, body, scratch))
 }
 
 fn split_body_scratch(content: &str) -> (String, String) {
+    // Check for scratch header preceded by newline (middle of content)
     if let Some(pos) = content.find("\n## Scratch Notes\n") {
         let body = content[..pos].trim().to_string();
         let scratch = content[pos + "\n## Scratch Notes\n".len()..]
@@ -152,6 +138,14 @@ fn split_body_scratch(content: &str) -> (String, String) {
         let after = &content[pos + "\n## Scratch Notes".len()..];
         let scratch = after.trim().to_string();
         (body, scratch)
+    // Check for scratch header at start of content (no body text before it)
+    } else if content.starts_with("## Scratch Notes\n") {
+        let scratch = content["## Scratch Notes\n".len()..].trim().to_string();
+        (String::new(), scratch)
+    } else if content.starts_with("## Scratch Notes") {
+        let after = &content["## Scratch Notes".len()..];
+        let scratch = after.trim().to_string();
+        (String::new(), scratch)
     } else {
         (content.trim().to_string(), String::new())
     }
