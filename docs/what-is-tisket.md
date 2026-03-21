@@ -222,5 +222,5 @@ issue ID. This is what makes the "current issue" detection work — clc
 checks whether the branch name resolves as a tisket issue ID, and if
 it does, that issue is treated as the active one for the session.
 
-For CLI usage details, see [cli-reference](cli-reference.md). For
-step-by-step workflows, see [workflow](workflow.md).
+For CLI usage details, see the [CLI reference](/tisket/cli-reference). For
+day-to-day issue management, see the [workflow guide](/tisket/workflow).
