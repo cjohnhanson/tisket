@@ -6,20 +6,7 @@ type: guide
 
 # Tisket Workflow
 
-## Initialize a repository
-
-To start tracking issues in a project, run `tisket init` from the
-repository root. This creates a `tisket.yml` config file and a default
-project at `.tisket/default/`.
-
-```
-tisket init
-```
-
-The generated `tisket.yml` has two fields:
-
-- `tisket_dir` — where issue files live (default `.tisket`)
-- `additional_instructions` — extra text injected into agent prime output
+This guide assumes tisket is initialized (see [Getting Started](/tisket/getting-started)). It covers day-to-day issue management: creating issues, filtering, managing status, and integrating with clc's pickup workflow.
 
 ## Projects
 
