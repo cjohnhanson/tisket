@@ -64,6 +64,13 @@ transitions:
       files:
         - path: ".tisket/bugs/"
           ignore: true
+  - name: "add tags to issue"
+    command: "tisket issue edit fix-the-widget --tag estimate=4 --tag severity=critical"
+    target: "../has-issue-with-tags"
+    comparators:
+      files:
+        - path: ".tisket/bugs/"
+          ignore: true
 
 assertions:
   - name: "issue list shows issue"
