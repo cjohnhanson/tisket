@@ -249,6 +249,14 @@ pub struct IssueEditArgs {
     /// Append text to the body
     #[arg(long)]
     pub append: Option<String>,
+
+    /// Set a tag (key=value, repeatable)
+    #[arg(long = "tag", value_name = "KEY=VALUE")]
+    pub tags: Vec<String>,
+
+    /// Remove a tag by key (repeatable)
+    #[arg(long = "untag", value_name = "KEY")]
+    pub untags: Vec<String>,
 }
 
 #[derive(Parser)]
@@ -463,6 +471,14 @@ pub fn run_command(root: &camino::Utf8Path, command: Command) -> crate::Result<(
                     Ok(())
                 }
                 IssueCommand::Edit(a) => {
+                    let parsed_tags: Vec<(String, String)> = a
+                        .tags
+                        .iter()
+                        .filter_map(|t| {
+                            let (k, v) = t.split_once('=')?;
+                            Some((k.to_string(), v.to_string()))
+                        })
+                        .collect();
                     repo.edit_issue(
                         &a.id,
                         EditIssueOptions {
@@ -477,6 +493,8 @@ pub fn run_command(root: &camino::Utf8Path, command: Command) -> crate::Result<(
                             depends_on: a.depends_on.as_deref(),
                             body: a.body.as_deref(),
                             append: a.append.as_deref(),
+                            tags: &parsed_tags,
+                            untags: &a.untags,
                         },
                     )?;
                     Ok(())
@@ -628,6 +646,28 @@ fn print_search_results(results: &[SearchResult]) {
 }
 
 fn issue_to_json(iss: &Issue) -> serde_json::Value {
+    let tags: serde_json::Map<String, serde_json::Value> = iss
+        .frontmatter
+        .tags
+        .iter()
+        .map(|(k, v)| {
+            let jv = match v {
+                serde_yml::Value::String(s) => serde_json::Value::String(s.clone()),
+                serde_yml::Value::Number(n) => {
+                    if let Some(i) = n.as_i64() {
+                        serde_json::Value::Number(i.into())
+                    } else if let Some(f) = n.as_f64() {
+                        serde_json::json!(f)
+                    } else {
+                        serde_json::Value::String(n.to_string())
+                    }
+                }
+                serde_yml::Value::Bool(b) => serde_json::Value::Bool(*b),
+                other => serde_json::Value::String(format!("{other:?}")),
+            };
+            (k.clone(), jv)
+        })
+        .collect();
     serde_json::json!({
         "id": iss.id,
         "project": iss.project,
@@ -638,6 +678,7 @@ fn issue_to_json(iss: &Issue) -> serde_json::Value {
         "due_date": iss.frontmatter.due_date,
         "labels": iss.frontmatter.labels,
         "depends_on": iss.frontmatter.depends_on,
+        "tags": tags,
         "body": iss.body,
         "scratch": iss.scratch,
         "closed": iss.closed,
@@ -706,6 +747,18 @@ fn print_issue_show(iss: &Issue) {
             "Depends:",
             iss.frontmatter.depends_on.join(", ")
         );
+    }
+    if !iss.frontmatter.tags.is_empty() {
+        println!("  {:<10}", "Tags:");
+        for (k, v) in &iss.frontmatter.tags {
+            let v_str = match v {
+                serde_yml::Value::String(s) => s.clone(),
+                serde_yml::Value::Number(n) => n.to_string(),
+                serde_yml::Value::Bool(b) => b.to_string(),
+                other => format!("{other:?}"),
+            };
+            println!("    {k}: {v_str}");
+        }
     }
     if !iss.body.is_empty() {
         println!();

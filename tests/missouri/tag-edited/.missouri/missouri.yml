@@ -1,9 +1,9 @@
 assertions:
   - name: "severity changed to low"
-    command: "grep -q 'severity: low' .tisket/bugs/fix-the-widget.md"
+    command: "cat $(tisket issue path fix-the-widget) | grep -q 'severity: low'"
 
   - name: "estimate still present"
-    command: "grep -q 'estimate:' .tisket/bugs/fix-the-widget.md"
+    command: "cat $(tisket issue path fix-the-widget) | grep -q 'estimate:'"
 
   - name: "show json severity is low"
     command: "tisket issue show fix-the-widget --format json | jq -r '.tags.severity'"

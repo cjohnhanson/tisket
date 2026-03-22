@@ -98,6 +98,8 @@ pub struct IssueFrontmatter {
     pub depends_on: Vec<String>,
     pub created: Option<String>,
     pub updated: Option<String>,
+    #[serde(default, skip_serializing_if = "std::collections::HashMap::is_empty")]
+    pub tags: std::collections::HashMap<String, serde_yml::Value>,
 }
 
 #[derive(Debug, Serialize)]
@@ -193,6 +195,20 @@ pub fn serialize_issue(fm: &IssueFrontmatter, body: &str, scratch: &str) -> Stri
 
     s.push_str(&format!("created: {created}\n"));
     s.push_str(&format!("updated: {updated}\n"));
+
+    if !fm.tags.is_empty() {
+        s.push_str("tags:\n");
+        for (k, v) in &fm.tags {
+            let v_str = match v {
+                serde_yml::Value::String(sv) => format!("{sv}"),
+                serde_yml::Value::Number(n) => n.to_string(),
+                serde_yml::Value::Bool(b) => b.to_string(),
+                other => format!("{other:?}"),
+            };
+            s.push_str(&format!("  {k}: {v_str}\n"));
+        }
+    }
+
     s.push_str("---\n");
 
     if !body.is_empty() {
@@ -222,6 +238,7 @@ pub fn new_frontmatter(title: &str, status: Status) -> IssueFrontmatter {
         depends_on: vec![],
         created: Some(now.clone()),
         updated: Some(now),
+        tags: std::collections::HashMap::new(),
     }
 }
 

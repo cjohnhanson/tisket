@@ -27,7 +27,15 @@ impl Selector {
                 .any(|l| l.as_str() == self.value),
             "status" => issue.frontmatter.status.to_string() == self.value,
             "project" => issue.project == self.value,
-            _ => false,
+            // Fall through to tags: check if tags[namespace] matches value
+            key => issue.frontmatter.tags.get(key).map_or(false, |v| {
+                match v {
+                    serde_yml::Value::String(s) => s == &self.value,
+                    serde_yml::Value::Number(n) => n.to_string() == self.value,
+                    serde_yml::Value::Bool(b) => b.to_string() == self.value,
+                    _ => false,
+                }
+            }),
         }
     }
 }
