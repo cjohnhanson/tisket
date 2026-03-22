@@ -1,18 +1,15 @@
 doc: |
-  Start with an empty directory. Tisket hasn't been initialized — there's no
-  `tisket.yml`, no `.tisket/` directory, nothing. Any tisket command that
-  expects a repository will fail with "not a tisket repository."
+  Tisket needs one thing: a `tisket.yml` at the project root. Without
+  it, every command fails with "not a tisket repository."
 
 transitions:
   - name: "tisket init"
     command: "tisket init"
     target: "../initialized"
     doc: |
-      Initialize tisket. This creates `tisket.yml` at the root (configuring
-      where issues are stored) and a `.tisket/default/` directory with the
-      default project. That's it — two files and a directory. Everything
-      tisket does from here is reading and writing markdown files inside
-      `.tisket/`.
+      Two files and a directory. `tisket.yml` says where issues live.
+      `.tisket/default/` is a project — issues go inside it as markdown
+      files. That's the entire data model.
 
 assertions:
   - name: "issue list fails before init"
