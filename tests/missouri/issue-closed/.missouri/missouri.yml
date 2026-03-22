@@ -1,7 +1,17 @@
+doc: |
+  The issue is closed — its file moved to `.tisket/bugs/.closed/`. It
+  won't show up in `tisket issue list` by default (use `--closed` to
+  see it). You can still `show` it and `search` for it. You can't edit
+  a closed issue — reopen it first.
+
 transitions:
   - name: "reopen issue"
     command: "tisket issue reopen fix-the-widget"
     target: "../issue-reopened"
+    doc: |
+      Reopen the issue. This moves the file back out of `.closed/`,
+      sets the status to `todo`, and makes it editable again. Nothing
+      is lost — the full history is preserved in git.
     comparators:
       files:
         - path: ".tisket/bugs/"

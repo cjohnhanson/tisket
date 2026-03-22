@@ -1,7 +1,21 @@
+doc: |
+  The issue exists as a markdown file in `.tisket/bugs/`. You can list it,
+  show it, search for it, and get its file path. The short ID prefix
+  (the first 4 characters of the filename) works as a shorthand anywhere
+  you'd use the full slug — `tisket issue show ab12` resolves to the
+  full issue.
+
+  Here's what the file looks like on disk:
+
 transitions:
   - name: "close issue"
     command: "tisket issue close fix-the-widget"
     target: "../issue-closed"
+    doc: |
+      Close the issue. This changes its status to `done` and moves
+      the file from `.tisket/bugs/` to `.tisket/bugs/.closed/`. The
+      issue is still searchable and can be reopened — closing doesn't
+      delete anything.
     comparators:
       files:
         - path: ".tisket/bugs/"

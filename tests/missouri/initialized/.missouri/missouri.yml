@@ -1,7 +1,18 @@
+doc: |
+  After init, the repo has a `tisket.yml` and a default project. The issue
+  list is empty. Tisket organizes issues into projects — the default project
+  was created automatically, but for real work you'll want named projects
+  that group related issues.
+
 transitions:
   - name: "create bugs project"
     command: "tisket project create bugs"
     target: "../has-project"
+    doc: |
+      Create a project called `bugs`. This makes a `.tisket/bugs/` directory
+      with a `project.yml` inside it. Issues created with `-p bugs` will
+      live here as markdown files.
+
   - name: "populate many issues"
     command: "populate-issues.sh"
     target: "../has-many-issues"
