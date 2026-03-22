@@ -1,3 +1,9 @@
+doc: |
+  The issue is back in `.tisket/bugs/` with `todo` status. The full
+  lifecycle — create, close, reopen — is just file operations: create
+  a markdown file, move it to `.closed/`, move it back. Git tracks
+  every change.
+
 assertions:
   - name: "reopened issue is listed"
     command: "tisket issue list -p bugs | grep -q 'Fix the widget'"

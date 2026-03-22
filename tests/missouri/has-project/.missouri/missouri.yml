@@ -1,7 +1,17 @@
+doc: |
+  Now there are two projects: `default` (created by init) and `bugs`
+  (just created). The `bugs` project is empty — no issues yet.
+
 transitions:
   - name: "create issue"
     command: "tisket issue create 'Fix the widget' -p bugs"
     target: "../has-issue"
+    doc: |
+      Create an issue in the bugs project. Tisket generates a 4-character
+      random prefix and slugifies the title, producing a filename like
+      `ab12-fix-the-widget.md`. The file contains YAML frontmatter
+      (title, status, timestamps) and an empty body. The issue starts
+      at `todo` status by default.
     comparators:
       files:
         - path: ".tisket/bugs/"
