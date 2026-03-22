@@ -47,6 +47,18 @@ pub enum Command {
     /// Manage projects
     #[command(subcommand)]
     Project(ProjectCommand),
+
+    /// Browse bundled documentation
+    Docs(DocsArgs),
+}
+
+#[derive(clap::Args)]
+pub struct DocsArgs {
+    /// Topic slug to display, or "search" to search
+    pub topic: Option<String>,
+
+    /// Search query (when topic is "search")
+    pub query: Option<String>,
 }
 
 #[derive(Parser)]
@@ -509,6 +521,34 @@ pub fn run_command(root: &camino::Utf8Path, command: Command) -> crate::Result<(
                         println!("{p}");
                     }
                     Ok(())
+                }
+            }
+        }
+
+        Command::Docs(args) => {
+            match args.topic.as_deref() {
+                None => {
+                    crate::docs::list();
+                    Ok(())
+                }
+                Some("search") => {
+                    let query = args.query.as_deref().unwrap_or("");
+                    if query.is_empty() {
+                        eprintln!("usage: tisket docs search <query>");
+                        std::process::exit(1);
+                    }
+                    crate::docs::search(query);
+                    Ok(())
+                }
+                Some(slug) => {
+                    if crate::docs::show(slug) {
+                        Ok(())
+                    } else {
+                        eprintln!("unknown doc: {slug}");
+                        eprintln!("available docs:");
+                        crate::docs::list();
+                        std::process::exit(1);
+                    }
                 }
             }
         }
