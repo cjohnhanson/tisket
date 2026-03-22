@@ -1,7 +1,4 @@
-doc: |
-  Back where it started. The lifecycle is file operations: create a
-  markdown file, move it to `.closed/`, move it back. Git handles
-  the history.
+doc: ""
 
 assertions:
   - name: "reopened issue is listed"

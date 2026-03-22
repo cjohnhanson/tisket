@@ -1,15 +1,7 @@
-doc: |
-  Tisket needs one thing: a `tisket.yml` at the project root. Without
-  it, every command fails with "not a tisket repository."
-
 transitions:
   - name: "tisket init"
     command: "tisket init"
     target: "../initialized"
-    doc: |
-      Two files and a directory. `tisket.yml` says where issues live.
-      `.tisket/default/` is a project — issues go inside it as markdown
-      files. That's the entire data model.
 
 assertions:
   - name: "issue list fails before init"

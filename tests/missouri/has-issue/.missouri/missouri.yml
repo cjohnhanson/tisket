@@ -1,28 +1,9 @@
-doc: |
-  The file that was created:
-
-  ```yaml
-  ---
-  title: "Fix the widget"
-  status: todo
-  priority:
-  assignee:
-  labels: []
-  depends_on: []
-  created: "2026-03-22T..."
-  updated: "2026-03-22T..."
-  ---
-  ```
-
-  YAML frontmatter, empty body. The 4-char prefix (`ab12`) works as
-  a short ID anywhere — `tisket issue show ab12` finds it.
+doc: ""
 
 transitions:
   - name: "close issue"
     command: "tisket issue close fix-the-widget"
     target: "../issue-closed"
-    doc: |
-      Closing moves the file to `.closed/`. Nothing is deleted.
     comparators:
       files:
         - path: ".tisket/bugs/"

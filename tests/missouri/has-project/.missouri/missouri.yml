@@ -1,13 +1,10 @@
-doc: |
-  Two projects now: `default` and `bugs`. No issues yet.
+doc: ""
 
 transitions:
   - name: "create issue"
     command: "tisket issue create 'Fix the widget' -p bugs"
     target: "../has-issue"
-    doc: |
-      This creates a markdown file. The filename is a random 4-char
-      prefix plus a slug of the title: `ab12-fix-the-widget.md`.
+    doc: ""
     comparators:
       files:
         - path: ".tisket/bugs/"
