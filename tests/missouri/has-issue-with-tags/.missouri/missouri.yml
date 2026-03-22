@@ -1,13 +1,13 @@
 assertions:
   # --- Tags persisted in frontmatter ---
   - name: "issue frontmatter has tags section"
-    command: "grep -q 'tags:' .tisket/bugs/fix-the-widget.md"
+    command: "cat $(tisket issue path fix-the-widget) | grep -q 'tags:'"
 
   - name: "estimate tag present"
-    command: "grep -q 'estimate:' .tisket/bugs/fix-the-widget.md"
+    command: "cat $(tisket issue path fix-the-widget) | grep -q 'estimate:'"
 
   - name: "severity tag present"
-    command: "grep -q 'severity: critical' .tisket/bugs/fix-the-widget.md"
+    command: "cat $(tisket issue path fix-the-widget) | grep -q 'severity: critical'"
 
   # --- Show displays tags ---
   - name: "show displays estimate tag"
@@ -37,17 +37,17 @@ assertions:
     stdout: "todo\n"
 
   # --- List filtering by tag ---
-  - name: "list --where severity=critical finds issue"
-    command: "tisket issue list --where severity=critical | grep -q 'fix-the-widget'"
+  - name: "list --where severity:critical finds issue"
+    command: "tisket issue list --where severity:critical | grep -q 'fix-the-widget'"
 
-  - name: "list --where estimate=4 finds issue"
-    command: "tisket issue list --where estimate=4 | grep -q 'fix-the-widget'"
+  - name: "list --where estimate:4 finds issue"
+    command: "tisket issue list --where estimate:4 | grep -q 'fix-the-widget'"
 
-  - name: "list --where severity=low finds nothing"
-    command: "! tisket issue list --where severity=low | grep -q 'fix-the-widget'"
+  - name: "list --where severity:low finds nothing"
+    command: "! tisket issue list --where severity:low | grep -q 'fix-the-widget'"
 
-  - name: "list --where nonexistent=value finds nothing"
-    command: "! tisket issue list --where nonexistent=value | grep -q 'fix-the-widget'"
+  - name: "list --where nonexistent:value finds nothing"
+    command: "! tisket issue list --where nonexistent:value | grep -q 'fix-the-widget'"
 
 transitions:
   - name: "edit tag value"

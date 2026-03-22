@@ -1,9 +1,9 @@
 assertions:
   - name: "estimate tag removed"
-    command: "! grep -q 'estimate:' .tisket/bugs/fix-the-widget.md"
+    command: "! cat $(tisket issue path fix-the-widget) | grep -q 'estimate:'"
 
   - name: "severity still present"
-    command: "grep -q 'severity: critical' .tisket/bugs/fix-the-widget.md"
+    command: "cat $(tisket issue path fix-the-widget) | grep -q 'severity: critical'"
 
   - name: "show json has no estimate key"
     command: "tisket issue show fix-the-widget --format json | jq -e '.tags.estimate == null'"
@@ -12,8 +12,8 @@ assertions:
     command: "tisket issue show fix-the-widget --format json | jq -r '.tags.severity'"
     stdout: "critical\n"
 
-  - name: "list --where estimate=4 no longer finds issue"
-    command: "! tisket issue list --where estimate=4 | grep -q 'fix-the-widget'"
+  - name: "list --where estimate:4 no longer finds issue"
+    command: "! tisket issue list --where estimate:4 | grep -q 'fix-the-widget'"
 
-  - name: "list --where severity=critical still finds issue"
-    command: "tisket issue list --where severity=critical | grep -q 'fix-the-widget'"
+  - name: "list --where severity:critical still finds issue"
+    command: "tisket issue list --where severity:critical | grep -q 'fix-the-widget'"
