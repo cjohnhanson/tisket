@@ -18,3 +18,4 @@ grep-regex = "0.1.14"
 grep-matcher = "0.1.8"
 gix = { version = "0.80.0", default-features = false, features = ["basic"] }
 mdstore = { path = "../mdstore" }
+sigpipe = "0.1.3"
