@@ -40,6 +40,8 @@ pub struct EditIssueOptions<'a> {
     pub depends_on: Option<&'a str>,
     pub body: Option<&'a str>,
     pub append: Option<&'a str>,
+    pub tags: &'a [(String, String)],
+    pub untags: &'a [String],
 }
 
 pub struct Repo {
@@ -595,6 +597,22 @@ impl Repo {
 
         if let Some(d) = opts.depends_on {
             fm.depends_on = d.split(',').map(|s| s.trim().to_string()).collect();
+        }
+
+        for (key, value) in opts.tags {
+            // Try to parse as a number first, fall back to string
+            let yaml_value = if let Ok(n) = value.parse::<i64>() {
+                serde_yml::Value::Number(n.into())
+            } else if let Ok(f) = value.parse::<f64>() {
+                serde_yml::Value::Number(serde_yml::Number::from(f))
+            } else {
+                serde_yml::Value::String(value.clone())
+            };
+            fm.tags.insert(key.clone(), yaml_value);
+        }
+
+        for key in opts.untags {
+            fm.tags.remove(key);
         }
 
         issue::update_timestamp(&mut fm);
