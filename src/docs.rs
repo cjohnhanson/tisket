@@ -51,14 +51,12 @@ pub static PAGES: &[DocPage] = &[
 
 /// Print a listing of all docs to stdout.
 pub fn list() {
-    for page in PAGES {
-        println!("{:<25} {}", page.title, page.description);
-    }
+    print!("{}", format_list(PAGES));
 }
 
 /// Print a doc by slug. Returns false if not found.
 pub fn show(slug: &str) -> bool {
-    if let Some(page) = PAGES.iter().find(|p| p.slug == slug) {
+    if let Some(page) = find(slug) {
         print!("{}", page.content());
         true
     } else {
@@ -68,13 +66,74 @@ pub fn show(slug: &str) -> bool {
 
 /// Search docs for a query string. Prints matching doc titles.
 pub fn search(query: &str) {
-    let q = query.to_lowercase();
-    for page in PAGES {
-        if page.title.to_lowercase().contains(&q)
-            || page.description.to_lowercase().contains(&q)
-            || page.content().to_lowercase().contains(&q)
-        {
-            println!("{:<25} {}", page.title, page.description);
-        }
+    let matches = find_matching(PAGES, query);
+    if matches.is_empty() {
+        eprintln!("no docs matching '{query}'");
+    } else {
+        print!("{}", format_list_from_refs(&matches));
     }
+}
+
+/// Find a doc page by flexible identifier: exact slug, slug prefix, or
+/// case-insensitive title match.
+pub fn find(identifier: &str) -> Option<&'static DocPage> {
+    find_in(PAGES, identifier)
+}
+
+/// Find a doc page in a given slice by flexible identifier.
+pub fn find_in<'a>(pages: &'a [DocPage], identifier: &str) -> Option<&'a DocPage> {
+    // 1. Exact slug match
+    if let Some(page) = pages.iter().find(|p| p.slug == identifier) {
+        return Some(page);
+    }
+    // 2. Case-insensitive slug match
+    let lower = identifier.to_lowercase();
+    if let Some(page) = pages.iter().find(|p| p.slug.to_lowercase() == lower) {
+        return Some(page);
+    }
+    // 3. Case-insensitive title match
+    if let Some(page) = pages.iter().find(|p| p.title.to_lowercase() == lower) {
+        return Some(page);
+    }
+    // 4. Unique slug prefix
+    let prefix_matches: Vec<_> = pages
+        .iter()
+        .filter(|p| p.slug.starts_with(identifier) || p.slug.starts_with(&lower))
+        .collect();
+    if prefix_matches.len() == 1 {
+        return Some(prefix_matches[0]);
+    }
+    None
+}
+
+/// Format a listing of doc pages showing slug (what to type) and description.
+pub fn format_list(pages: &[DocPage]) -> String {
+    let mut out = String::new();
+    for page in pages {
+        out.push_str(&format!("  {:<25} {}\n", page.slug, page.description));
+    }
+    out
+}
+
+/// Format a listing from a vec of page references.
+pub fn format_list_from_refs(pages: &[&DocPage]) -> String {
+    let mut out = String::new();
+    for page in pages {
+        out.push_str(&format!("  {:<25} {}\n", page.slug, page.description));
+    }
+    out
+}
+
+/// Find all docs matching a query string. Returns matching pages.
+pub fn find_matching<'a>(pages: &'a [DocPage], query: &str) -> Vec<&'a DocPage> {
+    let q = query.to_lowercase();
+    pages
+        .iter()
+        .filter(|page| {
+            page.slug.to_lowercase().contains(&q)
+                || page.title.to_lowercase().contains(&q)
+                || page.description.to_lowercase().contains(&q)
+                || page.content().to_lowercase().contains(&q)
+        })
+        .collect()
 }

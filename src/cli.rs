@@ -545,7 +545,7 @@ pub fn run_command(root: &camino::Utf8Path, command: Command) -> crate::Result<(
 
         Command::Docs(args) => {
             match args.topic.as_deref() {
-                None => {
+                None | Some("list") => {
                     crate::docs::list();
                     Ok(())
                 }
@@ -558,12 +558,12 @@ pub fn run_command(root: &camino::Utf8Path, command: Command) -> crate::Result<(
                     crate::docs::search(query);
                     Ok(())
                 }
-                Some(slug) => {
-                    if crate::docs::show(slug) {
+                Some(identifier) => {
+                    if crate::docs::show(identifier) {
                         Ok(())
                     } else {
-                        eprintln!("unknown doc: {slug}");
-                        eprintln!("available docs:");
+                        eprintln!("unknown doc: {identifier}");
+                        eprintln!();
                         crate::docs::list();
                         std::process::exit(1);
                     }
