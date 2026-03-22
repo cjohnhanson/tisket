@@ -1,19 +1,7 @@
-doc: |
-  The `tisket.yml` that was just created:
-
-  ```yaml
-  tisket_dir: ".tisket"
-  ```
-
-  One field. Issues live in `.tisket/`, organized into project
-  subdirectories.
-
 transitions:
   - name: "create bugs project"
     command: "tisket project create bugs"
     target: "../has-project"
-    doc: |
-      Projects are directories under `.tisket/`. Each one holds its issues.
 
   - name: "populate many issues"
     command: "populate-issues.sh"

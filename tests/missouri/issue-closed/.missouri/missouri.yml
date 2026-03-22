@@ -1,13 +1,9 @@
-doc: |
-  Hidden from the default list. `--closed` shows it. Still searchable,
-  still showable. Can't be edited until reopened.
+doc: ""
 
 transitions:
   - name: "reopen issue"
     command: "tisket issue reopen fix-the-widget"
     target: "../issue-reopened"
-    doc: |
-      Moves the file back out of `.closed/`. Status resets to `todo`.
     comparators:
       files:
         - path: ".tisket/bugs/"
