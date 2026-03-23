@@ -91,6 +91,7 @@ List issues. By default, lists open issues across all projects.
 | `--status <status>` | `-s` | | Filter by status |
 | `--assignee <name>` | `-a` | | Filter by assignee |
 | `--label <label>` | | | Filter by label |
+| `--where <selector>` | | | Filter by selector (`namespace:value`). Repeatable; multiple selectors AND together |
 | `--closed` | | `false` | List closed issues instead of open ones |
 | `--format <fmt>` | | `text` | Output format: `text` or `json` |
 
