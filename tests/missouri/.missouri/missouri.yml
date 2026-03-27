@@ -1,6 +1,6 @@
 setup:
   - name: "link tisket binary"
-    command: "mkdir -p .missouri/bin && ln -sf $(cd ../.. && pwd)/target/debug/tisket .missouri/bin/tisket"
+    command: "mkdir -p .missouri/bin && ln -sf $(cd ../../.. && pwd)/target/debug/tisket .missouri/bin/tisket"
 
 packages:
   - git
