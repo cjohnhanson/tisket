@@ -1,6 +1,6 @@
 setup:
-  - name: "build tisket"
-    command: "cargo build --quiet --manifest-path ../../Cargo.toml"
+  - name: "link tisket binary"
+    command: "mkdir -p .missouri/bin && ln -sf $(cd ../.. && pwd)/target/debug/tisket .missouri/bin/tisket"
 
 packages:
   - git
