@@ -245,3 +245,53 @@ pub fn new_frontmatter(title: &str, status: Status) -> IssueFrontmatter {
 pub fn update_timestamp(fm: &mut IssueFrontmatter) {
     fm.updated = Some(format!("\"{}\"", Utc::now().format("%Y-%m-%dT%H:%M:%SZ")));
 }
+
+#[cfg(test)]
+mod tests {
+    use super::Status;
+
+    #[test]
+    fn is_active_returns_true_for_non_terminal_statuses() {
+        assert!(Status::Discovery.is_active());
+        assert!(Status::Todo.is_active());
+        assert!(Status::InProgress.is_active());
+        assert!(Status::Blocked.is_active());
+        assert!(Status::Paused.is_active());
+    }
+
+    #[test]
+    fn is_active_returns_false_for_terminal_statuses() {
+        assert!(!Status::Done.is_active());
+        assert!(!Status::Cancelled.is_active());
+    }
+
+    #[test]
+    fn is_terminal_returns_true_for_done_and_cancelled() {
+        assert!(Status::Done.is_terminal());
+        assert!(Status::Cancelled.is_terminal());
+    }
+
+    #[test]
+    fn is_terminal_returns_false_for_non_terminal_statuses() {
+        assert!(!Status::Discovery.is_terminal());
+        assert!(!Status::Todo.is_terminal());
+        assert!(!Status::InProgress.is_terminal());
+        assert!(!Status::Blocked.is_terminal());
+        assert!(!Status::Paused.is_terminal());
+    }
+
+    #[test]
+    fn is_pickable_returns_true_for_todo_blocked_paused() {
+        assert!(Status::Todo.is_pickable());
+        assert!(Status::Blocked.is_pickable());
+        assert!(Status::Paused.is_pickable());
+    }
+
+    #[test]
+    fn is_pickable_returns_false_for_non_pickable_statuses() {
+        assert!(!Status::Discovery.is_pickable());
+        assert!(!Status::InProgress.is_pickable());
+        assert!(!Status::Done.is_pickable());
+        assert!(!Status::Cancelled.is_pickable());
+    }
+}
