@@ -7,8 +7,7 @@ type: tutorial
 # Getting Started with Tisket
 
 Tisket is a plaintext issue tracker. Issues are markdown files with YAML
-frontmatter, stored in your git repo alongside your code. No server, no
-database, no accounts. Just files.
+frontmatter, stored in your git repo alongside your code.
 
 ## Install
 
@@ -420,13 +419,12 @@ The rest are active statuses for open issues.
 
 ## What goes in git
 
-Everything. `tisket.yml`, `.tisket/`, issue files — all of it gets
-committed alongside your code. Issues travel with the repo. Cloning the
-repo clones the issues. Branching the repo branches the issues. There's no
-external state to synchronize.
+`tisket.yml`, `.tisket/`, and all issue files get committed alongside
+code. `git clone` includes the full issue history. `git branch` branches
+the issues with the code. No external state to sync.
 
 ## Next
 
-- [What is Tisket?](/tisket/what-is-tisket) — design philosophy and how the pieces fit together
+- [What is Tisket?](/tisket/what-is-tisket) — file format, status lifecycle, scratch notes, divergence detection
 - [Workflow Guide](/tisket/workflow) — day-to-day issue management beyond the basics
 - [CLI Reference](/tisket/cli-reference) — full command and flag documentation
