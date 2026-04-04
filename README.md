@@ -1,4 +1,4 @@
-# tisket
+# 🧺 tisket
 
 > 🎶 _A tisket, a tasket_ 🎶 A plaintext git-tracked CLI-first project
 > management system for people that use coding agents.
