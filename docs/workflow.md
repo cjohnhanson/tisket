@@ -376,8 +376,7 @@ tisket issue create "epic: context lifecycle management" \
 ```
 
 The epic can't be picked up until all its children are done, because
-`depends_on` blocks pickup when any dependency is still open. This
-makes the epic a natural tracking issue: it's the last thing closed.
+`depends_on` blocks pickup when any dependency is still open.
 
 As child issues get scoped and created, add them as dependencies:
 
