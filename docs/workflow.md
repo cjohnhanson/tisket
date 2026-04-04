@@ -359,6 +359,46 @@ This matters because issue files are committed to git. When multiple
 worktrees or branches modify the same issue, divergence tells you
 the current branch's view might not match what other branches see.
 
+## Epics
+
+An epic is a regular issue that depends on every issue in the epic.
+Tisket doesn't have a separate epic type. The convention is:
+
+1. Create an issue with an `epic:` title prefix and the `epic` label
+2. Write the body as a high-level problem statement and scope
+3. Add every child issue as a dependency
+
+```
+tisket issue create "epic: context lifecycle management" \
+  -l epic,architecture \
+  -s discovery \
+  -d "8skh,irx9"
+```
+
+The epic can't be picked up until all its children are done, because
+`depends_on` blocks pickup when any dependency is still open. This
+makes the epic a natural tracking issue: it's the last thing closed.
+
+As child issues get scoped and created, add them as dependencies:
+
+```
+tisket issue edit nbuj -d "8skh,irx9,f4k2"
+```
+
+The epic's body should list child issues with brief descriptions so
+the relationship is readable without checking each dependency:
+
+```markdown
+## Child issues
+
+- 8skh: context lifecycle design (architecture)
+- irx9: almanac skills go unused despite prime injection
+- f4k2: rename clc remind to clc cron
+```
+
+This list is maintained manually. It duplicates the `depends_on` field
+but in a human-readable form.
+
 ## Using tisket with clc pickup
 
 `clc pickup` is how a coding agent begins work on a tisket issue. The
