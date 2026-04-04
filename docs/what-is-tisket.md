@@ -6,7 +6,7 @@ type: explanation
 
 # What is Tisket?
 
-Tisket stores issues as markdown files in the git repository they describe. The design is motivated by a specific set of frustrations with external issue trackers — and a specific use case that most trackers handle badly.
+Tisket stores issues as markdown files in the git repository they describe.
 
 ## Why files in git
 
@@ -15,25 +15,14 @@ someone else's server, accessed through a browser or an API, and
 unavailable when the network is. Tisket takes a different position:
 issues belong with the code they're about.
 
-Storing issues as files in the repository means:
+Issues and code live in the same tree. A branch carries both the fix
+and the issue state change. `git clone` gives the full issue history.
+No accounts, no API tokens, no webhooks. Creating, editing, and
+searching issues works offline; sync happens through normal git
+operations.
 
-a. **Colocation.** The issue describing a bug and the code containing
-   the bug are in the same tree. A branch can carry both the fix and
-   the issue state change in a single commit.
-
-b. **No external service.** There's no account to create, no API token
-   to manage, no webhook to configure. `git clone` gives you the full
-   issue history.
-
-c. **Offline by default.** Issues can be created, edited, searched,
-   and closed without network access. Sync happens through normal git
-   operations.
-
-d. **Agent-native.** Coding agents can read issue files directly from
-   the filesystem and write to them with standard file operations.
-   There's no API client to install, no authentication flow to handle,
-   no rate limiting to navigate. An agent working in a worktree has
-   the issue right there on disk.
+Coding agents interact with issues as filesystem operations. Read a
+file, write a file. No API client, no authentication flow.
 
 ## The file format
 
@@ -145,29 +134,18 @@ c. **Slug** — just `fix-the-widget`, resolved by extracting the slug
    portion of every prefixed filename and comparing. Again, ambiguous
    matches are an error.
 
-This makes the system comfortable for both quick interactive use (type
-the 4-character prefix) and programmatic use (pass the full ID).
+The short prefix works for interactive use; the full ID for scripting.
 
-## Scratch notes as agent working memory
+## Scratch notes
 
-The scratch notes section solves a specific problem: agents lose
-context between sessions. A coding agent picks up an issue, works on
-it, gets interrupted or reaches a session boundary, and the next
-session starts cold. Whatever the previous session learned — dead ends
-tried, intermediate findings, partial progress — is gone unless it was
-written down somewhere.
+Each issue file can have a `## Scratch Notes` section below the body.
+This is working memory for agents across sessions. When a session ends,
+whatever the agent learned goes in scratch notes. When the next session
+starts, clc injects those notes into context.
 
-Scratch notes are that somewhere. They're part of the issue file, so
-they travel with the branch. They have dedicated append and write
-operations so agents can update them without touching the body (which
-is the stable description of the work, not the running log of doing
-it). And they're injected into agent context by clc at session start,
-so the next session picks up where the last one left off without
-needing to be told to look.
-
-The body says what needs to be done. The scratch notes say what's been
-tried, what's known, and what's next. Keeping them separate means the
-issue description stays clean while working state accumulates.
+Scratch notes have dedicated `append`, `write`, `read`, and `clear`
+operations so agents can update them without touching the body. The body
+describes the work; scratch notes track the doing of it.
 
 ## Git-aware divergence detection
 
@@ -185,8 +163,8 @@ This matters because tisket issues get modified on branches. An agent
 picks up an issue on main, which sets the status to `in_progress` and
 creates a worktree. Work happens on the branch. Meanwhile, someone
 might edit the issue's priority on main, or another branch might have
-changed the title. Divergence detection surfaces these conflicts before
-they become merge surprises.
+changed the title. Divergence detection shows you the conflicts before
+merge time.
 
 The comparison is structural, not textual. Tisket parses the
 frontmatter from each branch's version and compares individual fields
