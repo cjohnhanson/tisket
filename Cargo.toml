@@ -17,5 +17,5 @@ colored = "3.1.1"
 grep-regex = "0.1.14"
 grep-matcher = "0.1.8"
 gix = { version = "0.80.0", default-features = false, features = ["basic"] }
-mdstore = { path = "../mdstore" }
+mdstore = { git = "https://github.com/cjohnhanson/mdstore", rev = "1d9524ccb11c6c177a36f23cbab962d631f1615b" }
 sigpipe = "0.1.3"
