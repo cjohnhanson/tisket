@@ -60,7 +60,8 @@ tisket scratch ab12 read
 When listing or showing issues, tisket reads the same issue file from
 every other branch and compares field by field. If another branch has a
 different status, assignee, or priority, tisket flags it with a `*` and
-names the diverging branches. Catches conflicts before merge surprises.
+names the diverging branches — so you find out two branches moved the
+same issue forward before merge clobbers one side.
 
 ## Documentation
 
