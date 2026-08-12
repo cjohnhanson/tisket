@@ -10,40 +10,41 @@ Tisket stores issues as markdown files in the git repository they describe.
 
 ## Why files in git
 
-Most issue trackers are web applications. The issue data lives on
-someone else's server, accessed through a browser or an API, and
-unavailable when the network is. Tisket takes a different position:
-issues belong with the code they're about.
+Most issue trackers are web applications. The issue data is on another
+company's server. You reach it through a browser or an API. When the
+network fails, the data is unavailable. Tisket works differently: an
+issue belongs with the code it describes.
 
-Issues and code live in the same tree. A branch carries both the fix
-and the issue state change. `git clone` gives the full issue history.
-No accounts, no API tokens, no webhooks. Creating, editing, and
-searching issues works offline; sync happens through normal git
-operations.
+The issues and the code are in the same tree. One branch holds both
+the fix and the issue state change. `git clone` gives you the full
+issue history. Tisket needs no account, no API token, and no webhook.
+You can create, edit, and search issues offline. Git operations do the
+sync.
 
-Coding agents interact with issues as filesystem operations. Read a
-file, write a file. No API client, no authentication flow.
+A coding agent works with issues as file operations. It reads a file
+and writes a file. It needs no API client and no authentication flow.
 
 ## The file format
 
 An issue file has three sections: YAML frontmatter, a markdown body,
 and an optional scratch notes section.
 
-**Frontmatter** is delimited by `---` fences and contains structured
-fields: `title`, `status`, `priority`, `assignee`, `due_date`,
-`labels`, `depends_on`, `created`, and `updated`. These fields are
-what tisket queries against for listing, filtering, and status gating.
-The `labels` and `depends_on` fields are arrays. The `created` and
-`updated` timestamps are managed automatically.
+**Frontmatter** comes between two `---` fences. It holds the
+structured fields: `title`, `status`, `priority`, `assignee`,
+`due_date`, `labels`, `depends_on`, `created`, and `updated`. Tisket
+queries these fields to list, filter, and gate issues by status. The
+`labels` and `depends_on` fields are arrays. Tisket sets the `created`
+and `updated` timestamps automatically.
 
-**Body** is freeform markdown between the closing `---` and the scratch
-notes header (or end of file). This is where the issue description,
-acceptance criteria, context links, or whatever else matters goes. It's
-the part a human or agent reads to understand what needs doing.
+**Body** is free-form markdown. It comes after the closing `---` and
+before the scratch notes header, or the end of the file. Put the issue
+description, the acceptance criteria, and any context links here. A
+person or an agent reads the body to learn what the work is.
 
-**Scratch notes** appear below a `## Scratch Notes` header at the end
-of the file. This section has dedicated read, write, append, and clear
-operations separate from the body. Its purpose is discussed below.
+**Scratch notes** come below a `## Scratch Notes` header at the end of
+the file. This section has its own read, write, append, and clear
+operations. Those operations do not change the body. A later section
+explains the purpose.
 
 A minimal issue file looks like:
 
@@ -68,137 +69,141 @@ Reproduced locally — the bounds check is missing on line 42.
 
 ## The status lifecycle
 
-Tisket has seven statuses organized into three categories.
+Tisket has seven statuses in three categories.
 
 **Active statuses** (the issue is open):
 
-- `discovery` — The issue exists but isn't yet scoped enough to work
-  on. Requirements are still being gathered or the approach is
-  undefined.
-- `todo` — Ready to be picked up. The work is understood well enough
-  to start.
-- `in_progress` — Someone (or something) is actively working on it.
-- `blocked` — Work can't continue until an external dependency is
-  resolved.
-- `paused` — Work was started but deliberately suspended. Different
-  from blocked in that nothing external prevents resuming — it's a
-  choice.
+- `discovery` — The issue exists, but the scope is not clear enough to
+  start work. Someone is still gathering the requirements, or the
+  approach is undefined.
+- `todo` — Ready for pickup. The scope is clear enough to start the
+  work.
+- `in_progress` — A person or an agent is working on the issue now.
+- `blocked` — The work cannot continue until an external dependency
+  clears.
+- `paused` — The work started, then someone suspended it on purpose.
+  This differs from `blocked`. Nothing external stops the work. The
+  pause is a choice.
 
 **Terminal statuses** (the issue is closed):
 
-- `done` — The work was completed.
-- `cancelled` — The work was abandoned, determined unnecessary, or
-  superseded.
+- `done` — Someone completed the work.
+- `cancelled` — Someone abandoned the work. The work is unnecessary,
+  or another issue replaced it.
 
-Three of the active statuses — `todo`, `blocked`, and `paused` — are
-**pickable**, meaning clc's pickup command will accept them. An issue
-in `discovery` can't be picked up (not scoped yet), and one in
-`in_progress` can't be picked up (already being worked). This
-distinction matters for the clc integration described below.
+Three active statuses are **pickable**: `todo`, `blocked`, and
+`paused`. The clc pickup command accepts these three. It rejects an
+issue in `discovery`, because the scope is not clear. It also rejects
+an issue in `in_progress`, because someone already works on it. A later
+section describes the clc integration.
 
-When an issue is closed, the file moves from its project directory into
-a `.closed/` subdirectory. Reopening moves it back. The directory
-structure encodes the open/closed state rather than relying solely on
-the frontmatter field, which makes it trivial to count open issues
-with `ls`.
+When you close an issue, the file moves from the project directory
+into a `.closed/` subdirectory. When you reopen the issue, the file
+moves back. The directory structure records the open or closed state,
+not only the frontmatter field. You can therefore count the open
+issues with `ls`.
 
-There's also a legacy compatibility alias: `backlog` parses as `todo`.
+There is one legacy alias. Tisket parses `backlog` as `todo`.
 
 ## The short ID system
 
-Every issue gets a filename like `ab12-fix-the-widget.md`. That's a
-4-character random prefix, a hyphen, and a slug derived from the title.
+Every issue gets a filename such as `ab12-fix-the-widget.md`. The
+filename has a 4-character random prefix, a hyphen, and a slug from
+the title.
 
-The **slug** is generated by lowercasing the title and replacing any
-non-alphanumeric character with a hyphen, collapsing consecutive
-hyphens and trimming leading/trailing ones. "Fix the Widget!" becomes
-`fix-the-widget`. Slugs must be unique across all projects in the repo
-— creating an issue with a duplicate slug is an error, regardless of
-the prefix.
+Tisket makes the **slug** from the title. It converts the title to
+lowercase. It replaces each non-alphanumeric character with a hyphen.
+It then collapses repeated hyphens and removes any hyphen at the start
+or the end. "Fix the Widget!" becomes `fix-the-widget`. A slug must be
+unique across every project in the repo. If you create an issue with a
+duplicate slug, tisket returns an error. The prefix does not make a
+duplicate slug unique.
 
-The **prefix** is 4 characters drawn from `[a-z0-9]`, generated
-randomly with collision avoidance against all existing prefixes in the
-repo. With a 36-character alphabet and 4 positions, there are ~1.7
-million possible prefixes, so collisions are unlikely in practice but
-checked anyway.
+The **prefix** is 4 characters from the set `[a-z0-9]`. Tisket
+generates it at random and compares it against every existing prefix
+in the repo. The alphabet has 36 characters and the prefix has 4
+positions. There are therefore about 1.7 million possible prefixes. A
+collision is unlikely, but tisket checks for one anyway.
 
 The combined ID (`ab12-fix-the-widget`) is the filename stem and the
-canonical identifier. But tisket's ID resolution accepts multiple
-forms:
+canonical identifier. Tisket also accepts three shorter forms:
 
-a. **Full ID** — exact match against the filename stem.
-b. **Short prefix** — just `ab12`, resolved by scanning all projects
-   for files starting with `ab12-`. Ambiguous if multiple issues share
-   a prefix (an error is returned).
-c. **Slug** — just `fix-the-widget`, resolved by extracting the slug
-   portion of every prefixed filename and comparing. Again, ambiguous
-   matches are an error.
+a. **Full ID** — an exact match against the filename stem.
+b. **Short prefix** — only `ab12`. Tisket scans every project for a
+   file that starts with `ab12-`. If more than one issue has that
+   prefix, tisket returns an error.
+c. **Slug** — only `fix-the-widget`. Tisket takes the slug part of
+   every prefixed filename and compares it. If more than one issue
+   matches, tisket returns an error.
 
-The short prefix works for interactive use; the full ID for scripting.
+Use the short prefix by hand. Use the full ID in a script.
 
 ## Scratch notes
 
 Each issue file can have a `## Scratch Notes` section below the body.
-This is working memory for agents across sessions. When a session ends,
-whatever the agent learned goes in scratch notes. When the next session
-starts, clc injects those notes into context.
+This section is the working memory for an agent across sessions. At the
+end of a session, the agent writes what it learned into the scratch
+notes. At the start of the next session, clc puts those notes into the
+context.
 
-Scratch notes have dedicated `append`, `write`, `read`, and `clear`
-operations so agents can update them without touching the body. The body
-describes the work; scratch notes track the doing of it.
+The scratch notes have their own `append`, `write`, `read`, and `clear`
+operations. An agent updates the notes and does not change the body.
+The body describes the work. The scratch notes record the progress of
+the work.
 
 ## Git-aware divergence detection
 
-When tisket lists or shows an issue, it doesn't just read the file
-from disk. It also reads the same file path from every other branch's
-tree (local and remote, excluding the current HEAD) and compares the
-parsed content field by field.
+When tisket lists or shows an issue, it reads the file from the disk.
+It also reads the same file path from the tree of every other branch.
+This includes local branches and remote branches, but not the current
+HEAD. Tisket then parses each version and compares the content field
+by field.
 
-If any branch has a different version of the issue — different status,
-different title, different priority, different body or scratch
-presence — the issue is marked as **divergent**. The specific branches
-and their field-level differences are available in the detailed view.
+A branch can hold a different version of the issue. The status, the
+title, the priority, the body, or the scratch content can differ.
+Tisket then marks the issue as **divergent**. The detailed view names
+each branch and each field that differs.
 
-This matters because tisket issues get modified on branches. An agent
-picks up an issue on main, which sets the status to `in_progress` and
-creates a worktree. Work happens on the branch. Meanwhile, someone
-might edit the issue's priority on main, or another branch might have
-changed the title. Divergence detection shows you the conflicts before
-merge time.
+This matters because people and agents change issues on branches. An
+agent picks up an issue on main. The pickup sets the status to
+`in_progress` and creates a worktree. The work then happens on the
+branch. Meanwhile someone can edit the priority on main, or another
+branch can change the title. Divergence detection shows you the
+conflict before the merge.
 
 The comparison is structural, not textual. Tisket parses the
-frontmatter from each branch's version and compares individual fields
-(`title`, `status`, `priority`, `assignee`, `due_date`, `labels`,
-`depends_on`) plus the presence of body and scratch content. This
-means irrelevant whitespace changes don't trigger false divergence
-alerts.
+frontmatter from each branch version. It compares the `title`,
+`status`, `priority`, `assignee`, `due_date`, `labels`, and
+`depends_on` fields. It also compares whether the body and the scratch
+content exist. A whitespace change therefore does not produce a false
+divergence.
 
 ## How tisket relates to clc
 
-Tisket is a standalone tool — it can be used without clc. But clc is
-built to work with tisket as its issue source, and the integration is
-deep enough to be worth understanding.
+Tisket is a standalone tool, and you can use it without clc. But clc
+uses tisket as its issue source. The next paragraphs describe that
+integration.
 
-**Context injection.** When clc starts an agent session, it detects
-whether the current repository has a `tisket.yml`. If so, it reads the
-tisket state: how many open issues exist, and whether the current
-branch name matches an issue ID. If there's a matching issue, its
-title, body, and scratch notes are injected directly into the agent's
-starting context. The agent doesn't need to run any commands to know
-what it's working on.
+**Context injection.** When clc starts an agent session, it checks the
+current repository for a `tisket.yml`. If the file exists, clc reads
+the tisket state. It counts the open issues. It also checks whether the
+current branch name matches an issue ID. If an issue matches, clc puts
+the title, the body, and the scratch notes into the starting context of
+the agent. The agent runs no command to learn what its work is.
 
-**Pickup gating.** [clc](/what-is-codelikecody)'s `pickup` command checks the issue's status before proceeding. Only `todo`, `blocked`, and
-`paused` issues can be picked up. It also checks `depends_on` — every
-listed dependency must be closed before pickup is allowed. On pickup,
-clc sets the status to `in_progress`, ensures a scratch notes section
-exists, commits the change to the main branch, and then creates a
-worktree from that commit. This means the branch starts from a state
-where the issue is already marked as being worked on.
+**Pickup gating.** The [clc](/what-is-codelikecody) `pickup` command
+checks the status of the issue first. It accepts only a `todo`,
+`blocked`, or `paused` issue. It also checks `depends_on`. Every listed
+dependency must be closed before pickup. On pickup, clc sets the status
+to `in_progress`. It adds a scratch notes section if the file has none.
+It commits the change to the main branch. It then creates a worktree
+from that commit. The branch therefore starts from a state where the
+issue is already `in_progress`.
 
-**Branch naming.** The worktree and its branch are named after the
-issue ID. This is what makes the "current issue" detection work — clc
-checks whether the branch name resolves as a tisket issue ID, and if
-it does, that issue is treated as the active one for the session.
+**Branch naming.** Clc names the worktree and its branch after the
+issue ID. This is how the current-issue detection works. Clc checks
+whether the branch name resolves to a tisket issue ID. If it does, that
+issue becomes the active issue for the session.
 
 For CLI usage details, see the [CLI reference](/tisket/cli-reference). For
 day-to-day issue management, see the [workflow guide](/tisket/workflow).

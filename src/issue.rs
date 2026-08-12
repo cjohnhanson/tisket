@@ -6,7 +6,8 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 use crate::error::{Error, Result};
 
-/// Fixed workflow statuses. Drives pickup gating, phase transitions, and display.
+/// The fixed workflow statuses. These control pickup gating, phase
+/// transitions, and display.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Status {
     Discovery,
@@ -19,7 +20,7 @@ pub enum Status {
 }
 
 impl Status {
-    /// Active statuses — issue is open and potentially workable.
+    /// Return true for an active status. The issue is open and workable.
     pub fn is_active(self) -> bool {
         matches!(
             self,
@@ -27,12 +28,12 @@ impl Status {
         )
     }
 
-    /// Terminal statuses — issue is closed.
+    /// Return true for a terminal status. The issue is closed.
     pub fn is_terminal(self) -> bool {
         matches!(self, Self::Done | Self::Cancelled)
     }
 
-    /// Statuses that can be picked up for work.
+    /// Return true for a status that allows pickup for work.
     pub fn is_pickable(self) -> bool {
         matches!(self, Self::Todo | Self::Blocked | Self::Paused)
     }
@@ -65,7 +66,7 @@ impl FromStr for Status {
             "paused" => Ok(Self::Paused),
             "done" => Ok(Self::Done),
             "cancelled" => Ok(Self::Cancelled),
-            // Legacy compat
+            // Legacy alias.
             "backlog" => Ok(Self::Todo),
             _ => Err(Error::InvalidStatus { status: s.into() }),
         }
@@ -127,7 +128,8 @@ pub fn parse_issue(content: &str) -> Result<(IssueFrontmatter, String, String)> 
 }
 
 fn split_body_scratch(content: &str) -> (String, String) {
-    // Check for scratch header preceded by newline (middle of content)
+    // Find a scratch header that comes after a newline, in the middle of the
+    // content.
     if let Some(pos) = content.find("\n## Scratch Notes\n") {
         let body = content[..pos].trim().to_string();
         let scratch = content[pos + "\n## Scratch Notes\n".len()..]
@@ -135,17 +137,18 @@ fn split_body_scratch(content: &str) -> (String, String) {
             .to_string();
         (body, scratch)
     } else if let Some(pos) = content.find("\n## Scratch Notes") {
-        // Handle case where scratch header is at end of file with no trailing newline
+        // Handle a scratch header at the end of the file with no trailing
+        // newline.
         let body = content[..pos].trim().to_string();
         let after = &content[pos + "\n## Scratch Notes".len()..];
         let scratch = after.trim().to_string();
         (body, scratch)
-    // Check for scratch header at start of content (no body text before it)
-    } else if content.starts_with("## Scratch Notes\n") {
-        let scratch = content["## Scratch Notes\n".len()..].trim().to_string();
+    // Handle a scratch header at the start of the content, with no body
+    // before it.
+    } else if let Some(rest) = content.strip_prefix("## Scratch Notes\n") {
+        let scratch = rest.trim().to_string();
         (String::new(), scratch)
-    } else if content.starts_with("## Scratch Notes") {
-        let after = &content["## Scratch Notes".len()..];
+    } else if let Some(after) = content.strip_prefix("## Scratch Notes") {
         let scratch = after.trim().to_string();
         (String::new(), scratch)
     } else {
@@ -200,7 +203,7 @@ pub fn serialize_issue(fm: &IssueFrontmatter, body: &str, scratch: &str) -> Stri
         s.push_str("tags:\n");
         for (k, v) in &fm.tags {
             let v_str = match v {
-                serde_yml::Value::String(sv) => format!("{sv}"),
+                serde_yml::Value::String(sv) => sv.to_string(),
                 serde_yml::Value::Number(n) => n.to_string(),
                 serde_yml::Value::Bool(b) => b.to_string(),
                 other => format!("{other:?}"),

@@ -4,7 +4,7 @@ use camino::Utf8PathBuf;
 use clap::Parser;
 use colored::Colorize;
 
-use crate::{CreateIssueOptions, EditIssueOptions, Issue, Repo, SearchResult, Selector, git};
+use crate::{git, CreateIssueOptions, EditIssueOptions, Issue, Repo, SearchResult, Selector};
 
 #[derive(Parser)]
 #[command(
@@ -48,13 +48,13 @@ pub enum Command {
     #[command(subcommand)]
     Project(ProjectCommand),
 
-    /// Browse bundled documentation
+    /// Show the bundled documentation
     Docs(DocsArgs),
 }
 
 #[derive(clap::Args)]
 pub struct DocsArgs {
-    /// Topic slug to display, or "search" to search
+    /// Topic slug to show, or "search" to search the docs
     pub topic: Option<String>,
 
     /// Search query (when topic is "search")
@@ -119,7 +119,7 @@ pub struct IssueCreateArgs {
     /// Issue title
     pub title: String,
 
-    /// Project to create the issue in (default: root .tisket/)
+    /// Project to create the issue in (default: "default")
     #[arg(short, long)]
     pub project: Option<String>,
 
@@ -151,7 +151,7 @@ pub struct IssueCreateArgs {
     #[arg(short, long)]
     pub body: Option<String>,
 
-    /// Read issue body from file
+    /// Read the issue body from a file
     #[arg(long)]
     pub body_file: Option<Utf8PathBuf>,
 }
@@ -174,11 +174,11 @@ pub struct IssueListArgs {
     #[arg(long)]
     pub label: Option<String>,
 
-    /// Include closed issues
+    /// List closed issues instead of open ones
     #[arg(long)]
     pub closed: bool,
 
-    /// Filter by selector (namespace:value, repeatable, ANDs together)
+    /// Filter by a selector in namespace:value form. Repeatable. All selectors must match
     #[arg(long = "where")]
     pub r#where: Vec<String>,
 
@@ -234,19 +234,19 @@ pub struct IssueEditArgs {
     #[arg(short, long)]
     pub assignee: Option<String>,
 
-    /// New labels (replaces existing)
+    /// New labels (replaces all existing labels)
     #[arg(short, long)]
     pub labels: Option<String>,
 
-    /// Add a label (keeps existing)
+    /// Add one label and keep the existing labels
     #[arg(long)]
     pub add_label: Option<String>,
 
-    /// Remove a label (keeps others)
+    /// Remove one label and keep the other labels
     #[arg(long)]
     pub remove_label: Option<String>,
 
-    /// New dependencies (replaces existing)
+    /// New dependencies (replaces all existing dependencies)
     #[arg(short, long)]
     pub depends_on: Option<String>,
 
@@ -254,7 +254,7 @@ pub struct IssueEditArgs {
     #[arg(long)]
     pub due: Option<String>,
 
-    /// Replace the entire body below frontmatter
+    /// Replace the entire body below the frontmatter
     #[arg(long)]
     pub body: Option<String>,
 
@@ -262,11 +262,11 @@ pub struct IssueEditArgs {
     #[arg(long)]
     pub append: Option<String>,
 
-    /// Set a tag (key=value, repeatable)
+    /// Set a tag in key=value form. Repeatable
     #[arg(long = "tag", value_name = "KEY=VALUE")]
     pub tags: Vec<String>,
 
-    /// Remove a tag by key (repeatable)
+    /// Remove a tag by key. Repeatable
     #[arg(long = "untag", value_name = "KEY")]
     pub untags: Vec<String>,
 }
@@ -322,7 +322,7 @@ pub struct ProjectCreateArgs {
 
 #[derive(Parser)]
 pub struct SearchArgs {
-    /// Search pattern (regex supported)
+    /// Search pattern (a regular expression)
     pub pattern: String,
 
     /// Filter to a specific project
@@ -341,13 +341,13 @@ pub struct ScratchArgs {
 
 #[derive(Parser)]
 pub enum ScratchAction {
-    /// Print scratch notes (default)
+    /// Print the scratch notes (default)
     Read,
-    /// Append text to scratch notes
+    /// Append text to the scratch notes
     Append(ScratchTextArgs),
-    /// Replace scratch notes with text
+    /// Replace the scratch notes with the given text
     Write(ScratchTextArgs),
-    /// Clear scratch notes
+    /// Clear the scratch notes
     Clear,
 }
 
@@ -424,7 +424,7 @@ pub fn run_command(root: &camino::Utf8Path, command: Command) -> crate::Result<(
                         (Some(_), Some(_)) => {
                             return Err(crate::error::Error::Io(std::io::Error::new(
                                 std::io::ErrorKind::InvalidInput,
-                                "cannot specify both --body and --body-file",
+                                "use --body or --body-file, but not both",
                             )));
                         }
                         (Some(b), None) => Some(b),
@@ -543,33 +543,31 @@ pub fn run_command(root: &camino::Utf8Path, command: Command) -> crate::Result<(
             }
         }
 
-        Command::Docs(args) => {
-            match args.topic.as_deref() {
-                None | Some("list") => {
+        Command::Docs(args) => match args.topic.as_deref() {
+            None | Some("list") => {
+                crate::docs::list();
+                Ok(())
+            }
+            Some("search") => {
+                let query = args.query.as_deref().unwrap_or("");
+                if query.is_empty() {
+                    eprintln!("usage: tisket docs search <query>");
+                    std::process::exit(1);
+                }
+                crate::docs::search(query);
+                Ok(())
+            }
+            Some(identifier) => {
+                if crate::docs::show(identifier) {
+                    Ok(())
+                } else {
+                    eprintln!("unknown doc: {identifier}");
+                    eprintln!();
                     crate::docs::list();
-                    Ok(())
-                }
-                Some("search") => {
-                    let query = args.query.as_deref().unwrap_or("");
-                    if query.is_empty() {
-                        eprintln!("usage: tisket docs search <query>");
-                        std::process::exit(1);
-                    }
-                    crate::docs::search(query);
-                    Ok(())
-                }
-                Some(identifier) => {
-                    if crate::docs::show(identifier) {
-                        Ok(())
-                    } else {
-                        eprintln!("unknown doc: {identifier}");
-                        eprintln!();
-                        crate::docs::list();
-                        std::process::exit(1);
-                    }
+                    std::process::exit(1);
                 }
             }
-        }
+        },
     }
 }
 
@@ -614,7 +612,7 @@ fn print_columns(headers: &[&str], rows: &[Vec<String>]) {
         }
     }
 
-    // Print header
+    // Print the header row.
     let mut header_line = String::new();
     for (i, h) in headers.iter().enumerate() {
         if i > 0 {
@@ -628,7 +626,7 @@ fn print_columns(headers: &[&str], rows: &[Vec<String>]) {
     }
     println!("{header_line}");
 
-    // Print data rows
+    // Print the data rows.
     for row in rows {
         let mut line = String::new();
         for (i, cell) in row.iter().enumerate() {
@@ -636,7 +634,7 @@ fn print_columns(headers: &[&str], rows: &[Vec<String>]) {
                 line.push_str("  ");
             }
             if i < num_cols - 1 {
-                // Status column gets colorized but padded to the raw width
+                // Colorize the status column, then pad it to the raw width.
                 if headers[i] == "STATUS" {
                     let padding = widths[i].saturating_sub(cell.len());
                     line.push_str(&colorize_status(cell));

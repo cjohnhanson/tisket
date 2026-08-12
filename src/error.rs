@@ -15,7 +15,7 @@ pub enum Error {
     #[error("issue '{0}' not found")]
     IssueNotFound(String),
 
-    #[error("ambiguous prefix '{0}' — matches multiple issues")]
+    #[error("ambiguous prefix '{0}': more than one issue matches")]
     AmbiguousPrefix(String),
 
     #[error("issue '{0}' already exists")]
