@@ -57,7 +57,7 @@ impl GitContext {
 
             let full_name = reference.name().as_bstr().to_string();
 
-            // Only branches (local and remote tracking)
+            // Use branches only, both local and remote-tracking.
             let (branch_name, is_remote) = if let Some(rest) = full_name.strip_prefix("refs/heads/")
             {
                 (rest.to_string(), false)
@@ -67,7 +67,7 @@ impl GitContext {
                 continue;
             };
 
-            // Skip HEAD's branch — that's what the filesystem read already shows
+            // Skip the HEAD branch. The filesystem read already shows it.
             if self
                 .head_id
                 .as_ref()
@@ -77,7 +77,7 @@ impl GitContext {
                 continue;
             }
 
-            // Try to read the issue file from this branch's tree
+            // Read the issue file from the tree of this branch.
             let mut ref_clone = reference;
             let tree = match ref_clone.peel_to_tree() {
                 Ok(t) => t,

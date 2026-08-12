@@ -1,4 +1,4 @@
-//! Bundled documentation, baked in at compile time.
+//! Bundled documentation. The compiler includes these pages in the binary.
 
 /// A single documentation page.
 pub struct DocPage {
@@ -9,13 +9,13 @@ pub struct DocPage {
 }
 
 impl DocPage {
-    /// Return the markdown content with the metadata comment stripped.
+    /// Return the markdown content without the metadata comment.
     pub fn content(&self) -> &str {
         let md = self.raw;
-        if let Some(start) = md.find("<!-- metadata") {
-            if let Some(end) = md[start..].find("-->") {
-                return md[start + end + 3..].trim_start_matches('\n');
-            }
+        if let Some(start) = md.find("<!-- metadata")
+            && let Some(end) = md[start..].find("-->")
+        {
+            return md[start + end + 3..].trim_start_matches('\n');
         }
         md
     }
@@ -54,7 +54,7 @@ pub fn list() {
     print!("{}", format_list(PAGES));
 }
 
-/// Print a doc by slug. Returns false if not found.
+/// Print a doc by slug. Return false if the doc does not exist.
 pub fn show(slug: &str) -> bool {
     if let Some(page) = find(slug) {
         print!("{}", page.content());
@@ -64,7 +64,7 @@ pub fn show(slug: &str) -> bool {
     }
 }
 
-/// Search docs for a query string. Prints matching doc titles.
+/// Search the docs for a query string. Print each doc that matches.
 pub fn search(query: &str) {
     let matches = find_matching(PAGES, query);
     if matches.is_empty() {
@@ -74,28 +74,28 @@ pub fn search(query: &str) {
     }
 }
 
-/// Find a doc page by flexible identifier: exact slug, slug prefix, or
-/// case-insensitive title match.
+/// Find a doc page by identifier. An identifier is an exact slug, a slug
+/// prefix, or a title. Slug and title matches ignore case.
 pub fn find(identifier: &str) -> Option<&'static DocPage> {
     find_in(PAGES, identifier)
 }
 
-/// Find a doc page in a given slice by flexible identifier.
+/// Find a doc page by identifier in the given slice.
 pub fn find_in<'a>(pages: &'a [DocPage], identifier: &str) -> Option<&'a DocPage> {
-    // 1. Exact slug match
+    // 1. Match the slug exactly.
     if let Some(page) = pages.iter().find(|p| p.slug == identifier) {
         return Some(page);
     }
-    // 2. Case-insensitive slug match
+    // 2. Match the slug and ignore case.
     let lower = identifier.to_lowercase();
     if let Some(page) = pages.iter().find(|p| p.slug.to_lowercase() == lower) {
         return Some(page);
     }
-    // 3. Case-insensitive title match
+    // 3. Match the title and ignore case.
     if let Some(page) = pages.iter().find(|p| p.title.to_lowercase() == lower) {
         return Some(page);
     }
-    // 4. Unique slug prefix
+    // 4. Match one slug prefix, but only if it is unique.
     let prefix_matches: Vec<_> = pages
         .iter()
         .filter(|p| p.slug.starts_with(identifier) || p.slug.starts_with(&lower))
@@ -106,7 +106,7 @@ pub fn find_in<'a>(pages: &'a [DocPage], identifier: &str) -> Option<&'a DocPage
     None
 }
 
-/// Format a listing of doc pages showing slug (what to type) and description.
+/// Format a listing of doc pages. Each line shows the slug and the description.
 pub fn format_list(pages: &[DocPage]) -> String {
     let mut out = String::new();
     for page in pages {
@@ -115,7 +115,7 @@ pub fn format_list(pages: &[DocPage]) -> String {
     out
 }
 
-/// Format a listing from a vec of page references.
+/// Format a listing from a slice of page references.
 pub fn format_list_from_refs(pages: &[&DocPage]) -> String {
     let mut out = String::new();
     for page in pages {
@@ -124,7 +124,7 @@ pub fn format_list_from_refs(pages: &[&DocPage]) -> String {
     out
 }
 
-/// Find all docs matching a query string. Returns matching pages.
+/// Find all docs that match a query string. Return the matching pages.
 pub fn find_matching<'a>(pages: &'a [DocPage], query: &str) -> Vec<&'a DocPage> {
     let q = query.to_lowercase();
     pages

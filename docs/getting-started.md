@@ -6,8 +6,8 @@ type: tutorial
 
 # Getting Started with Tisket
 
-Tisket is a plaintext issue tracker. Issues are markdown files with YAML
-frontmatter, stored in your git repo alongside your code.
+Tisket is a plaintext issue tracker. Each issue is a markdown file with
+YAML frontmatter. The files live in your git repo next to your code.
 
 ## Install
 
@@ -17,35 +17,37 @@ Build from source:
 cargo build --release -p tisket
 ```
 
-The binary lands at `target/release/tisket`. Put it on your PATH.
+The build writes the binary to `target/release/tisket`. Put it on your
+PATH.
 
 ## Initialize
 
-Tisket needs an existing git repository. From the repo root:
+Tisket needs an existing git repository. Run this command from the repo
+root:
 
 ```
 tisket init
 ```
 
-This creates two things:
+The command creates two files:
 
-- `tisket.yml` — configuration file at the repo root
+- `tisket.yml` — the configuration file at the repo root
 - `.tisket/default/project.yml` — a default project
 
-The config file is minimal:
+The configuration file is short:
 
 ```yaml
 tisket_dir: .tisket
 additional_instructions: ""
 ```
 
-`tisket_dir` controls where issues live. The default `.tisket` is fine for
-most repos.
+`tisket_dir` sets the directory for the issues. The default `.tisket`
+works for most repos.
 
 ## Create a project
 
-The `default` project exists after init. To organize issues into groups,
-create additional projects:
+The `default` project exists after `tisket init`. To group your issues,
+create more projects:
 
 ```
 tisket project create backend
@@ -64,17 +66,17 @@ default
 
 ## Create issues
 
-The simplest form takes just a title:
+The simplest form takes only a title:
 
 ```
 tisket issue create "Fix login timeout"
 ```
 
-This creates a markdown file in `.tisket/default/` with a generated ID like
-`ab12-fix-login-timeout.md`. The ID has a 4-character prefix for
-short-reference and a slug derived from the title.
+This command creates a markdown file in `.tisket/default/`. The
+generated ID looks like `ab12-fix-login-timeout`. The ID has a
+4-character prefix for short references and a slug from the title.
 
-To target a specific project:
+To use a specific project:
 
 ```
 tisket issue create "Add rate limiting" -p backend
@@ -82,7 +84,7 @@ tisket issue create "Add rate limiting" -p backend
 
 ### Metadata
 
-All metadata flags are optional:
+Every metadata flag is optional:
 
 ```
 tisket issue create "Upgrade TLS certificates" \
@@ -99,16 +101,16 @@ The flags:
 | Flag | Short | Purpose |
 |------|-------|---------|
 | `--priority` | | 1=urgent, 2=high, 3=medium, 4=low |
-| `--assignee` | `-a` | Who owns this |
+| `--assignee` | `-a` | The owner of the issue |
 | `--labels` | `-l` | Comma-separated labels |
 | `--due` | | Due date in YYYY-MM-DD format |
 | `--body` | `-b` | Inline body text |
-| `--body-file` | | Read body from a file |
+| `--body-file` | | Read the body from a file |
 | `--status` | `-s` | Initial status (default: `todo`) |
-| `--depends-on` | `-d` | Comma-separated issue IDs this blocks on |
+| `--depends-on` | `-d` | Comma-separated issue IDs this issue depends on |
 | `--project` | `-p` | Target project (default: `default`) |
 
-The resulting file looks like this:
+The command writes a file like this:
 
 ```markdown
 ---
@@ -128,7 +130,7 @@ Current certs expire May 1. Need to rotate before then.
 
 ## List and filter issues
 
-List all open issues across all projects:
+List every open issue in every project:
 
 ```
 tisket issue list
@@ -171,7 +173,7 @@ Filter by assignee:
 tisket issue list -a ops-team
 ```
 
-To see closed issues instead of open ones:
+To list the closed issues instead of the open ones:
 
 ```
 tisket issue list --closed
@@ -179,7 +181,7 @@ tisket issue list --closed
 
 ### JSON output
 
-Both `list` and `show` accept `--format json` for scripting:
+Both `list` and `show` accept `--format json`. Use it in a script:
 
 ```
 tisket issue list --format json
@@ -191,8 +193,8 @@ tisket issue list --format json
 tisket issue show ef56
 ```
 
-The 4-character prefix is enough to identify an issue (unless ambiguous).
-Full IDs and slug portions also work.
+The 4-character prefix identifies an issue, unless more than one issue
+matches. A full ID and a slug also work.
 
 ```
 ef56 (backend)
@@ -219,25 +221,25 @@ todo
 
 ## Edit an issue
 
-Change status to in-progress:
+Change the status to `in_progress`:
 
 ```
 tisket issue edit ef56 -s in_progress
 ```
 
-Update multiple fields at once:
+Update more than one field in one command:
 
 ```
 tisket issue edit ef56 --priority 2 -a different-team
 ```
 
-Add a label without replacing existing ones:
+Add one label and keep the existing labels:
 
 ```
 tisket issue edit ef56 --add-label urgent
 ```
 
-Remove a specific label:
+Remove one label:
 
 ```
 tisket issue edit ef56 --remove-label infrastructure
@@ -257,7 +259,8 @@ tisket issue edit ef56 --append "Update: vendor confirmed timeline."
 
 ## Search
 
-Search titles, metadata, and body text with regex:
+Search the titles, the metadata, and the body text with a regular
+expression:
 
 ```
 tisket search "TLS|certificates"
@@ -268,8 +271,8 @@ ID                              STATUS       PROJECT  TITLE                     
 ef56-upgrade-tls-certificates   in_progress  backend  Upgrade TLS certificates      title
 ```
 
-The MATCH column shows which fields contained hits. Narrow to a single
-project with `-p`:
+The MATCH column names each field that matched. Use `-p` to search one
+project:
 
 ```
 tisket search "timeout" -p default
@@ -277,11 +280,12 @@ tisket search "timeout" -p default
 
 ## Scratch notes
 
-Every issue has a scratch notes section — a place for working notes,
-investigation logs, or context that doesn't belong in the body. Scratch
-notes live inside the issue file under a `## Scratch Notes` heading.
+Every issue has a scratch notes section. Use it for working notes,
+investigation logs, and any context that does not belong in the body.
+The scratch notes are in the issue file under a `## Scratch Notes`
+heading.
 
-Write scratch notes:
+Write the scratch notes:
 
 ```
 tisket scratch ef56 write "Checked cert expiry: 2026-05-01. Vendor portal: acme.example.com"
@@ -304,9 +308,9 @@ Checked cert expiry: 2026-05-01. Vendor portal: acme.example.com
 Called vendor, renewal in progress. Ticket #4821.
 ```
 
-(Running `tisket scratch ef56` with no subcommand also reads.)
+`tisket scratch ef56` with no subcommand also reads the notes.
 
-Clear scratch notes:
+Clear the scratch notes:
 
 ```
 tisket scratch ef56 clear
@@ -314,8 +318,8 @@ tisket scratch ef56 clear
 
 ## Close and reopen
 
-Close an issue (moves it to `.tisket/<project>/.closed/`, sets status to
-`done`):
+Close an issue. The command moves the file to
+`.tisket/<project>/.closed/` and sets the status to `done`:
 
 ```
 tisket issue close ef56
@@ -327,7 +331,8 @@ Close with a different terminal status:
 tisket issue close ab12 -s cancelled
 ```
 
-Reopen a closed issue (moves it back, sets status to `todo`):
+Reopen a closed issue. The command moves the file back and sets the
+status to `todo`:
 
 ```
 tisket issue reopen ef56
@@ -341,11 +346,11 @@ tisket issue reopen ef56 -s in_progress
 
 ## Git divergence detection
 
-Because issues are files in git, different branches can have different
+Issues are files in git. Two branches can therefore hold different
 versions of the same issue. Tisket detects this automatically.
 
-When listing issues, a `*` after the status means the issue has been
-modified on another branch:
+In the list output, a `*` after the status means that another branch
+changed the issue:
 
 ```
 tisket issue list
@@ -357,11 +362,11 @@ ab12-fix-login-timeout          todo          Fix login timeout
 ef56-upgrade-tls-certificates   in_progress*  Upgrade TLS certificates
 ```
 
-That `*` on `in_progress*` means at least one other branch has a different
-version of this issue — maybe a different status, different assignee,
-different body.
+The `*` on `in_progress*` means that one or more other branches hold a
+different version of this issue. The status, the assignee, or the body
+can differ.
 
-To see which branches diverge and what changed, use `show`:
+Use `show` to see which branches diverge and which fields changed:
 
 ```
 tisket issue show ef56
@@ -386,19 +391,19 @@ Update: vendor confirmed timeline.
     origin/main        status
 ```
 
-The "Other branches" section lists each branch where the issue differs,
-along with which fields don't match. This makes merge conflicts visible
-before they happen.
+The "Other branches" section lists each branch where the issue differs.
+It also names the fields that do not match. You see a merge conflict
+before it happens.
 
 ## Working from a different directory
 
-If tisket is run outside the repo root, pass `--root`:
+If you run tisket outside the repo root, pass `--root`:
 
 ```
 tisket --root /path/to/repo issue list
 ```
 
-The `--root` flag is global and works with every subcommand.
+The `--root` flag is global. It works with every subcommand.
 
 ## Statuses
 
@@ -408,23 +413,23 @@ Tisket has a fixed set of statuses:
 |--------|---------|
 | `discovery` | Being scoped or investigated |
 | `todo` | Ready for work |
-| `in_progress` | Actively being worked |
-| `blocked` | Waiting on something external |
-| `paused` | Intentionally shelved |
+| `in_progress` | Someone is working on it now |
+| `blocked` | Waiting for something external |
+| `paused` | Suspended on purpose |
 | `done` | Complete (terminal) |
-| `cancelled` | Won't do (terminal) |
+| `cancelled` | Abandoned (terminal) |
 
-`done` and `cancelled` are terminal — closing an issue sets one of these.
-The rest are active statuses for open issues.
+`done` and `cancelled` are terminal. Closing an issue sets one of them.
+The other five are active statuses for open issues.
 
 ## What goes in git
 
-`tisket.yml`, `.tisket/`, and all issue files get committed alongside
-code. `git clone` includes the full issue history. `git branch` branches
-the issues with the code. No external state to sync.
+Commit `tisket.yml`, `.tisket/`, and every issue file with the code.
+`git clone` then includes the full issue history. `git branch` branches
+the issues with the code. There is no external state to sync.
 
 ## Next
 
 - [What is Tisket?](/tisket/what-is-tisket) — file format, status lifecycle, scratch notes, divergence detection
-- [Workflow Guide](/tisket/workflow) — day-to-day issue management beyond the basics
+- [Workflow Guide](/tisket/workflow) — daily issue management past the basics
 - [CLI Reference](/tisket/cli-reference) — full command and flag documentation
