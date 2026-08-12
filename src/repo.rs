@@ -134,11 +134,12 @@ impl Repo {
 
     // -- ID resolution --
 
-    /// Resolve a user-provided ID to the full filename stem.
-    /// Accepts: full ID (e.g. "ab12-fix-the-widget"), short prefix (e.g. "ab12"),
-    /// slug portion (e.g. "fix-the-widget"), or legacy unprefixed ID.
+    /// Resolve an ID that the user gave to the full filename stem.
+    /// The input can be a full ID such as "ab12-fix-the-widget", a short
+    /// prefix such as "ab12", a slug such as "fix-the-widget", or a legacy
+    /// ID with no prefix.
     pub fn resolve_id(&self, input: &str) -> Result<String> {
-        // First, try exact match (full ID or legacy unprefixed)
+        // Try an exact match first. This covers a full ID and a legacy ID.
         let projects = self.list_projects()?;
         for proj in &projects {
             let project_dir = self.tisket_dir().join(proj);
@@ -151,7 +152,8 @@ impl Repo {
             }
         }
 
-        // If input looks like a 4-char prefix, scan for matching files by prefix
+        // If the input looks like a 4-character prefix, scan for files with
+        // that prefix.
         if input.len() == 4
             && input
                 .bytes()
@@ -174,7 +176,7 @@ impl Repo {
             }
         }
 
-        // Try matching by slug portion (input matches the slug part of a prefixed filename)
+        // Match the input against the slug part of each prefixed filename.
         let mut slug_matches = Vec::new();
         for proj in &projects {
             let project_dir = self.tisket_dir().join(proj);
@@ -228,7 +230,7 @@ impl Repo {
         Ok(())
     }
 
-    /// Collect all existing short-id prefixes across all projects.
+    /// Collect every short-ID prefix that exists in any project.
     fn collect_existing_prefixes(&self) -> Result<Vec<String>> {
         let projects = self.list_projects()?;
         let mut prefixes = Vec::new();
@@ -261,7 +263,7 @@ impl Repo {
         Ok(())
     }
 
-    /// Check if a slug already exists (ignoring prefix) across all projects.
+    /// Return true if the slug already exists in any project. Ignore prefixes.
     fn slug_exists(&self, slug: &str) -> Result<bool> {
         let projects = self.list_projects()?;
         for proj in &projects {
@@ -287,13 +289,13 @@ impl Repo {
                 .map_err(|e| std::io::Error::new(std::io::ErrorKind::InvalidData, e))?;
             if path.extension() == Some("md") {
                 let stem = path.file_stem().unwrap_or("");
-                // Check if this file's slug portion matches
+                // Compare the slug part of this filename.
                 if let Some((_, file_slug)) = extract_prefix(stem) {
                     if file_slug == slug {
                         return Ok(true);
                     }
                 } else if stem == slug {
-                    // Legacy unprefixed file
+                    // A legacy file with no prefix.
                     return Ok(true);
                 }
             }
@@ -309,17 +311,17 @@ impl Repo {
         project: &str,
         opts: CreateIssueOptions,
     ) -> Result<String> {
-        // Verify project exists
+        // Verify that the project exists.
         let _project_config = self.load_project(project)?;
 
         let slug = slugify(title);
 
-        // Check for duplicate slugs (regardless of prefix)
+        // Reject a duplicate slug. Prefixes do not make a slug unique.
         if self.slug_exists(&slug)? {
             return Err(Error::IssueAlreadyExists(slug));
         }
 
-        // Generate unique prefix
+        // Generate a unique prefix.
         let existing_prefixes = self.collect_existing_prefixes()?;
         let prefix = generate_prefix(&existing_prefixes);
         let id = format!("{prefix}-{slug}");
@@ -355,7 +357,7 @@ impl Repo {
     ) -> Result<Vec<Issue>> {
         let projects = match project {
             Some(p) => {
-                // Verify the project exists
+                // Verify that the project exists.
                 let _ = self.load_project(p)?;
                 vec![p.to_string()]
             }
@@ -377,7 +379,7 @@ impl Repo {
             if let Ok(s) = status.parse::<Status>() {
                 issues.retain(|i| i.frontmatter.status == s);
             } else {
-                // Invalid status filter matches nothing.
+                // An invalid status filter matches no issue.
                 issues.clear();
             }
         }
@@ -390,7 +392,7 @@ impl Repo {
             issues.retain(|i| selector::matches_all(selectors, i));
         }
 
-        // Annotate with git divergence info
+        // Add the git divergence flag to each issue.
         if let Some(git) = &self.git {
             for iss in &mut issues {
                 let rel_path = self.issue_path_for(&iss.id, &iss.project, iss.closed);
@@ -483,7 +485,7 @@ impl Repo {
         for proj in &projects {
             let project_dir = self.tisket_dir().join(proj);
 
-            // Check active
+            // Look for an open issue.
             let active_path = project_dir.join(format!("{resolved}.md"));
             if active_path.exists() {
                 let content = std::fs::read_to_string(&active_path)?;
@@ -502,7 +504,7 @@ impl Repo {
                 return Ok(iss);
             }
 
-            // Check closed
+            // Look for a closed issue.
             let closed_path = project_dir.join(".closed").join(format!("{resolved}.md"));
             if closed_path.exists() {
                 let content = std::fs::read_to_string(&closed_path)?;
@@ -600,7 +602,7 @@ impl Repo {
         }
 
         for (key, value) in opts.tags {
-            // Try to parse as a number first, fall back to string
+            // Parse the value as a number. If that fails, keep it as a string.
             let yaml_value = if let Ok(n) = value.parse::<i64>() {
                 serde_yml::Value::Number(n.into())
             } else if let Ok(f) = value.parse::<f64>() {
@@ -670,7 +672,7 @@ impl Repo {
     pub fn move_issue(&self, id: &str, target_project: &str) -> Result<()> {
         let iss = self.find_issue(id)?;
 
-        // Verify target project exists
+        // Verify that the target project exists.
         let _ = self.load_project(target_project)?;
 
         if iss.project == target_project {
@@ -699,7 +701,8 @@ impl Repo {
         Ok(())
     }
 
-    /// Appends a `## Scratch Notes` section to the issue file if one is not already present.
+    /// Add a `## Scratch Notes` section to the issue file. Do nothing if the
+    /// file already has one.
     pub fn ensure_scratch_notes(&self, id: &str) -> Result<()> {
         let iss = self.find_issue(id)?;
         if iss.closed {
@@ -772,7 +775,7 @@ impl Repo {
         std::fs::write(&active_path, new_content)?;
         std::fs::remove_file(&closed_path)?;
 
-        // Clean up empty .closed/ directory
+        // Remove the .closed/ directory if it is now empty.
         let closed_dir = project_dir.join(".closed");
         if closed_dir.exists() && std::fs::read_dir(&closed_dir)?.next().is_none() {
             std::fs::remove_dir(&closed_dir)?;
@@ -828,10 +831,10 @@ impl Repo {
         for proj in &projects {
             let project_dir = self.tisket_dir().join(proj);
 
-            // Search open issues
+            // Search the open issues.
             self.search_issues_in_dir(&project_dir, proj, false, &matcher, &mut results)?;
 
-            // Search closed issues
+            // Search the closed issues.
             let closed_dir = project_dir.join(".closed");
             self.search_issues_in_dir(&closed_dir, proj, true, &matcher, &mut results)?;
         }
