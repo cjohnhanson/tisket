@@ -99,9 +99,14 @@ pub struct IssueFrontmatter {
     pub depends_on: Vec<String>,
     pub created: Option<String>,
     pub updated: Option<String>,
-    #[serde(default, skip_serializing_if = "std::collections::HashMap::is_empty")]
-    pub tags: std::collections::HashMap<String, serde_yml::Value>,
+    #[serde(default, skip_serializing_if = "std::collections::BTreeMap::is_empty")]
+    pub tags: std::collections::BTreeMap<String, serde_yml::Value>,
+    /// Frontmatter keys tisket does not model. They are kept so an edit
+    /// never drops a key a user or another tool added.
+    #[serde(flatten)]
+    pub extra: serde_yml::Mapping,
 }
+
 
 #[derive(Debug, Serialize)]
 pub struct Issue {
@@ -156,81 +161,48 @@ fn split_body_scratch(content: &str) -> (String, String) {
     }
 }
 
+/// Serialize an issue to frontmattered markdown.
+///
+/// serde_yml does the YAML, so a title, label, dependency, or tag value
+/// with a comma, a quote, a colon, or a backslash is escaped correctly.
+/// The old hand-rolled writer produced a file that no longer parsed,
+/// and one bad file broke every repo-wide command. The scratch notes
+/// stay a `## Scratch Notes` section after the body, so the parser
+/// still splits them out.
 pub fn serialize_issue(fm: &IssueFrontmatter, body: &str, scratch: &str) -> String {
-    let mut s = String::from("---\n");
-    s.push_str(&format!("title: \"{}\"\n", fm.title.replace('"', "\\\"")));
-    s.push_str(&format!("status: {}\n", fm.status));
+    let now = Utc::now().format("%Y-%m-%dT%H:%M:%SZ").to_string();
+    let filled = IssueFrontmatter {
+        title: fm.title.clone(),
+        status: fm.status,
+        priority: fm.priority.clone(),
+        assignee: fm.assignee.clone(),
+        due_date: fm.due_date.clone(),
+        labels: fm.labels.clone(),
+        depends_on: fm.depends_on.clone(),
+        created: Some(fm.created.clone().unwrap_or_else(|| now.clone())),
+        updated: Some(fm.updated.clone().unwrap_or(now)),
+        tags: fm.tags.clone(),
+        extra: fm.extra.clone(),
+    };
 
-    match &fm.priority {
-        Some(p) => s.push_str(&format!("priority: {p}\n")),
-        None => s.push_str("priority:\n"),
-    }
-
-    match &fm.assignee {
-        Some(a) => s.push_str(&format!("assignee: {a}\n")),
-        None => s.push_str("assignee:\n"),
-    }
-
-    if let Some(d) = &fm.due_date {
-        s.push_str(&format!("due_date: \"{d}\"\n"));
-    }
-
-    if fm.labels.is_empty() {
-        s.push_str("labels: []\n");
-    } else {
-        s.push_str(&format!("labels: [{}]\n", fm.labels.join(", ")));
-    }
-
-    if fm.depends_on.is_empty() {
-        s.push_str("depends_on: []\n");
-    } else {
-        s.push_str(&format!("depends_on: [{}]\n", fm.depends_on.join(", ")));
-    }
-
-    let created = fm
-        .created
-        .clone()
-        .unwrap_or_else(|| format!("\"{}\"", Utc::now().format("%Y-%m-%dT%H:%M:%SZ")));
-    let updated = fm
-        .updated
-        .clone()
-        .unwrap_or_else(|| format!("\"{}\"", Utc::now().format("%Y-%m-%dT%H:%M:%SZ")));
-
-    s.push_str(&format!("created: {created}\n"));
-    s.push_str(&format!("updated: {updated}\n"));
-
-    if !fm.tags.is_empty() {
-        s.push_str("tags:\n");
-        for (k, v) in &fm.tags {
-            let v_str = match v {
-                serde_yml::Value::String(sv) => sv.to_string(),
-                serde_yml::Value::Number(n) => n.to_string(),
-                serde_yml::Value::Bool(b) => b.to_string(),
-                other => format!("{other:?}"),
-            };
-            s.push_str(&format!("  {k}: {v_str}\n"));
+    let mut full_body = body.trim().to_string();
+    if !scratch.trim().is_empty() {
+        if !full_body.is_empty() {
+            full_body.push_str("\n\n");
         }
+        full_body.push_str("## Scratch Notes\n\n");
+        full_body.push_str(scratch.trim());
     }
 
-    s.push_str("---\n");
-
-    if !body.is_empty() {
-        s.push('\n');
-        s.push_str(body);
-        s.push('\n');
-    }
-
-    if !scratch.is_empty() {
-        s.push_str("\n## Scratch Notes\n\n");
-        s.push_str(scratch);
-        s.push('\n');
-    }
-
-    s
+    let doc = mdstore::document::Document {
+        frontmatter: filled,
+        body: full_body,
+    };
+    mdstore::document::serialize(&doc).unwrap_or_default()
 }
 
 pub fn new_frontmatter(title: &str, status: Status) -> IssueFrontmatter {
-    let now = format!("\"{}\"", Utc::now().format("%Y-%m-%dT%H:%M:%SZ"));
+    let now = Utc::now().format("%Y-%m-%dT%H:%M:%SZ").to_string();
     IssueFrontmatter {
         title: title.into(),
         status,
@@ -241,12 +213,13 @@ pub fn new_frontmatter(title: &str, status: Status) -> IssueFrontmatter {
         depends_on: vec![],
         created: Some(now.clone()),
         updated: Some(now),
-        tags: std::collections::HashMap::new(),
+        tags: std::collections::BTreeMap::new(),
+        extra: serde_yml::Mapping::new(),
     }
 }
 
 pub fn update_timestamp(fm: &mut IssueFrontmatter) {
-    fm.updated = Some(format!("\"{}\"", Utc::now().format("%Y-%m-%dT%H:%M:%SZ")));
+    fm.updated = Some(Utc::now().format("%Y-%m-%dT%H:%M:%SZ").to_string());
 }
 
 #[cfg(test)]
@@ -296,5 +269,56 @@ mod tests {
         assert!(!Status::InProgress.is_pickable());
         assert!(!Status::Done.is_pickable());
         assert!(!Status::Cancelled.is_pickable());
+    }
+}
+
+#[cfg(test)]
+mod serialize_tests {
+    use super::*;
+
+    fn round_trip(fm: &IssueFrontmatter, body: &str, scratch: &str) -> (IssueFrontmatter, String, String) {
+        let text = serialize_issue(fm, body, scratch);
+        parse_issue(&text).expect("a serialized issue must parse back")
+    }
+
+    #[test]
+    fn metacharacters_in_fields_round_trip() {
+        // Commas, brackets, quotes, colons, and a backslash used to break
+        // the hand-rolled writer and produce an unparseable file.
+        let mut tags = std::collections::BTreeMap::new();
+        tags.insert("note".to_string(), serde_yml::Value::String("has: colon, and \"quote\"".to_string()));
+        let fm = IssueFrontmatter {
+            title: r#"a: "quoted", [x] and a \ backslash"#.to_string(),
+            status: Status::InProgress,
+            priority: Some("high: now".to_string()),
+            assignee: Some("a, b".to_string()),
+            due_date: Some("2025-06-15".to_string()),
+            labels: vec!["a, b".to_string(), "[c]".to_string()],
+            depends_on: vec!["x: y".to_string()],
+            created: Some("2000-01-01T00:00:00Z".to_string()),
+            updated: Some("2000-01-02T00:00:00Z".to_string()),
+            tags,
+            extra: serde_yml::Mapping::new(),
+        };
+        let (back, body, scratch) = round_trip(&fm, "the body", "some scratch");
+        assert_eq!(back.title, fm.title);
+        assert_eq!(back.labels, fm.labels);
+        assert_eq!(back.depends_on, fm.depends_on);
+        assert_eq!(back.priority, fm.priority);
+        assert_eq!(back.assignee, fm.assignee);
+        assert_eq!(back.tags, fm.tags);
+        assert_eq!(body, "the body");
+        assert_eq!(scratch, "some scratch");
+    }
+
+    #[test]
+    fn unknown_frontmatter_keys_survive_an_edit() {
+        let source = "---\ntitle: t\nstatus: todo\npriority:\nassignee:\nlabels: []\ndepends_on: []\ncreated: \"2020-01-01T00:00:00Z\"\nupdated: \"2020-01-01T00:00:00Z\"\nsprint: 42\nowner: alice\n---\n\nbody\n";
+        let (mut fm, body, scratch) = parse_issue(source).unwrap();
+        assert!(fm.extra.contains_key("sprint"), "unknown key captured");
+        update_timestamp(&mut fm);
+        let (back, _, _) = round_trip(&fm, &body, &scratch);
+        assert_eq!(back.extra.get("owner").and_then(|v| v.as_str()), Some("alice"));
+        assert_eq!(back.extra.get("sprint").and_then(serde_yml::Value::as_i64), Some(42));
     }
 }

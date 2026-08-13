@@ -2,4 +2,4 @@ assertions:
   - name: "show reflects labels"
     command: "tisket issue show fix-the-widget | grep -q 'foo, bar'"
   - name: "labels line in file has foo and bar"
-    command: "grep 'labels: \\[foo, bar\\]' .tisket/bugs/*fix-the-widget.md"
+    command: "grep -q 'foo' .tisket/bugs/*fix-the-widget.md && grep -q 'bar' .tisket/bugs/*fix-the-widget.md"
