@@ -7,6 +7,7 @@ pub mod issue;
 pub mod mangen;
 pub mod repo;
 pub mod selector;
+pub mod serve;
 pub mod slug;
 pub mod workspace;
 
