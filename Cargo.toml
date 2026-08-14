@@ -12,6 +12,9 @@ keywords = ["issue-tracker", "cli", "markdown", "gitops"]
 categories = ["command-line-utilities"]
 
 [dependencies]
+rmcp = { version = "3", features = ["server", "transport-io", "transport-streamable-http-server"] }
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "io-std", "signal", "net"] }
+axum = "0.8"
 camino = { version = "1", features = ["serde1"] }
 clap = { version = "4", features = ["derive", "env", "unicode", "wrap_help"] }
 clap_complete = "4"
@@ -26,5 +29,5 @@ colored = "3.1.1"
 grep-regex = "0.1.14"
 grep-matcher = "0.1.8"
 gix = { version = "0.80.0", default-features = false, features = ["basic"] }
-mdstore = { git = "https://github.com/cjohnhanson/mdstore", rev = "4235eaa" }
+mdstore = { git = "https://github.com/cjohnhanson/mdstore", rev = "ddfeb05", features = ["mcp"] }
 sigpipe = "0.1.3"
