@@ -97,6 +97,11 @@ pub struct IssueFrontmatter {
     pub labels: Vec<String>,
     #[serde(default)]
     pub depends_on: Vec<String>,
+    /// The issues this one contains. An epic lists its children here.
+    /// Containment is not blocking, so `depends_on` keeps its meaning.
+    /// An entry can name another store: `alias:id`.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub children: Vec<String>,
     pub created: Option<String>,
     pub updated: Option<String>,
     #[serde(default, skip_serializing_if = "std::collections::BTreeMap::is_empty")]
@@ -126,6 +131,7 @@ pub fn parse_issue(content: &str) -> Result<(IssueFrontmatter, String, String)> 
             Error::Io(std::io::Error::new(std::io::ErrorKind::InvalidData, e))
         }
         mdstore::Error::Yaml(ye) => Error::Yaml(ye),
+        other => Error::Store(other.to_string()),
     })?;
 
     let (body, scratch) = split_body_scratch(&doc.body);
@@ -179,6 +185,7 @@ pub fn serialize_issue(fm: &IssueFrontmatter, body: &str, scratch: &str) -> Stri
         due_date: fm.due_date.clone(),
         labels: fm.labels.clone(),
         depends_on: fm.depends_on.clone(),
+        children: fm.children.clone(),
         created: Some(fm.created.clone().unwrap_or_else(|| now.clone())),
         updated: Some(fm.updated.clone().unwrap_or(now)),
         tags: fm.tags.clone(),
@@ -211,6 +218,7 @@ pub fn new_frontmatter(title: &str, status: Status) -> IssueFrontmatter {
         due_date: None,
         labels: vec![],
         depends_on: vec![],
+        children: vec![],
         created: Some(now.clone()),
         updated: Some(now),
         tags: std::collections::BTreeMap::new(),
@@ -295,6 +303,7 @@ mod serialize_tests {
             due_date: Some("2025-06-15".to_string()),
             labels: vec!["a, b".to_string(), "[c]".to_string()],
             depends_on: vec!["x: y".to_string()],
+            children: vec![],
             created: Some("2000-01-01T00:00:00Z".to_string()),
             updated: Some("2000-01-02T00:00:00Z".to_string()),
             tags,

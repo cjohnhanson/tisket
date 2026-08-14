@@ -21,6 +21,17 @@ pub enum Error {
     #[error("issue '{0}' already exists")]
     IssueAlreadyExists(String),
 
+    #[error("store: {0}")]
+    Store(String),
+
+    #[error("store '{0}' is not declared in stores.yml")]
+    UndeclaredStore(String),
+
+    #[error(
+        "'{0}' is in store '{1}'; dependency stores are read-only — run the command from that store to edit it"
+    )]
+    ForeignWrite(String, String),
+
     #[error("issue '{0}' is not closed")]
     IssueNotClosed(String),
 
