@@ -6,7 +6,7 @@ type: guide
 
 # Tisket Workflow
 
-This guide assumes that you initialized tisket. See [Getting Started](/tisket/getting-started) if you have not. The guide covers daily issue management: how to create issues, how to filter them, how to manage the status, and how to use the clc pickup workflow.
+This guide assumes that you initialized tisket. See [Getting Started](/tisket/getting-started) if you have not. The guide covers daily issue management: how to create issues, how to filter them, how to manage the status, and how to prepare an issue for agent pickup.
 
 ## Projects
 
@@ -398,32 +398,31 @@ each dependency:
 
 - 8skh: context lifecycle design (architecture)
 - irx9: almanac skills go unused despite prime injection
-- f4k2: rename clc remind to clc cron
+- f4k2: add a due-date filter to issue list
 ```
 
 You maintain this list by hand. It repeats the `depends_on` field in a
 readable form.
 
-## Using tisket with clc pickup
+## Preparing an issue for agent pickup
 
-A coding agent runs `clc pickup` to start work on a tisket issue. The
-pickup command does these steps:
+An agent harness picks up a tisket issue to start work on it. Tisket
+supplies the gate; the harness supplies the session steps. A typical
+pickup runs these steps:
 
 1. Verify that the current branch is the main branch.
 2. Find the issue and check that its status is pickable (`todo`,
    `blocked`, or `paused`).
 3. Check that every `depends_on` issue is closed.
-4. Set the issue status to `in_progress` and assign the coordinator.
+4. Set the issue status to `in_progress`.
 5. Add a `## Scratch Notes` section to the issue file if it has none.
 6. Commit the status change on the main branch.
-7. Create a git worktree at `.worktrees/{issue-id}/`.
-8. Initialize clc in the worktree.
+7. Create a git worktree for the issue.
 
 Pickup accepts only an issue with a pickable status. It rejects an
 issue in `discovery` or `in_progress`. It also rejects an issue with an
-open dependency. After pickup, the issue is `in_progress`. The issue
-has its own worktree, branched from the HEAD of the main branch. That
-HEAD includes the status change commit.
+open dependency. Tisket enforces these status rules through its own
+commands, so a harness or a person applies them the same way.
 
 To make an issue ready for pickup, set its status to `todo`:
 

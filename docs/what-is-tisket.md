@@ -92,10 +92,10 @@ Tisket has seven statuses in three categories.
   or another issue replaced it.
 
 Three active statuses are **pickable**: `todo`, `blocked`, and
-`paused`. The clc pickup command accepts these three. It rejects an
+`paused`. An agent workflow picks up only these three. It rejects an
 issue in `discovery`, because the scope is not clear. It also rejects
 an issue in `in_progress`, because someone already works on it. A later
-section describes the clc integration.
+section describes how an agent workflow uses tisket.
 
 When you close an issue, the file moves from the project directory
 into a `.closed/` subdirectory. When you reopen the issue, the file
@@ -143,8 +143,8 @@ Use the short prefix by hand. Use the full ID in a script.
 Each issue file can have a `## Scratch Notes` section below the body.
 This section is the working memory for an agent across sessions. At the
 end of a session, the agent writes what it learned into the scratch
-notes. At the start of the next session, clc puts those notes into the
-context.
+notes. At the start of the next session, an agent workflow loads those
+notes into the context.
 
 The scratch notes have their own `append`, `write`, `read`, and `clear`
 operations. An agent updates the notes and does not change the body.
@@ -178,32 +178,27 @@ frontmatter from each branch version. It compares the `title`,
 content exist. A whitespace change therefore does not produce a false
 divergence.
 
-## How tisket relates to clc
+## Using tisket in an agent workflow
 
-Tisket is a standalone tool, and you can use it without clc. But clc
-uses tisket as its issue source. The next paragraphs describe that
-integration.
+Tisket is a standalone tool. An agent harness can also use tisket as
+its issue source. Tisket gives a harness these affordances, and the
+harness supplies the session behavior on top of them.
 
-**Context injection.** When clc starts an agent session, it checks the
-current repository for a `tisket.yml`. If the file exists, clc reads
-the tisket state. It counts the open issues. It also checks whether the
-current branch name matches an issue ID. If an issue matches, clc puts
-the title, the body, and the scratch notes into the starting context of
-the agent. The agent runs no command to learn what its work is.
+**Context injection.** A harness reads the tisket state at session
+start: the open issue count, and whether the current branch name
+resolves to an issue ID. If an issue matches, the harness puts the
+title, the body, and the scratch notes into the starting context. The
+agent runs no command to learn what its work is.
 
-**Pickup gating.** The [clc](/what-is-codelikecody) `pickup` command
-checks the status of the issue first. It accepts only a `todo`,
-`blocked`, or `paused` issue. It also checks `depends_on`. Every listed
-dependency must be closed before pickup. On pickup, clc sets the status
-to `in_progress`. It adds a scratch notes section if the file has none.
-It commits the change to the main branch. It then creates a worktree
-from that commit. The branch therefore starts from a state where the
-issue is already `in_progress`.
+**Pickup gating.** The pickable statuses and `depends_on` give a
+harness a gate. A harness picks up only a `todo`, `blocked`, or
+`paused` issue whose every dependency is closed, sets the status to
+`in_progress`, and starts the work. Tisket enforces the status
+transitions; the harness decides when to apply them.
 
-**Branch naming.** Clc names the worktree and its branch after the
-issue ID. This is how the current-issue detection works. Clc checks
-whether the branch name resolves to a tisket issue ID. If it does, that
-issue becomes the active issue for the session.
+**Branch naming.** The short ID is a stable key. A harness names the
+worktree and its branch after the issue ID, and tisket's branch-name to
+issue-ID resolution then finds the active issue for the session.
 
 For CLI usage details, see the [CLI reference](/tisket/cli-reference). For
 day-to-day issue management, see the [workflow guide](/tisket/workflow).
