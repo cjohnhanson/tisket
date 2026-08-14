@@ -23,6 +23,7 @@ pub struct CreateIssueOptions {
     pub due_date: Option<String>,
     pub labels: Option<String>,
     pub depends_on: Option<String>,
+    pub children: Option<String>,
     pub status: Option<Status>,
     pub body: Option<String>,
 }
@@ -38,6 +39,7 @@ pub struct EditIssueOptions<'a> {
     pub add_label: Option<&'a str>,
     pub remove_label: Option<&'a str>,
     pub depends_on: Option<&'a str>,
+    pub children: Option<&'a str>,
     pub body: Option<&'a str>,
     pub append: Option<&'a str>,
     pub tags: &'a [(String, String)],
@@ -339,6 +341,9 @@ impl Repo {
         if let Some(d) = opts.depends_on {
             fm.depends_on = d.split(',').map(|s| s.trim().to_string()).collect();
         }
+        if let Some(c) = opts.children {
+            fm.children = c.split(',').map(|s| s.trim().to_string()).collect();
+        }
 
         let body = opts.body.as_deref().unwrap_or("");
         let content = issue::serialize_issue(&fm, body, "");
@@ -599,6 +604,9 @@ impl Repo {
 
         if let Some(d) = opts.depends_on {
             fm.depends_on = d.split(',').map(|s| s.trim().to_string()).collect();
+        }
+        if let Some(c) = opts.children {
+            fm.children = c.split(',').map(|s| s.trim().to_string()).collect();
         }
 
         for (key, value) in opts.tags {

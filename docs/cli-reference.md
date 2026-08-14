@@ -352,3 +352,27 @@ tisket is git-aware. In a git repository, `issue list` and `issue show` compare 
 - In the `issue show` text output, an "Other branches" section lists the branches with fields that differ.
 
 This comparison only reads and never blocks. Tisket ignores a git failure without a message.
+
+
+## `tisket store list`
+
+List the trackers that this tracker reads. The first row is the tracker
+itself. Each other row shows a declared tracker, its source, and its
+issue count. A remote tracker also shows the age of its cache.
+
+## `tisket store sync`
+
+Fetch each declared remote tracker into the local cache. This is the
+only command that reaches the network.
+
+## `tisket check`
+
+Report the problems that the declarations create:
+
+- A `depends_on` or `children` entry names no issue.
+- A declared tracker is not available.
+- The children of an epic form a cycle.
+- A file could not be read.
+- In a `shared: true` tracker, a clone cannot reach a dependency.
+
+The command exits non-zero when it finds any.
