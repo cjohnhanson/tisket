@@ -1459,9 +1459,8 @@ dependencies = [
 [[package]]
 name = "mdstore"
 version = "0.2.0"
-source = "git+https://github.com/cjohnhanson/mdstore?rev=1d9524ccb11c6c177a36f23cbab962d631f1615b#1d9524ccb11c6c177a36f23cbab962d631f1615b"
+source = "git+https://github.com/cjohnhanson/mdstore?rev=4235eaa#4235eaabbdf344a64fdfe878af2d0afc1e6b92ca"
 dependencies = [
- "miette",
  "rand",
  "serde",
  "serde_yml",

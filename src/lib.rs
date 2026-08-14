@@ -8,6 +8,7 @@ pub mod mangen;
 pub mod repo;
 pub mod selector;
 pub mod slug;
+pub mod workspace;
 
 pub use config::{ProjectConfig, TisketConfig};
 pub use error::{Error, Result};

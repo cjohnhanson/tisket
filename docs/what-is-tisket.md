@@ -31,7 +31,8 @@ and an optional scratch notes section.
 
 **Frontmatter** comes between two `---` fences. It holds the
 structured fields: `title`, `status`, `priority`, `assignee`,
-`due_date`, `labels`, `depends_on`, `created`, and `updated`. Tisket
+`due_date`, `labels`, `depends_on`, `children`, `created`, and
+`updated`. Tisket
 queries these fields to list, filter, and gate issues by status. The
 `labels` and `depends_on` fields are arrays. Tisket sets the `created`
 and `updated` timestamps automatically.
@@ -202,3 +203,38 @@ issue-ID resolution then finds the active issue for the session.
 
 For CLI usage details, see the [CLI reference](/tisket/cli-reference). For
 day-to-day issue management, see the [workflow guide](/tisket/workflow).
+
+
+## Composed trackers
+
+A tracker can declare the other trackers it reads. The declarations live
+in `stores.yml`, each under a local alias:
+
+```yaml
+format: 2
+stores:
+  - alias: a
+    path: ../project-a
+  - alias: b
+    git: https://example.com/org/project-b
+```
+
+An epic is an issue that lists its children. A child can live in another
+tracker: `children: [a:x9k2, b:m4p1]`. `issue show` gives the status of
+each child and the count that is done.
+
+Containment is not blocking, so `depends_on` keeps its meaning. An entry
+in either field names another tracker only when the text before the
+first colon is a declared alias. An entry such as `x: y` therefore keeps
+the meaning that it always had.
+
+The declarations set the direction. A user-level tracker declares the
+project trackers that it follows. A project tracker does not declare the
+user-level one. It cannot: the target does not exist for the other users
+who clone the project. A dependency tracker is read-only, so an edit
+runs from the tracker that owns the issue.
+
+`tisket store list` shows the trackers. `tisket store sync` fetches the
+remote ones. `tisket check` reports a reference that names no issue, an
+unreachable tracker, a cycle in the children of an epic, and a
+declaration that other clones could not follow.
