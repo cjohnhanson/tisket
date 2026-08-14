@@ -509,28 +509,13 @@ pub fn run_command(root: &camino::Utf8Path, command: Command) -> crate::Result<(
         Command::Check => {
             Repo::open(root)?;
             let ws = crate::workspace::Workspace::open(root)?;
-            let mut findings: Vec<String> = Vec::new();
-            for (source, target) in ws.dangling() {
-                findings.push(format!("  {source} → {target} [reference]"));
-            }
-            for alias in ws.missing() {
-                findings.push(format!("  stores.yml → {alias} [unreachable tracker]"));
-            }
-            for (alias, why) in ws.unshareable(root) {
-                findings.push(format!("  stores.yml → {alias}: {why} [declaration]"));
-            }
-            for skipped in ws.skipped() {
-                findings.push(format!("  {skipped} [scan]"));
-            }
-            if let Some(cycle) = ws.children_cycle() {
-                findings.push(format!("  {} [children cycle]", cycle.join(" → ")));
-            }
+            let findings = ws.check(root);
             if findings.is_empty() {
                 println!("no problems found");
             } else {
                 println!("{} problem(s):", findings.len());
                 for f in &findings {
-                    println!("{f}");
+                    println!("  {} → {} [{}]", f.source, f.target, f.kind);
                 }
                 std::process::exit(1);
             }
@@ -919,9 +904,7 @@ fn print_issue_field(iss: &Issue, field: &str) -> crate::Result<()> {
 
 /// Print the children of an epic and their statuses.
 ///
-/// A child that cannot be read shows as `unknown` rather than not at
-/// all: an epic that hides what it cannot see reports a state that
-/// nobody can act on. A child from a cache shows the age of that cache.
+/// The rollup itself is lib work; this only renders it.
 fn print_rollup(root: &camino::Utf8Path, id: &str) {
     let Ok(ws) = crate::workspace::Workspace::open(root) else {
         return;
@@ -929,17 +912,17 @@ fn print_rollup(root: &camino::Utf8Path, id: &str) {
     let Ok(view) = ws.find(id) else {
         return;
     };
-    let rows = ws.rollup(&view);
-    if rows.is_empty() {
+    let rollup = ws.rollup(&view);
+    if rollup.rows.is_empty() {
         return;
     }
     println!();
     println!("  Children:");
-    for row in &rows {
-        let age = match &row.age {
-            Some(age) => format!("  (synced {age})"),
-            None => String::new(),
-        };
+    for row in &rollup.rows {
+        let age = row
+            .age
+            .as_ref()
+            .map_or_else(String::new, |age| format!("  (synced {age})"));
         let title = if row.title.is_empty() {
             String::new()
         } else {
@@ -947,12 +930,8 @@ fn print_rollup(root: &camino::Utf8Path, id: &str) {
         };
         println!("    {:<10}{}{title}{age}", row.status, row.id);
     }
-    let done = rows
-        .iter()
-        .filter(|r| r.status == "done")
-        .count();
-    println!("    {done}/{} done", rows.len());
-    for m in ws.missing() {
+    println!("    {}/{} done", rollup.done, rollup.rows.len());
+    for m in &rollup.unreachable {
         eprintln!("partial — unreachable tracker: {m}");
     }
 }
