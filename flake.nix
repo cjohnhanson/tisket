@@ -83,6 +83,18 @@
                 export HOME="$tmpHome"
                 cargo test --profile release --locked
               '';
+              # Man pages and shell completions come from the built
+              # binary itself, so they always match the real CLI.
+              postInstall = ''
+                mkdir -p $out/share/man/man1
+                $out/bin/tisket gen-man $out/share/man/man1
+                mkdir -p $out/share/zsh/site-functions
+                mkdir -p $out/share/bash-completion/completions
+                mkdir -p $out/share/fish/vendor_completions.d
+                $out/bin/tisket gen-completions zsh > $out/share/zsh/site-functions/_tisket
+                $out/bin/tisket gen-completions bash > $out/share/bash-completion/completions/tisket
+                $out/bin/tisket gen-completions fish > $out/share/fish/vendor_completions.d/tisket.fish
+              '';
             }
           );
         in

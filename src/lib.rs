@@ -4,6 +4,7 @@ pub mod docs;
 pub mod error;
 pub mod git;
 pub mod issue;
+pub mod mangen;
 pub mod repo;
 pub mod selector;
 pub mod slug;

@@ -27,6 +27,20 @@ pub enum Command {
     /// Initialize tisket in the current repository
     Init,
 
+    /// Write the man pages into a directory (the package build uses this)
+    #[command(hide = true)]
+    GenMan {
+        /// Output directory for the section-1 pages
+        dir: std::path::PathBuf,
+    },
+
+    /// Print a shell completion script (the package build uses this)
+    #[command(hide = true)]
+    GenCompletions {
+        /// Target shell
+        shell: clap_complete::Shell,
+    },
+
     /// Print agent instructions to stdout
     Prime,
 
@@ -375,6 +389,19 @@ pub fn run(args: Args) -> crate::Result<()> {
 pub fn run_command(root: &camino::Utf8Path, command: Command) -> crate::Result<()> {
     match command {
         Command::Init => Repo::init(root),
+
+        Command::GenMan { dir } => {
+            use clap::CommandFactory as _;
+            std::fs::create_dir_all(&dir)?;
+            crate::mangen::write_man_pages(&Args::command(), &dir)?;
+            Ok(())
+        }
+
+        Command::GenCompletions { shell } => {
+            use clap::CommandFactory as _;
+            clap_complete::generate(shell, &mut Args::command(), "tisket", &mut std::io::stdout());
+            Ok(())
+        }
 
         Command::Prime => {
             let repo = Repo::open(root)?;
