@@ -864,20 +864,52 @@ impl Repo {
             }
 
             let content = std::fs::read_to_string(&path)?;
-            let mut matched_fields = Vec::new();
+            let (fm, body, scratch) = issue::parse_issue(&content)?;
 
-            for line in content.lines() {
-                if matcher.find(line.as_bytes()).unwrap_or(None).is_some()
-                    && let Some(field) = Self::field_name_from_line(line)
-                    && !matched_fields.contains(&field)
-                {
-                    matched_fields.push(field);
+            // Match against the parsed field values, not the raw YAML
+            // lines. A raw-line scan couples the search to the byte
+            // form of the frontmatter: a block-style list puts each
+            // label on its own `- item` line, which carries no field
+            // name, so a line scan drops the match. A body line that
+            // happens to start with `status:` would also classify as a
+            // frontmatter match.
+            let hit = |s: &str| matcher.find(s.as_bytes()).unwrap_or(None).is_some();
+            let mut matched_fields: Vec<String> = Vec::new();
+            let check = |field: &str, matched: bool, fields: &mut Vec<String>| {
+                if matched && !fields.iter().any(|f| f == field) {
+                    fields.push(field.to_string());
                 }
-            }
+            };
+            check("title", hit(&fm.title), &mut matched_fields);
+            check("status", hit(&fm.status.to_string()), &mut matched_fields);
+            check(
+                "priority",
+                fm.priority.as_deref().is_some_and(hit),
+                &mut matched_fields,
+            );
+            check(
+                "assignee",
+                fm.assignee.as_deref().is_some_and(hit),
+                &mut matched_fields,
+            );
+            check(
+                "due_date",
+                fm.due_date.as_deref().is_some_and(hit),
+                &mut matched_fields,
+            );
+            check(
+                "labels",
+                fm.labels.iter().any(|l| hit(l)),
+                &mut matched_fields,
+            );
+            check(
+                "depends_on",
+                fm.depends_on.iter().any(|d| hit(d)),
+                &mut matched_fields,
+            );
 
             if !matched_fields.is_empty() {
                 let id = path.file_stem().unwrap_or("").to_string();
-                let (fm, body, scratch) = issue::parse_issue(&content)?;
                 out.push(SearchResult {
                     issue: Issue {
                         id,
@@ -896,19 +928,36 @@ impl Repo {
 
         Ok(())
     }
+}
 
-    fn field_name_from_line(line: &str) -> Option<String> {
-        let line = line.trim();
-        if line == "---" {
-            return None;
-        }
-        let colon_pos = line.find(':')?;
-        let field = line[..colon_pos].trim();
-        match field {
-            "title" | "status" | "priority" | "assignee" | "due_date" | "labels" | "depends_on" => {
-                Some(field.to_string())
-            }
-            _ => None,
-        }
+#[cfg(test)]
+mod search_tests {
+    use super::*;
+
+    /// The match classification must come from the parsed fields, not
+    /// from the raw YAML lines. A block-style label list puts each
+    /// label on its own `- item` line; a raw-line scan drops that
+    /// match because the line carries no field name.
+    #[test]
+    fn search_matches_block_style_labels() {
+        let dir = std::env::temp_dir().join(format!("tisket-search-{}", std::process::id()));
+        std::fs::remove_dir_all(&dir).ok();
+        std::fs::create_dir_all(&dir).unwrap();
+        let root = Utf8PathBuf::try_from(dir.clone()).unwrap();
+        Repo::init(&root).unwrap();
+        let repo = Repo::open(&root).unwrap();
+        repo.create_project("core").unwrap();
+        std::fs::write(
+            dir.join(".tisket/core/ab12-add-search.md"),
+            "---\ntitle: Add search functionality\nstatus: todo\npriority: null\nassignee: null\ndue_date: null\nlabels:\n- feature\n- search\n- ui\ndepends_on: []\ncreated: '2026-01-01T00:00:00Z'\nupdated: '2026-01-01T00:00:00Z'\n---\nbody\n",
+        )
+        .unwrap();
+        let results = repo.search("search", None).unwrap();
+        assert_eq!(results.len(), 1);
+        assert_eq!(
+            results[0].matched_fields,
+            vec!["title".to_string(), "labels".to_string()],
+            "the term matches the title and a block-style label"
+        );
     }
 }
