@@ -1,3 +1,18 @@
+transitions:
+  - name: "enter the served checks"
+    command: "true"
+    target: "../served"
+    comparators:
+      files:
+        - path: ".tisket/"
+          ignore: true
+        - path: "proj-a/"
+          ignore: true
+        - path: "proj-b/"
+          ignore: true
+        - path: "stores.yml"
+          ignore: true
+
 # A user-level tracker with an epic whose children live in two project
 # trackers. The direction rule holds here as it does for notes: this
 # tracker reads the projects, and neither project can see this one.
