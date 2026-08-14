@@ -375,6 +375,12 @@ impl Workspace {
         None
     }
 
+    /// The aliases this tracker declares.
+    #[must_use]
+    pub fn aliases(&self) -> Vec<String> {
+        self.snapshot.graph.config(0).aliases()
+    }
+
     /// One row for each tracker in the closure.
     pub fn store_members(&self) -> Vec<StoreRow> {
         self.snapshot
