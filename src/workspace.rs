@@ -176,6 +176,17 @@ pub struct View<'a> {
     pub foreign: bool,
 }
 
+/// The children of an epic, with the count that is done.
+#[derive(Debug, serde::Serialize)]
+pub struct Rollup {
+    pub rows: Vec<RollupRow>,
+    /// How many children are done.
+    pub done: usize,
+    /// Trackers that could not be read, so a caller can say the count
+    /// is partial rather than present it as whole.
+    pub unreachable: Vec<String>,
+}
+
 /// One row of a rollup.
 #[derive(Debug, serde::Serialize)]
 pub struct RollupRow {
@@ -264,7 +275,7 @@ impl Workspace {
     /// `unknown`, never dropped: an epic that hides a child it cannot
     /// see would report a state that nobody can act on. A child from a
     /// cache carries the age of that cache, so a stale row looks stale.
-    pub fn rollup(&self, view: &View<'_>) -> Vec<RollupRow> {
+    pub fn rollup(&self, view: &View<'_>) -> Rollup {
         let aliases = self.snapshot.graph.config(view.id.member).aliases();
         let mut rows = Vec::new();
         let mut seen: Vec<String> = Vec::new();
@@ -295,12 +306,20 @@ impl Workspace {
                 }),
             }
         }
-        rows
+        let done = rows
+            .iter()
+            .filter(|r| r.status == Status::Done.to_string())
+            .count();
+        Rollup {
+            rows,
+            done,
+            unreachable: self.missing(),
+        }
     }
 
     /// True when every child is done and at least one child exists.
-    pub fn all_children_done(&self, rows: &[RollupRow]) -> bool {
-        !rows.is_empty() && rows.iter().all(|r| r.status == Status::Done.to_string())
+    pub fn all_children_done(rollup: &Rollup) -> bool {
+        !rollup.rows.is_empty() && rollup.done == rollup.rows.len()
     }
 
     /// References that named no issue.
@@ -396,6 +415,48 @@ impl Workspace {
         results
     }
 
+    /// Every problem in the closure, as one list. Each interface
+    /// presents the same findings.
+    pub fn check(&self, root: &Utf8Path) -> Vec<Finding> {
+        let mut findings = Vec::new();
+        for (source, target) in self.dangling() {
+            findings.push(Finding {
+                source,
+                target,
+                kind: "reference".to_string(),
+            });
+        }
+        for alias in self.missing() {
+            findings.push(Finding {
+                source: "stores.yml".to_string(),
+                target: alias,
+                kind: "unreachable tracker".to_string(),
+            });
+        }
+        for (alias, why) in self.unshareable(root) {
+            findings.push(Finding {
+                source: "stores.yml".to_string(),
+                target: format!("{alias}: {why}"),
+                kind: "declaration".to_string(),
+            });
+        }
+        for skipped in self.skipped() {
+            findings.push(Finding {
+                source: "tracker".to_string(),
+                target: skipped.clone(),
+                kind: "scan".to_string(),
+            });
+        }
+        if let Some(cycle) = self.children_cycle() {
+            findings.push(Finding {
+                source: "children".to_string(),
+                target: cycle.join(" → "),
+                kind: "cycle".to_string(),
+            });
+        }
+        findings
+    }
+
     /// Refuse a write aimed at a dependency tracker.
     pub fn ensure_writable(&self, view: &View<'_>, input: &str) -> Result<()> {
         if view.foreign {
@@ -412,6 +473,17 @@ impl Workspace {
     pub fn is_single_store(&self) -> bool {
         self.snapshot.graph.members.len() == 1
     }
+}
+
+/// One problem that `check` reports.
+#[derive(Debug, serde::Serialize)]
+pub struct Finding {
+    /// What holds the problem: an issue ID, or a config file.
+    pub source: String,
+    /// What is wrong.
+    pub target: String,
+    /// The class of problem, for a caller that groups them.
+    pub kind: String,
 }
 
 /// One tracker in the closure.
