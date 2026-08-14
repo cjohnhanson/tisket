@@ -1,0 +1,40 @@
+doc: |
+  The same tracker, read through a server. A scripted JSON-RPC session
+  over stdio drives it, so the checks need no port and no background
+  process.
+
+assertions:
+  - name: "the server declares the surfaces it was asked for"
+    command: "mcp 'tisket serve' | jq -e 'select(.id==1) | .result.capabilities | has(\"tools\") and has(\"resources\")'"
+  - name: "the instructions say an issue body is stated intent"
+    command: "mcp 'tisket serve' | jq -r 'select(.id==1) | .result.instructions' | grep -q 'stated intent'"
+  - name: "a read-only tracker says so"
+    command: "mcp 'tisket serve' | jq -r 'select(.id==1) | .result.instructions' | grep -q 'read-only'"
+
+  - name: "issues list through the server"
+    command: "mcp 'tisket serve' '{\"jsonrpc\":\"2.0\",\"id\":2,\"method\":\"tools/call\",\"params\":{\"name\":\"tisket_list_issues\",\"arguments\":{}}}' | jq -r 'select(.id==2) | .result.content[0].text' | grep -q 'Ship the integration'"
+  - name: "an epic rolls up across trackers through the server"
+    command: "mcp 'tisket serve' '{\"jsonrpc\":\"2.0\",\"id\":2,\"method\":\"tools/call\",\"params\":{\"name\":\"tisket_rollup\",\"arguments\":{\"id\":\"ship-the-integration\"}}}' | jq -r 'select(.id==2) | .result.content[0].text' | jq -e '.rows | length == 2'"
+  - name: "the rollup carries the done count"
+    command: "mcp 'tisket serve' '{\"jsonrpc\":\"2.0\",\"id\":2,\"method\":\"tools/call\",\"params\":{\"name\":\"tisket_rollup\",\"arguments\":{\"id\":\"ship-the-integration\"}}}' | jq -r 'select(.id==2) | .result.content[0].text' | jq -e 'has(\"done\")'"
+  - name: "check answers through the server"
+    command: "mcp 'tisket serve' '{\"jsonrpc\":\"2.0\",\"id\":2,\"method\":\"tools/call\",\"params\":{\"name\":\"tisket_check\",\"arguments\":{}}}' | jq -r 'select(.id==2) | .result.content[0].text' | grep -q 'no problems found'"
+  - name: "a listed resource URI reads back"
+    command: "URI=$(mcp 'tisket serve' '{\"jsonrpc\":\"2.0\",\"id\":2,\"method\":\"resources/list\"}' | jq -r 'select(.id==2) | .result.resources[0].uri'); mcp 'tisket serve' \"{\\\"jsonrpc\\\":\\\"2.0\\\",\\\"id\\\":3,\\\"method\\\":\\\"resources/read\\\",\\\"params\\\":{\\\"uri\\\":\\\"$URI\\\"}}\" | jq -e 'select(.id==3) | .result.contents[0].text | fromjson | has(\"status\")'"
+
+  # What a served tracker refuses
+  - name: "a read-only tracker offers no write tool"
+    command: "mcp 'tisket serve' '{\"jsonrpc\":\"2.0\",\"id\":2,\"method\":\"tools/list\"}' | jq -e 'select(.id==2) | [.result.tools[].name] | index(\"tisket_append_scratch\") == null'"
+  - name: "no tracker offers closing an issue, in any access mode"
+    command: "mcp 'tisket serve --access read-write' '{\"jsonrpc\":\"2.0\",\"id\":2,\"method\":\"tools/list\"}' | jq -e 'select(.id==2) | [.result.tools[].name] | map(test(\"close|reopen|delete|edit\")) | any | not'"
+  - name: "a write through a read-only tracker is refused"
+    command: "mcp 'tisket serve' '{\"jsonrpc\":\"2.0\",\"id\":2,\"method\":\"tools/call\",\"params\":{\"name\":\"tisket_append_scratch\",\"arguments\":{\"id\":\"ship-the-integration\",\"text\":\"nope\"}}}' | jq -r 'select(.id==2) | .result.content[0].text' | grep -q 'read-only'"
+
+  # The one write a writable tracker allows
+  - name: "a writable tracker appends to working notes"
+    command: "mcp 'tisket serve --access read-write' '{\"jsonrpc\":\"2.0\",\"id\":2,\"method\":\"tools/call\",\"params\":{\"name\":\"tisket_append_scratch\",\"arguments\":{\"id\":\"ship-the-integration\",\"text\":\"Found by an agent.\"}}}' | jq -r 'select(.id==2) | .result.content[0].text' | grep -q 'appended'"
+  - name: "the note is on disk, and the CLI sees it"
+    command: "tisket scratch ship-the-integration read | grep -q 'Found by an agent.'"
+  - name: "the issue's status is untouched"
+    command: "tisket issue show ship-the-integration --field status"
+    stdout: "todo\n"

@@ -62,6 +62,21 @@ pub enum Command {
     /// Check the issues for broken references and store problems
     Check,
 
+    /// Serve this tracker over MCP
+    Serve {
+        /// The surfaces to offer, separated by commas: resources, tools.
+        #[arg(long, default_value = "resources,tools")]
+        surfaces: String,
+        /// What a caller may do: read-only or read-write. A writable
+        /// tracker allows appending to working notes, and nothing else.
+        #[arg(long, default_value = "read-only")]
+        access: String,
+        /// Where to listen. Omitted, the server speaks on stdin and
+        /// stdout. Given, it serves over HTTP.
+        #[arg(long)]
+        bind: Option<String>,
+    },
+
     /// Read or modify scratch notes for an issue
     Scratch(ScratchArgs),
 
@@ -504,6 +519,17 @@ pub fn run_command(root: &camino::Utf8Path, command: Command) -> crate::Result<(
                 }
             }
             Ok(())
+        }
+
+        Command::Serve {
+            surfaces,
+            access,
+            bind,
+        } => {
+            Repo::open(root)?;
+            let config =
+                crate::serve::config_from(root.as_std_path(), &surfaces, &access, "tisket")?;
+            crate::serve::run(config, bind.as_deref())
         }
 
         Command::Check => {
