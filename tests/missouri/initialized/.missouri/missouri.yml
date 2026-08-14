@@ -11,6 +11,31 @@ transitions:
         - path: ".tisket/"
           ignore: true
 
+  # A user-level tracker that declares two project trackers. One epic
+  # holds children that live in both of them.
+  - name: "declare two project trackers"
+    command: |
+      for d in proj-a proj-b; do
+        mkdir -p $d && (cd $d && tisket init >/dev/null)
+      done &&
+      (cd proj-a && tisket issue create 'Add the parser' >/dev/null) &&
+      (cd proj-b && tisket issue create 'Wire the client' >/dev/null) &&
+      printf 'format: 2\nstores:\n  - alias: a\n    path: ./proj-a\n  - alias: b\n    path: ./proj-b\n' > stores.yml &&
+      A=$(cd proj-a && tisket issue list --format json | jq -r '.[0].id') &&
+      B=$(cd proj-b && tisket issue list --format json | jq -r '.[0].id') &&
+      tisket issue create 'Ship the integration' --children "a:$A,b:$B" >/dev/null
+    target: "../has-cross-repo-epic"
+    comparators:
+      files:
+        - path: ".tisket/"
+          ignore: true
+        - path: "proj-a/"
+          ignore: true
+        - path: "proj-b/"
+          ignore: true
+        - path: "stores.yml"
+          ignore: true
+
 assertions:
   - name: "prime succeeds"
     command: "tisket prime"

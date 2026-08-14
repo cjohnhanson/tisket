@@ -1,0 +1,59 @@
+# A user-level tracker with an epic whose children live in two project
+# trackers. The direction rule holds here as it does for notes: this
+# tracker reads the projects, and neither project can see this one.
+assertions:
+  - name: "store list shows this tracker and both projects"
+    command: "test $(tisket store list | wc -l) -eq 3"
+  - name: "each project reports its issue count"
+    command: "tisket store list | grep '^a ' | grep -q '1 issue(s)'"
+  - name: "issue list shows only this tracker's issues"
+    command: "test $(tisket issue list --format json | jq 'length') -eq 1"
+
+  # The rollup
+  - name: "the epic lists its children"
+    command: "test $(tisket issue show ship-the-integration | grep -c '^    ') -eq 3"
+  - name: "a child from another tracker is store-qualified"
+    command: "tisket issue show ship-the-integration | grep -q 'a:.*Add the parser'"
+  - name: "the rollup counts what is done"
+    command: "tisket issue show ship-the-integration | grep -q '0/2 done'"
+  - name: "a child completed in its own tracker moves the count"
+    command: "(cd proj-a && tisket issue edit add-the-parser -s done >/dev/null) && tisket issue show ship-the-integration | grep -q '1/2 done'"
+  - name: "the child's new status shows in the rollup"
+    command: "tisket issue show ship-the-integration | grep 'Add the parser' | grep -q 'done'"
+
+  # A child that cannot be read is reported, never dropped
+  - name: "an unresolvable child shows as unknown"
+    command: "tisket issue edit ship-the-integration --children \"a:add-the-parser,b:wire-the-client,a:nosuchissue\" >/dev/null && tisket issue show ship-the-integration | grep -q 'unknown.*a:nosuchissue'"
+  - name: "the unknown child still counts in the total"
+    command: "tisket issue show ship-the-integration | grep -q '1/3 done'"
+  - name: "check reports the dangling child"
+    command: "tisket check 2>&1 | grep -q 'a:nosuchissue'"
+  - name: "check exits nonzero"
+    command: "tisket check"
+    should_fail: true
+  - name: "with the child removed, check passes"
+    command: "tisket issue edit ship-the-integration --children 'a:add-the-parser,b:wire-the-client' >/dev/null && tisket check"
+    stdout: "no problems found\n"
+
+  # The direction rule
+  - name: "a project tracker sees one store"
+    command: "cd proj-a && test $(tisket store list | wc -l) -eq 1"
+  - name: "a project tracker cannot see the epic"
+    command: "cd proj-a && tisket issue list | grep -q 'Ship the integration'"
+    should_fail: true
+  - name: "a dependency tracker is read-only"
+    command: "! tisket issue edit a:add-the-parser -s todo >/dev/null 2>&1 && tisket issue edit a:add-the-parser -s todo 2>&1 >/dev/null | grep -q 'read-only'"
+  - name: "the child keeps the status its own tracker set"
+    command: "cd proj-a && tisket issue show add-the-parser --field status"
+    stdout: "done\n"
+
+  # Old data keeps its meaning
+  - name: "a colon-bearing depends_on entry stays opaque"
+    command: "tisket issue create 'Legacy deps' -d 'x: y' >/dev/null && tisket check"
+    stdout: "no problems found\n"
+  - name: "children survive a round trip through an edit"
+    command: "tisket issue edit ship-the-integration --add-label epic >/dev/null && tisket issue show ship-the-integration --field children"
+    stdout: "a:add-the-parser, b:wire-the-client\n"
+  - name: "sync reports that no remote tracker is declared"
+    command: "tisket store sync"
+    stdout: "no remote trackers declared\n"
