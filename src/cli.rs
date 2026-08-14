@@ -55,6 +55,13 @@ pub enum Command {
     /// Search issues
     Search(SearchArgs),
 
+    /// Manage the declared trackers
+    #[command(subcommand)]
+    Store(StoreCommand),
+
+    /// Check the issues for broken references and store problems
+    Check,
+
     /// Read or modify scratch notes for an issue
     Scratch(ScratchArgs),
 
@@ -128,6 +135,19 @@ pub enum IssueCommand {
     Move(IssueMoveArgs),
 }
 
+impl IssueCommand {
+    /// The issue a mutating subcommand targets, if it mutates one.
+    fn target_id(&self) -> Option<&str> {
+        match self {
+            IssueCommand::Edit(a) => Some(&a.id),
+            IssueCommand::Close(a) => Some(&a.id),
+            IssueCommand::Reopen(a) => Some(&a.id),
+            IssueCommand::Move(a) => Some(&a.id),
+            _ => None,
+        }
+    }
+}
+
 #[derive(Parser)]
 pub struct IssueCreateArgs {
     /// Issue title
@@ -152,6 +172,11 @@ pub struct IssueCreateArgs {
     /// Comma-separated issue IDs this depends on
     #[arg(short, long)]
     pub depends_on: Option<String>,
+
+    /// The child issue IDs; separate them with commas. An entry can name
+    /// another tracker: alias:id
+    #[arg(long)]
+    pub children: Option<String>,
 
     /// Due date (YYYY-MM-DD)
     #[arg(long)]
@@ -264,6 +289,11 @@ pub struct IssueEditArgs {
     #[arg(short, long)]
     pub depends_on: Option<String>,
 
+    /// The child issue IDs; separate them with commas. An entry can name
+    /// another tracker: alias:id
+    #[arg(long)]
+    pub children: Option<String>,
+
     /// Due date (YYYY-MM-DD)
     #[arg(long)]
     pub due: Option<String>,
@@ -332,6 +362,14 @@ pub enum ProjectCommand {
 pub struct ProjectCreateArgs {
     /// Project name
     pub name: String,
+}
+
+#[derive(Parser)]
+pub enum StoreCommand {
+    /// List the trackers this tracker reads
+    List,
+    /// Fetch the declared remote trackers into the local cache
+    Sync,
 }
 
 #[derive(Parser)]
@@ -422,6 +460,83 @@ pub fn run_command(root: &camino::Utf8Path, command: Command) -> crate::Result<(
             Ok(())
         }
 
+        Command::Store(cmd) => {
+            Repo::open(root)?;
+            match cmd {
+                StoreCommand::List => {
+                    let ws = crate::workspace::Workspace::open(root)?;
+                    for m in ws.store_members() {
+                        let label = if m.alias.is_empty() {
+                            "(this tracker)".to_string()
+                        } else {
+                            m.alias.clone()
+                        };
+                        let state = match &m.unavailable {
+                            Some(why) => format!("unavailable: {why}"),
+                            None => format!("{} issue(s)", m.issues),
+                        };
+                        let age = match &m.age {
+                            Some(age) => format!("  synced {age}"),
+                            None => String::new(),
+                        };
+                        println!("{label}  {}  {state}{age}", m.source);
+                    }
+                }
+                StoreCommand::Sync => {
+                    let ws = crate::workspace::Workspace::open_fetching(root)?;
+                    let results = ws.sync_all();
+                    if results.is_empty() {
+                        println!("no remote trackers declared");
+                    }
+                    let mut failed = false;
+                    for (alias, outcome) in results {
+                        match outcome {
+                            Ok(()) => println!("{alias}  synced"),
+                            Err(e) => {
+                                failed = true;
+                                eprintln!("{alias}  failed: {e}");
+                            }
+                        }
+                    }
+                    if failed {
+                        std::process::exit(1);
+                    }
+                }
+            }
+            Ok(())
+        }
+
+        Command::Check => {
+            Repo::open(root)?;
+            let ws = crate::workspace::Workspace::open(root)?;
+            let mut findings: Vec<String> = Vec::new();
+            for (source, target) in ws.dangling() {
+                findings.push(format!("  {source} → {target} [reference]"));
+            }
+            for alias in ws.missing() {
+                findings.push(format!("  stores.yml → {alias} [unreachable tracker]"));
+            }
+            for (alias, why) in ws.unshareable(root) {
+                findings.push(format!("  stores.yml → {alias}: {why} [declaration]"));
+            }
+            for skipped in ws.skipped() {
+                findings.push(format!("  {skipped} [scan]"));
+            }
+            if let Some(cycle) = ws.children_cycle() {
+                findings.push(format!("  {} [children cycle]", cycle.join(" → ")));
+            }
+            if findings.is_empty() {
+                println!("no problems found");
+            } else {
+                println!("{} problem(s):", findings.len());
+                for f in &findings {
+                    println!("{f}");
+                }
+                std::process::exit(1);
+            }
+            Ok(())
+        }
+
         Command::Scratch(a) => {
             let repo = Repo::open(root)?;
             match a.action {
@@ -440,6 +555,16 @@ pub fn run_command(root: &camino::Utf8Path, command: Command) -> crate::Result<(
 
         Command::Issue(cmd) => {
             let repo = Repo::open(root)?;
+            // A dependency tracker is another repository's working tree.
+            // A write must run from the tracker that owns the issue.
+            if let Some(id) = cmd.target_id() {
+                let ws = crate::workspace::Workspace::open(root)?;
+                if !ws.is_single_store()
+                    && let Ok(view) = ws.find(id)
+                {
+                    ws.ensure_writable(&view, id)?;
+                }
+            }
             match *cmd {
                 IssueCommand::Create(a) => {
                     let project = a.project.as_deref().unwrap_or("default");
@@ -467,6 +592,7 @@ pub fn run_command(root: &camino::Utf8Path, command: Command) -> crate::Result<(
                             due_date: a.due,
                             labels: a.labels,
                             depends_on: a.depends_on,
+                            children: a.children,
                             status,
                             body,
                         },
@@ -499,7 +625,10 @@ pub fn run_command(root: &camino::Utf8Path, command: Command) -> crate::Result<(
                     } else {
                         match a.format {
                             OutputFormat::Json => print_issue_json(&iss)?,
-                            OutputFormat::Text => print_issue_show(&iss),
+                            OutputFormat::Text => {
+                                print_issue_show(&iss);
+                                print_rollup(root, &a.id);
+                            }
                         }
                     }
                     Ok(())
@@ -530,6 +659,7 @@ pub fn run_command(root: &camino::Utf8Path, command: Command) -> crate::Result<(
                             add_label: a.add_label.as_deref(),
                             remove_label: a.remove_label.as_deref(),
                             depends_on: a.depends_on.as_deref(),
+                            children: a.children.as_deref(),
                             body: a.body.as_deref(),
                             append: a.append.as_deref(),
                             tags: &parsed_tags,
@@ -743,6 +873,7 @@ fn issue_to_json(iss: &Issue) -> serde_json::Value {
         "due_date": iss.frontmatter.due_date,
         "labels": iss.frontmatter.labels,
         "depends_on": iss.frontmatter.depends_on,
+        "children": iss.frontmatter.children,
         "tags": tags,
         "body": iss.body,
         "scratch": iss.scratch,
@@ -771,6 +902,7 @@ fn print_issue_field(iss: &Issue, field: &str) -> crate::Result<()> {
         "due_date" => iss.frontmatter.due_date.clone(),
         "labels" => Some(iss.frontmatter.labels.join(", ")),
         "depends_on" => Some(iss.frontmatter.depends_on.join(", ")),
+        "children" => Some(iss.frontmatter.children.join(", ")),
         "body" => Some(iss.body.clone()),
         "scratch" => Some(iss.scratch.clone()),
         "id" => Some(iss.id.clone()),
@@ -783,6 +915,46 @@ fn print_issue_field(iss: &Issue, field: &str) -> crate::Result<()> {
         println!("{v}");
     }
     Ok(())
+}
+
+/// Print the children of an epic and their statuses.
+///
+/// A child that cannot be read shows as `unknown` rather than not at
+/// all: an epic that hides what it cannot see reports a state that
+/// nobody can act on. A child from a cache shows the age of that cache.
+fn print_rollup(root: &camino::Utf8Path, id: &str) {
+    let Ok(ws) = crate::workspace::Workspace::open(root) else {
+        return;
+    };
+    let Ok(view) = ws.find(id) else {
+        return;
+    };
+    let rows = ws.rollup(&view);
+    if rows.is_empty() {
+        return;
+    }
+    println!();
+    println!("  Children:");
+    for row in &rows {
+        let age = match &row.age {
+            Some(age) => format!("  (synced {age})"),
+            None => String::new(),
+        };
+        let title = if row.title.is_empty() {
+            String::new()
+        } else {
+            format!("  {}", row.title)
+        };
+        println!("    {:<10}{}{title}{age}", row.status, row.id);
+    }
+    let done = rows
+        .iter()
+        .filter(|r| r.status == "done")
+        .count();
+    println!("    {done}/{} done", rows.len());
+    for m in ws.missing() {
+        eprintln!("partial — unreachable tracker: {m}");
+    }
 }
 
 fn print_issue_show(iss: &Issue) {
