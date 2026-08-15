@@ -125,7 +125,22 @@ impl TisketServer {
         match name {
             "tisket_list_issues" => {
                 let repo = crate::Repo::open(&self.root())?;
-                let issues = repo.list_issues(None, text("status").as_deref(), None, false, &[])?;
+                // A terminal status lives in the closed directory, so
+                // asking for it while looking only at open issues
+                // returned an empty list.
+                let status = text("status");
+                let closed = match status.as_deref() {
+                    Some(text) => text
+                        .parse::<crate::issue::Status>()
+                        .map_err(|_| {
+                            Error::Store(format!(
+                                "'{text}' is not a status; use todo, in_progress, done, or cancelled"
+                            ))
+                        })?
+                        .is_terminal(),
+                    None => false,
+                };
+                let issues = repo.list_issues(None, status.as_deref(), None, closed, &[])?;
                 let listed: Vec<Value> = issues
                     .iter()
                     .map(|i| {
@@ -142,10 +157,22 @@ impl TisketServer {
             }
             "tisket_read_issue" => {
                 let id = text("id").ok_or_else(|| Error::IssueNotFound("id is required".into()))?;
+                // An ID that names another tracker goes through the
+                // workspace. A bare ID stays on the repository, which
+                // also holds the closed issues.
+                let ws = self.workspace()?;
                 let repo = crate::Repo::open(&self.root())?;
-                let issue = repo.find_issue(&id)?;
+                let owned: Option<crate::issue::Issue>;
+                let (qualified, issue) = if ws.is_qualified(&id) {
+                    let view = ws.find(&id)?;
+                    (view.qualified.clone(), view.issue)
+                } else {
+                    owned = Some(repo.find_issue(&id)?);
+                    let issue = owned.as_ref().expect("just assigned");
+                    (issue.id.clone(), issue)
+                };
                 Ok(pretty(&json!({
-                    "id": issue.id,
+                    "id": qualified,
                     "title": issue.frontmatter.title,
                     "status": issue.frontmatter.status.to_string(),
                     "labels": issue.frontmatter.labels,
