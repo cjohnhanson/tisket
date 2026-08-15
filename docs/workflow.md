@@ -366,43 +366,44 @@ branch.
 
 ## Epics
 
-An epic is a normal issue that depends on every issue in the epic.
-Tisket has no separate epic type. Follow this convention:
-
-1. Create an issue with an `epic:` title prefix and the `epic` label.
-2. Write the body as a problem statement and a scope.
-3. Add every child issue as a dependency.
+An epic is an issue that lists its children in the `children:` field.
+Tisket has no separate epic type, and a child can live in another
+tracker.
 
 ```
 tisket issue create "epic: context lifecycle management" \
   -l epic,architecture \
   -s discovery \
-  -d "8skh,irx9"
+  --children "8skh,irx9"
 ```
 
-You cannot pick up the epic until every child issue is done.
-`depends_on` blocks pickup while any dependency is still open.
-
-Add each new child issue as a dependency:
+Add a child later with the same field:
 
 ```
-tisket issue edit nbuj -d "8skh,irx9,f4k2"
+tisket issue edit nbuj --children "8skh,irx9,f4k2"
 ```
 
-List the child issues in the body of the epic with a short description
-of each one. A reader then sees the relationship without a check of
-each dependency:
+`tisket issue show` prints the children with the status of each one and
+the count that is done, so you maintain no list by hand:
 
-```markdown
-## Child issues
-
-- 8skh: context lifecycle design (architecture)
-- irx9: almanac skills go unused despite prime injection
-- f4k2: add a due-date filter to issue list
+```
+  Children:
+    done      8skh-context-lifecycle-design   Context lifecycle design
+    todo      irx9-skills-go-unused           Skills go unused
+    1/2 done
 ```
 
-You maintain this list by hand. It repeats the `depends_on` field in a
-readable form.
+A child in another tracker carries its alias: `children: [a:x9k2,
+b:m4p1]`. The alias must be declared in `stores.yml`. An entry whose
+text before the first colon is not a declared alias stays local, so an
+entry such as `x: y` keeps the meaning it always had.
+
+`tisket check` reports a child that names no issue, and a cycle in the
+children of an epic.
+
+Containment is not blocking. `children` says what an epic contains;
+`depends_on` says what an issue waits for. Use `depends_on` when work
+cannot start until another issue is closed.
 
 ## Preparing an issue for agent pickup
 
