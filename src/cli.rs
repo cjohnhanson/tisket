@@ -625,6 +625,7 @@ pub fn run_command(root: &camino::Utf8Path, command: Command) -> crate::Result<(
                         a.project.as_deref(),
                         a.status.as_deref(),
                         a.label.as_deref(),
+                        a.assignee.as_deref(),
                         a.closed,
                         &selectors,
                     )?;
