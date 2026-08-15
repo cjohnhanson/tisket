@@ -4,6 +4,21 @@ use grep_regex::RegexMatcher;
 
 use crate::config::{ProjectConfig, TisketConfig};
 use crate::error::{Error, Result};
+
+/// True when the text names one document, not a path.
+///
+/// An ID is joined onto a project directory to make a file path, so it
+/// must hold no separator, no parent component, and no root. A served
+/// tracker takes this text from the network.
+fn is_plain_stem(input: &str) -> bool {
+    !input.is_empty()
+        && !input.contains('/')
+        && !input.contains('\\')
+        && input != "."
+        && input != ".."
+        && !input.starts_with('.')
+        && !input.contains('\0')
+}
 use crate::git::{self, GitContext};
 use crate::issue::Status;
 use crate::issue::{self, Issue};
@@ -141,6 +156,15 @@ impl Repo {
     /// prefix such as "ab12", a slug such as "fix-the-widget", or a legacy
     /// ID with no prefix.
     pub fn resolve_id(&self, input: &str) -> Result<String> {
+        // An ID names one file inside a project directory. It is never a
+        // path. Without this check, an input such as "../../secrets"
+        // joins onto the project directory and reaches a file outside
+        // the tracker, which every caller of this function then reads or
+        // writes. The served tracker takes this input from the network.
+        if !is_plain_stem(input) {
+            return Err(Error::IssueNotFound(input.to_string()));
+        }
+
         // Try an exact match first. This covers a full ID and a legacy ID.
         let projects = self.list_projects()?;
         for proj in &projects {
@@ -941,6 +965,38 @@ impl Repo {
 #[cfg(test)]
 mod search_tests {
     use super::*;
+
+    #[test]
+    fn an_id_that_is_a_path_is_refused() {
+        // An ID is joined onto a project directory. A served tracker
+        // takes this text from the network, so a path here reads and
+        // writes files outside the tracker.
+        for bad in [
+            "../../secrets",
+            "../sibling",
+            "/etc/passwd",
+            "a/b",
+            "..",
+            ".",
+            ".hidden",
+            "",
+        ] {
+            assert!(!is_plain_stem(bad), "{bad} must be refused");
+        }
+    }
+
+    #[test]
+    fn an_ordinary_id_is_accepted() {
+        for good in [
+            "ab12-fix-the-widget",
+            "ab12",
+            "fix-the-widget",
+            "legacy_id",
+            "zz99-old-note",
+        ] {
+            assert!(is_plain_stem(good), "{good} must be accepted");
+        }
+    }
 
     /// The match classification must come from the parsed fields, not
     /// from the raw YAML lines. A block-style label list puts each
