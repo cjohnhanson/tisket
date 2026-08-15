@@ -225,7 +225,9 @@ impl Repo {
             let entry = entry?;
             let path = Utf8PathBuf::try_from(entry.path())
                 .map_err(|e| std::io::Error::new(std::io::ErrorKind::InvalidData, e))?;
-            if path.extension() == Some("md") {
+            if path.extension() == Some("md")
+                && mdstore::store::is_regular_file(path.as_std_path())
+            {
                 let stem = path.file_stem().unwrap_or("");
                 if stem.starts_with(prefix_dash) && !out.contains(&stem.to_string()) {
                     out.push(stem.to_string());
@@ -243,7 +245,9 @@ impl Repo {
             let entry = entry?;
             let path = Utf8PathBuf::try_from(entry.path())
                 .map_err(|e| std::io::Error::new(std::io::ErrorKind::InvalidData, e))?;
-            if path.extension() == Some("md") {
+            if path.extension() == Some("md")
+                && mdstore::store::is_regular_file(path.as_std_path())
+            {
                 let stem = path.file_stem().unwrap_or("");
                 if let Some((_, file_slug)) = extract_prefix(stem)
                     && file_slug == slug
@@ -277,7 +281,9 @@ impl Repo {
             let entry = entry?;
             let path = Utf8PathBuf::try_from(entry.path())
                 .map_err(|e| std::io::Error::new(std::io::ErrorKind::InvalidData, e))?;
-            if path.extension() == Some("md") {
+            if path.extension() == Some("md")
+                && mdstore::store::is_regular_file(path.as_std_path())
+            {
                 let stem = path.file_stem().unwrap_or("");
                 if let Some((prefix, _)) = extract_prefix(stem)
                     && !out.iter().any(|p| p == prefix)
@@ -313,7 +319,9 @@ impl Repo {
             let entry = entry?;
             let path = Utf8PathBuf::try_from(entry.path())
                 .map_err(|e| std::io::Error::new(std::io::ErrorKind::InvalidData, e))?;
-            if path.extension() == Some("md") {
+            if path.extension() == Some("md")
+                && mdstore::store::is_regular_file(path.as_std_path())
+            {
                 let stem = path.file_stem().unwrap_or("");
                 // Compare the slug part of this filename.
                 if let Some((_, file_slug)) = extract_prefix(stem) {
@@ -371,7 +379,8 @@ impl Repo {
 
         let body = opts.body.as_deref().unwrap_or("");
         let content = issue::serialize_issue(&fm, body, "");
-        std::fs::write(&issue_path, content)?;
+        mdstore::store::write_document(issue_path.as_std_path(), &content)
+            .map_err(|e| Error::Store(e.to_string()))?;
 
         Ok(id)
     }
@@ -452,9 +461,12 @@ impl Repo {
             let entry = entry?;
             let path = Utf8PathBuf::try_from(entry.path())
                 .map_err(|e| std::io::Error::new(std::io::ErrorKind::InvalidData, e))?;
-            if path.extension() == Some("md") {
+            if path.extension() == Some("md")
+                && mdstore::store::is_regular_file(path.as_std_path())
+            {
                 let id = path.file_stem().unwrap_or("").to_string();
-                let content = std::fs::read_to_string(&path)?;
+                let content = mdstore::store::read_document(path.as_std_path())
+                    .map_err(|e| Error::Store(e.to_string()))?;
                 let (fm, body, scratch) = issue::parse_issue(&content)?;
                 out.push(Issue {
                     id,
@@ -517,7 +529,8 @@ impl Repo {
             // Look for an open issue.
             let active_path = project_dir.join(format!("{resolved}.md"));
             if active_path.exists() {
-                let content = std::fs::read_to_string(&active_path)?;
+                let content = mdstore::store::read_document(active_path.as_std_path())
+                    .map_err(|e| Error::Store(e.to_string()))?;
                 let (fm, body, scratch) = issue::parse_issue(&content)?;
                 let mut iss = Issue {
                     id: resolved.clone(),
@@ -536,7 +549,8 @@ impl Repo {
             // Look for a closed issue.
             let closed_path = project_dir.join(".closed").join(format!("{resolved}.md"));
             if closed_path.exists() {
-                let content = std::fs::read_to_string(&closed_path)?;
+                let content = mdstore::store::read_document(closed_path.as_std_path())
+                    .map_err(|e| Error::Store(e.to_string()))?;
                 let (fm, body, scratch) = issue::parse_issue(&content)?;
                 let mut iss = Issue {
                     id: resolved.clone(),
@@ -576,7 +590,8 @@ impl Repo {
 
         let project_dir = self.tisket_dir().join(&iss.project);
         let issue_path = project_dir.join(format!("{}.md", iss.id));
-        let content = std::fs::read_to_string(&issue_path)?;
+        let content = mdstore::store::read_document(issue_path.as_std_path())
+            .map_err(|e| Error::Store(e.to_string()))?;
         let (mut fm, mut body, scratch) = issue::parse_issue(&content)?;
 
         if let Some(new_status) = opts.status {
@@ -651,7 +666,8 @@ impl Repo {
 
         issue::update_timestamp(&mut fm);
         let new_content = issue::serialize_issue(&fm, &body, &scratch);
-        std::fs::write(&issue_path, new_content)?;
+        mdstore::store::write_document(issue_path.as_std_path(), &new_content)
+            .map_err(|e| Error::Store(e.to_string()))?;
         Ok(())
     }
 
@@ -670,7 +686,8 @@ impl Repo {
         } else {
             project_dir.join(format!("{}.md", iss.id))
         };
-        let content = std::fs::read_to_string(&issue_path)?;
+        let content = mdstore::store::read_document(issue_path.as_std_path())
+            .map_err(|e| Error::Store(e.to_string()))?;
         let (fm, body, scratch) = issue::parse_issue(&content)?;
         let new_scratch = if scratch.is_empty() {
             text.to_string()
@@ -678,7 +695,8 @@ impl Repo {
             format!("{scratch}\n{text}")
         };
         let new_content = issue::serialize_issue(&fm, &body, &new_scratch);
-        std::fs::write(&issue_path, new_content)?;
+        mdstore::store::write_document(issue_path.as_std_path(), &new_content)
+            .map_err(|e| Error::Store(e.to_string()))?;
         Ok(())
     }
 
@@ -690,10 +708,12 @@ impl Repo {
         } else {
             project_dir.join(format!("{}.md", iss.id))
         };
-        let content = std::fs::read_to_string(&issue_path)?;
+        let content = mdstore::store::read_document(issue_path.as_std_path())
+            .map_err(|e| Error::Store(e.to_string()))?;
         let (fm, body, _) = issue::parse_issue(&content)?;
         let new_content = issue::serialize_issue(&fm, &body, text);
-        std::fs::write(&issue_path, new_content)?;
+        mdstore::store::write_document(issue_path.as_std_path(), &new_content)
+            .map_err(|e| Error::Store(e.to_string()))?;
         Ok(())
     }
 
@@ -752,7 +772,8 @@ impl Repo {
             }
             content.push_str("\n## Scratch Notes\n");
         }
-        std::fs::write(&issue_path, content)?;
+        mdstore::store::write_document(issue_path.as_std_path(), &content)
+            .map_err(|e| Error::Store(e.to_string()))?;
         Ok(())
     }
 
@@ -771,14 +792,16 @@ impl Repo {
         let closed_dir = project_dir.join(".closed");
         let closed_path = closed_dir.join(format!("{}.md", iss.id));
 
-        let content = std::fs::read_to_string(&issue_path)?;
+        let content = mdstore::store::read_document(issue_path.as_std_path())
+            .map_err(|e| Error::Store(e.to_string()))?;
         let (mut fm, body, scratch) = issue::parse_issue(&content)?;
         fm.status = terminal_status;
         issue::update_timestamp(&mut fm);
 
         std::fs::create_dir_all(&closed_dir)?;
         let new_content = issue::serialize_issue(&fm, &body, &scratch);
-        std::fs::write(&closed_path, new_content)?;
+        mdstore::store::write_document(closed_path.as_std_path(), &new_content)
+            .map_err(|e| Error::Store(e.to_string()))?;
         std::fs::remove_file(&issue_path)?;
 
         Ok(())
@@ -804,7 +827,8 @@ impl Repo {
         issue::update_timestamp(&mut fm);
 
         let new_content = issue::serialize_issue(&fm, &body, &scratch);
-        std::fs::write(&active_path, new_content)?;
+        mdstore::store::write_document(active_path.as_std_path(), &new_content)
+            .map_err(|e| Error::Store(e.to_string()))?;
         std::fs::remove_file(&closed_path)?;
 
         // Remove the .closed/ directory if it is now empty.
@@ -891,7 +915,9 @@ impl Repo {
             let entry = entry?;
             let path = Utf8PathBuf::try_from(entry.path())
                 .map_err(|e| std::io::Error::new(std::io::ErrorKind::InvalidData, e))?;
-            if path.extension() != Some("md") {
+            if path.extension() != Some("md")
+                || !mdstore::store::is_regular_file(path.as_std_path())
+            {
                 continue;
             }
 
