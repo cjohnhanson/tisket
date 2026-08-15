@@ -74,7 +74,7 @@ impl Repo {
             return Err(Error::NotInitialized);
         }
         let content = std::fs::read_to_string(&config_path)?;
-        let config: TisketConfig = serde_yml::from_str(&content)?;
+        let config: TisketConfig = yaml_serde::from_str(&content)?;
         let git = GitContext::open(root)?;
         Ok(Repo {
             root: root.to_owned(),
@@ -145,7 +145,7 @@ impl Repo {
             return Err(Error::ProjectNotFound(name.into()));
         }
         let content = std::fs::read_to_string(&config_path)?;
-        let config: ProjectConfig = serde_yml::from_str(&content)?;
+        let config: ProjectConfig = yaml_serde::from_str(&content)?;
         Ok(config)
     }
 
@@ -651,11 +651,11 @@ impl Repo {
         for (key, value) in opts.tags {
             // Parse the value as a number. If that fails, keep it as a string.
             let yaml_value = if let Ok(n) = value.parse::<i64>() {
-                serde_yml::Value::Number(n.into())
+                yaml_serde::Value::Number(n.into())
             } else if let Ok(f) = value.parse::<f64>() {
-                serde_yml::Value::Number(serde_yml::Number::from(f))
+                yaml_serde::Value::Number(yaml_serde::Number::from(f))
             } else {
-                serde_yml::Value::String(value.clone())
+                yaml_serde::Value::String(value.clone())
             };
             fm.tags.insert(key.clone(), yaml_value);
         }
