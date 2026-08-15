@@ -24,6 +24,9 @@ pub enum Error {
     #[error("store: {0}")]
     Store(String),
 
+    #[error("invalid selector '{0}'; a selector is namespace:value")]
+    InvalidSelector(String),
+
     #[error("store '{0}' is not declared in stores.yml")]
     UndeclaredStore(String),
 
