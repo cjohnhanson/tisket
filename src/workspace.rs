@@ -28,7 +28,7 @@ impl DocumentSource for IssueSource {
     ) -> mdstore::Result<Vec<Entry<Issue>>> {
         let dir_name = if content.exists("tisket.yml") {
             let text = content.read("tisket.yml")?;
-            serde_yml::from_str::<serde_yml::Value>(&text)
+            yaml_serde::from_str::<yaml_serde::Value>(&text)
                 .ok()
                 .and_then(|v| {
                     v.get("tisket_dir")

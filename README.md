@@ -23,6 +23,8 @@ tisket issue show ab12                # show the issue details
 tisket issue edit ab12 --add-label urgent
 tisket issue close ab12               # move the file to .closed/
 tisket search "TLS|certificates"      # search every issue with a regex
+tisket store list                     # show this tracker and the trackers it declares
+tisket serve [--bind ADDR]            # serve this tracker over MCP
 tisket docs [topic]                   # show the bundled documentation
 ```
 
@@ -64,6 +66,24 @@ every other branch. It compares the files field by field. If another
 branch has a different status, assignee, or priority, tisket marks the
 issue with a `*`. It also names each branch that differs. You see the
 conflict before a merge overwrites one version.
+
+## Serving over MCP
+
+`tisket serve` offers the same tracker to a Model Context Protocol
+client. The library answers both interfaces, so the server returns what
+the CLI returns.
+
+```sh
+tisket serve                        # speak MCP on stdin and stdout
+tisket serve --bind 127.0.0.1:7432  # serve over HTTP at /mcp on that address
+tisket serve --access read-write    # also allow appending to working notes
+```
+
+The server is read-only by default. With `--access read-write` it adds
+one write: appending to an issue's scratch notes. A caller cannot
+create an issue, change a status, or edit a body through the server. A
+served tracker has no authentication: bind it to `127.0.0.1`, or put a
+proxy that authenticates in front of it.
 
 ## Documentation
 
