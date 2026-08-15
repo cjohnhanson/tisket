@@ -54,7 +54,7 @@ pub enum Error {
     Io(#[from] std::io::Error),
 
     #[error("{0}")]
-    Yaml(#[from] serde_yml::Error),
+    Yaml(#[from] yaml_serde::Error),
 
     #[error("git: {0}")]
     Git(String),

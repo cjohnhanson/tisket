@@ -877,8 +877,8 @@ fn issue_to_json(iss: &Issue) -> serde_json::Value {
         .iter()
         .map(|(k, v)| {
             let jv = match v {
-                serde_yml::Value::String(s) => serde_json::Value::String(s.clone()),
-                serde_yml::Value::Number(n) => {
+                yaml_serde::Value::String(s) => serde_json::Value::String(s.clone()),
+                yaml_serde::Value::Number(n) => {
                     if let Some(i) = n.as_i64() {
                         serde_json::Value::Number(i.into())
                     } else if let Some(f) = n.as_f64() {
@@ -887,7 +887,7 @@ fn issue_to_json(iss: &Issue) -> serde_json::Value {
                         serde_json::Value::String(n.to_string())
                     }
                 }
-                serde_yml::Value::Bool(b) => serde_json::Value::Bool(*b),
+                yaml_serde::Value::Bool(b) => serde_json::Value::Bool(*b),
                 other => serde_json::Value::String(format!("{other:?}")),
             };
             (k.clone(), jv)
@@ -1013,9 +1013,9 @@ fn print_issue_show(iss: &Issue) {
         println!("  {:<10}", "Tags:");
         for (k, v) in &iss.frontmatter.tags {
             let v_str = match v {
-                serde_yml::Value::String(s) => s.clone(),
-                serde_yml::Value::Number(n) => n.to_string(),
-                serde_yml::Value::Bool(b) => b.to_string(),
+                yaml_serde::Value::String(s) => s.clone(),
+                yaml_serde::Value::Number(n) => n.to_string(),
+                yaml_serde::Value::Bool(b) => b.to_string(),
                 other => format!("{other:?}"),
             };
             println!("    {k}: {v_str}");
