@@ -376,3 +376,42 @@ Report the problems that the declarations create:
 - In a `shared: true` tracker, a clone cannot reach a dependency.
 
 The command exits non-zero when it finds any.
+
+
+## `tisket serve`
+
+Serve this tracker over the Model Context Protocol.
+
+```
+tisket serve                        Speak MCP on stdin and stdout
+tisket serve --root <DIR>           Serve the tracker at DIR (default: .)
+tisket serve --bind <ADDR>          Serve over HTTP at ADDR instead
+tisket serve --surfaces <LIST>      Offer these surfaces (default: resources,tools)
+tisket serve --access <MODE>        read-only (default) or read-write
+```
+
+Omit `--bind`, and the server speaks on stdin and stdout, for a client
+that starts the process. Give `--bind`, and it serves over HTTP at
+`/mcp` on that address, for a client that connects to it.
+
+`--surfaces` takes `resources`, `tools`, or both, separated by commas.
+The protocol cannot negotiate which of these a client understands, so
+the choice is configuration. Tools are the surface every client can
+call, so the default keeps them on.
+
+A read-only server offers `tisket_list_issues`, `tisket_read_issue`,
+`tisket_rollup`, and `tisket_check`. `--access read-write` adds
+`tisket_append_scratch`, and nothing else. A caller cannot create an
+issue, change a status, or edit a body through the server.
+
+### Authentication
+
+A served tracker has none. The server answers whoever opens the
+connection.
+
+This is deliberate. Authentication belongs in front of the server, in
+something built for it: a reverse proxy that terminates TLS and checks
+a token or an identity provider.
+
+Bind to `127.0.0.1` for a client on this machine. To serve anybody
+else, put the server behind a proxy that authenticates.
