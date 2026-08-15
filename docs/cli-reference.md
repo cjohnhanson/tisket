@@ -76,6 +76,7 @@ Create a new issue. Tisket makes the filename from a slug of the title. For exam
 | `--assignee <name>` | `-a` | | Assignee |
 | `--labels <csv>` | `-l` | | Comma-separated labels |
 | `--depends-on <csv>` | `-d` | | Comma-separated issue IDs this issue depends on |
+| `--children <csv>` | | | Comma-separated child issue IDs. An entry may name another tracker, as `alias:id` |
 | `--due <date>` | | | Due date in YYYY-MM-DD format |
 | `--status <status>` | `-s` | `todo` | Initial status |
 | `--body <text>` | `-b` | | Issue body text, inline |
@@ -106,11 +107,11 @@ Show the full details of an issue.
 | Option | Short | Default | Description |
 |--------|-------|---------|-------------|
 | `--format <fmt>` | | `text` | Output format: `text` or `json` |
-| `--field <name>` | | | Extract one field value. Valid fields: `title`, `status`, `priority`, `assignee`, `due_date`, `labels`, `depends_on`, `body`, `scratch`, `id`, `project` |
+| `--field <name>` | | | Extract one field value. Valid fields: `title`, `status`, `priority`, `assignee`, `due_date`, `labels`, `depends_on`, `children`, `body`, `scratch`, `id`, `project` |
 
 Text output shows every frontmatter field, the body, and the branch divergence. JSON output holds every field in one object.
 
-With `--field`, the command prints only that field value. It adds no formatting and no labels. For a list field (`labels`, `depends_on`), it separates the values with commas.
+With `--field`, the command prints only that field value. It adds no formatting and no labels. For a list field (`labels`, `depends_on`, `children`), it separates the values with commas.
 
 ### `tisket issue path <id>`
 
@@ -130,6 +131,7 @@ Edit the metadata or the body of an existing issue. The command changes only the
 | `--add-label <label>` | | Add one label and keep the existing labels |
 | `--remove-label <label>` | | Remove one label and keep the other labels |
 | `--depends-on <csv>` | `-d` | Replace every dependency (comma-separated) |
+| `--children <csv>` | | Replace every child (comma-separated). An entry may name another tracker, as `alias:id` |
 | `--due <date>` | | Set the due date (YYYY-MM-DD) |
 | `--body <text>` | | Replace the entire body below the frontmatter |
 | `--append <text>` | | Append text to the body. Adds a blank line first if the body is not empty |
@@ -272,6 +274,7 @@ assignee:
 due_date: "2025-06-15"
 labels: []
 depends_on: []
+children: []
 created: "2025-01-15T10:30:00Z"
 updated: "2025-01-15T10:30:00Z"
 ```
@@ -285,6 +288,7 @@ updated: "2025-01-15T10:30:00Z"
 | `due_date` | string or null | no | null | Due date, usually YYYY-MM-DD. Tisket quotes it in the file |
 | `labels` | list of strings | no | `[]` | Free-form labels |
 | `depends_on` | list of strings | no | `[]` | Issue IDs that must close first |
+| `children` | list of strings | no | `[]` | The issues this epic contains. An entry may name another tracker, as `alias:id`. Containment does not block pickup |
 | `created` | string or null | no | auto | ISO 8601 timestamp. Tisket sets it at creation |
 | `updated` | string or null | no | auto | ISO 8601 timestamp. Tisket updates it on every edit |
 
@@ -315,6 +319,7 @@ With `--format json`, each issue looks like this:
   "due_date": "2025-06-15",
   "labels": ["bug", "frontend"],
   "depends_on": ["cd34-other-issue"],
+  "children": ["ef56-a-child-issue"],
   "body": "Full body text here.",
   "scratch": "Agent notes here.",
   "closed": false
