@@ -28,6 +28,6 @@ chrono = { version = "0.4", features = ["serde"] }
 colored = "3.1.1"
 grep-regex = "0.1.14"
 grep-matcher = "0.1.8"
-gix = { version = "0.80.0", default-features = false, features = ["basic"] }
-mdstore = { git = "https://github.com/cjohnhanson/mdstore", rev = "b081f50", features = ["mcp"] }
+gix = { version = "0.86.0", default-features = false, features = ["basic", "sha1"] }
+mdstore = { git = "https://github.com/cjohnhanson/mdstore", rev = "b458808", features = ["mcp"] }
 sigpipe = "0.1.3"
