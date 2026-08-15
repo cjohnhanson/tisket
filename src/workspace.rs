@@ -45,37 +45,47 @@ impl DocumentSource for IssueSource {
         // Issues live under one directory for each project.
         let mut issues = Vec::new();
         for project in projects_of(content, &dir_name) {
-            let subdir = format!("{dir_name}/{project}");
-            let scan = content.scan(&subdir)?;
-            for (path, why) in scan.skipped {
-                skipped.push(format!("{} ({why})", path.display()));
-            }
-            for entry in scan.entries {
-                // One unreadable issue never takes down a tracker. A
-                // bare `?` here is caught one level up, where the whole
-                // member becomes an empty document list.
-                let text = match content.read(&entry.path.to_string_lossy()) {
-                    Ok(t) => t,
-                    Err(e) => {
-                        skipped.push(format!("{} ({e})", entry.path.display()));
-                        continue;
-                    }
+            // A closed issue is still an issue. An epic that contains
+            // one reported it as unknown and undercounted the done
+            // ones, because the graph held only the open directory.
+            let subdirs = [
+                (format!("{dir_name}/{project}"), false),
+                (format!("{dir_name}/{project}/.closed"), true),
+            ];
+            for (subdir, closed) in subdirs {
+                let Ok(scan) = content.scan(&subdir) else {
+                    continue;
                 };
-                match issue::parse_issue(&text) {
-                    Ok((frontmatter, body, scratch)) => issues.push(Entry {
-                        id: entry.stem.clone(),
-                        doc: Issue {
-                            id: entry.stem,
-                            project: project.clone(),
-                            frontmatter,
-                            body,
-                            scratch,
-                            closed: false,
-                            diverges: false,
-                            branch_statuses: Vec::new(),
-                        },
-                    }),
-                    Err(e) => skipped.push(format!("{} ({e})", entry.path.display())),
+                for (path, why) in scan.skipped {
+                    skipped.push(format!("{} ({why})", path.display()));
+                }
+                for entry in scan.entries {
+                    // One unreadable issue never takes down a tracker. A
+                    // bare `?` here is caught one level up, where the whole
+                    // member becomes an empty document list.
+                    let text = match content.read(&entry.path.to_string_lossy()) {
+                        Ok(t) => t,
+                        Err(e) => {
+                            skipped.push(format!("{} ({e})", entry.path.display()));
+                            continue;
+                        }
+                    };
+                    match issue::parse_issue(&text) {
+                        Ok((frontmatter, body, scratch)) => issues.push(Entry {
+                            id: entry.stem.clone(),
+                            doc: Issue {
+                                id: entry.stem,
+                                project: project.clone(),
+                                frontmatter,
+                                body,
+                                scratch,
+                                closed,
+                                diverges: false,
+                                branch_statuses: Vec::new(),
+                            },
+                        }),
+                        Err(e) => skipped.push(format!("{} ({e})", entry.path.display())),
+                    }
                 }
             }
         }
@@ -128,9 +138,7 @@ fn resolve_within(input: &str, ids: &[&str]) -> Option<usize> {
     let by_slug: Vec<usize> = ids
         .iter()
         .enumerate()
-        .filter(|(_, id)| {
-            mdstore::slug::extract_prefix(id).is_some_and(|(_, slug)| slug == input)
-        })
+        .filter(|(_, id)| mdstore::slug::extract_prefix(id).is_some_and(|(_, slug)| slug == input))
         .map(|(i, _)| i)
         .collect();
     if by_slug.len() == 1 {
@@ -272,8 +280,11 @@ impl Workspace {
                 .target_of(member, alias)
                 .ok_or_else(|| Error::UndeclaredStore(alias.clone()))?;
         }
-        let entries: Vec<&Entry<Issue>> =
-            self.snapshot.member_documents(member).map(|(_, e)| e).collect();
+        let entries: Vec<&Entry<Issue>> = self
+            .snapshot
+            .member_documents(member)
+            .map(|(_, e)| e)
+            .collect();
         let ids: Vec<&str> = entries.iter().map(|e| e.id.as_str()).collect();
         let index =
             resolve_within(&r.id, &ids).ok_or_else(|| Error::IssueNotFound(input.into()))?;
@@ -358,7 +369,10 @@ impl Workspace {
 
     /// Declarations that other clones could not follow.
     pub fn unshareable(&self, root: &Utf8Path) -> Vec<(String, String)> {
-        self.snapshot.graph.config(0).unshareable(root.as_std_path())
+        self.snapshot
+            .graph
+            .config(0)
+            .unshareable(root.as_std_path())
     }
 
     /// A cycle in the children of an epic, if one exists.
@@ -371,15 +385,12 @@ impl Workspace {
                 let aliases = self.snapshot.graph.config(current.member).aliases();
                 for text in &entry.doc.frontmatter.children {
                     let r = StoreRef::parse(text, &aliases);
-                    let Some(child) =
-                        self.snapshot.resolve_from(current.member, &r, &self.source)
+                    let Some(child) = self.snapshot.resolve_from(current.member, &r, &self.source)
                     else {
                         continue;
                     };
                     if child == start {
-                        return Some(
-                            seen.iter().map(|d| self.snapshot.qualify(*d)).collect(),
-                        );
+                        return Some(seen.iter().map(|d| self.snapshot.qualify(*d)).collect());
                     }
                     if !seen.contains(&child) {
                         seen.push(child);
