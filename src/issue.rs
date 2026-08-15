@@ -105,11 +105,11 @@ pub struct IssueFrontmatter {
     pub created: Option<String>,
     pub updated: Option<String>,
     #[serde(default, skip_serializing_if = "std::collections::BTreeMap::is_empty")]
-    pub tags: std::collections::BTreeMap<String, serde_yml::Value>,
+    pub tags: std::collections::BTreeMap<String, yaml_serde::Value>,
     /// Frontmatter keys tisket does not model. They are kept so an edit
     /// never drops a key a user or another tool added.
     #[serde(flatten)]
-    pub extra: serde_yml::Mapping,
+    pub extra: yaml_serde::Mapping,
 }
 
 
@@ -169,7 +169,7 @@ fn split_body_scratch(content: &str) -> (String, String) {
 
 /// Serialize an issue to frontmattered markdown.
 ///
-/// serde_yml does the YAML, so a title, label, dependency, or tag value
+/// yaml_serde does the YAML, so a title, label, dependency, or tag value
 /// with a comma, a quote, a colon, or a backslash is escaped correctly.
 /// The old hand-rolled writer produced a file that no longer parsed,
 /// and one bad file broke every repo-wide command. The scratch notes
@@ -222,7 +222,7 @@ pub fn new_frontmatter(title: &str, status: Status) -> IssueFrontmatter {
         created: Some(now.clone()),
         updated: Some(now),
         tags: std::collections::BTreeMap::new(),
-        extra: serde_yml::Mapping::new(),
+        extra: yaml_serde::Mapping::new(),
     }
 }
 
@@ -294,7 +294,7 @@ mod serialize_tests {
         // Commas, brackets, quotes, colons, and a backslash used to break
         // the hand-rolled writer and produce an unparseable file.
         let mut tags = std::collections::BTreeMap::new();
-        tags.insert("note".to_string(), serde_yml::Value::String("has: colon, and \"quote\"".to_string()));
+        tags.insert("note".to_string(), yaml_serde::Value::String("has: colon, and \"quote\"".to_string()));
         let fm = IssueFrontmatter {
             title: r#"a: "quoted", [x] and a \ backslash"#.to_string(),
             status: Status::InProgress,
@@ -307,7 +307,7 @@ mod serialize_tests {
             created: Some("2000-01-01T00:00:00Z".to_string()),
             updated: Some("2000-01-02T00:00:00Z".to_string()),
             tags,
-            extra: serde_yml::Mapping::new(),
+            extra: yaml_serde::Mapping::new(),
         };
         let (back, body, scratch) = round_trip(&fm, "the body", "some scratch");
         assert_eq!(back.title, fm.title);
@@ -328,6 +328,6 @@ mod serialize_tests {
         update_timestamp(&mut fm);
         let (back, _, _) = round_trip(&fm, &body, &scratch);
         assert_eq!(back.extra.get("owner").and_then(|v| v.as_str()), Some("alice"));
-        assert_eq!(back.extra.get("sprint").and_then(serde_yml::Value::as_i64), Some(42));
+        assert_eq!(back.extra.get("sprint").and_then(yaml_serde::Value::as_i64), Some(42));
     }
 }
