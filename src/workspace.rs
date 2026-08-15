@@ -51,7 +51,16 @@ impl DocumentSource for IssueSource {
                 skipped.push(format!("{} ({why})", path.display()));
             }
             for entry in scan.entries {
-                let text = content.read(&entry.path.to_string_lossy())?;
+                // One unreadable issue never takes down a tracker. A
+                // bare `?` here is caught one level up, where the whole
+                // member becomes an empty document list.
+                let text = match content.read(&entry.path.to_string_lossy()) {
+                    Ok(t) => t,
+                    Err(e) => {
+                        skipped.push(format!("{} ({e})", entry.path.display()));
+                        continue;
+                    }
+                };
                 match issue::parse_issue(&text) {
                     Ok((frontmatter, body, scratch)) => issues.push(Entry {
                         id: entry.stem.clone(),
