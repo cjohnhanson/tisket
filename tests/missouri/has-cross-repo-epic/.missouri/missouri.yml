@@ -72,3 +72,21 @@ assertions:
   - name: "sync reports that no remote tracker is declared"
     command: "tisket store sync"
     stdout: "no remote trackers declared\n"
+
+  # Findings from the cold review
+  - name: "a cross-tracker ID that the tool printed reads back"
+    command: "tisket issue show a:add-the-parser --field title"
+    stdout: "Add the parser\n"
+  - name: "a malformed selector is an error, not a silent widening"
+    command: "tisket issue list --where labelbug"
+    should_fail: true
+  - name: "the error names the selector"
+    command: "! tisket issue list --where labelbug >/dev/null 2>&1 && tisket issue list --where labelbug 2>&1 >/dev/null | grep -q 'invalid selector'"
+  - name: "a tag selector with any namespace still works"
+    command: "tisket issue list --where status:todo | grep -q 'Ship the integration'"
+  - name: "hooks setup exits through the error path, not a panic"
+    command: "! tisket hooks setup claude >/dev/null 2>&1 && tisket hooks setup claude 2>&1 >/dev/null | grep -q 'not implemented yet'"
+  - name: "a served status filter finds a terminal status"
+    command: "(cd proj-a && tisket issue edit add-the-parser -s done >/dev/null); mcp 'tisket serve' '{\"jsonrpc\":\"2.0\",\"id\":2,\"method\":\"tools/call\",\"params\":{\"name\":\"tisket_list_issues\",\"arguments\":{\"status\":\"done\"}}}' | jq -r 'select(.id==2) | .result.content[0].text' | jq -e 'type == \"array\"'"
+  - name: "a served status filter rejects a status that is not one"
+    command: "mcp 'tisket serve' '{\"jsonrpc\":\"2.0\",\"id\":2,\"method\":\"tools/call\",\"params\":{\"name\":\"tisket_list_issues\",\"arguments\":{\"status\":\"nonsense\"}}}' | jq -r 'select(.id==2) | .result.content[0].text' | grep -q 'is not a status'"
