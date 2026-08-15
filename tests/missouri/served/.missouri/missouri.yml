@@ -38,3 +38,17 @@ assertions:
   - name: "the issue's status is untouched"
     command: "tisket issue show ship-the-integration --field status"
     stdout: "todo\n"
+
+  # An ID names one document, never a path. A served tracker takes this
+  # text from the network, so a path here would read and write files
+  # outside the tracker.
+  - name: "a path-shaped id is refused on the read path"
+    command: "mcp 'tisket serve' '{\"jsonrpc\":\"2.0\",\"id\":2,\"method\":\"tools/call\",\"params\":{\"name\":\"tisket_read_issue\",\"arguments\":{\"id\":\"../../../etc/hosts\"}}}' | jq -r 'select(.id==2) | .result.content[0].text' | grep -q 'not found'"
+  - name: "a path-shaped id is refused on the write path"
+    command: "mcp 'tisket serve --access read-write' '{\"jsonrpc\":\"2.0\",\"id\":2,\"method\":\"tools/call\",\"params\":{\"name\":\"tisket_append_scratch\",\"arguments\":{\"id\":\"../../../tmp/tisket-traversal-probe\",\"text\":\"INJECTED\"}}}' | jq -r 'select(.id==2) | .result.content[0].text' | grep -q 'not found'"
+  - name: "the write attempt created nothing outside the tracker"
+    command: "test ! -f /tmp/tisket-traversal-probe.md"
+  - name: "an absolute id is refused"
+    command: "mcp 'tisket serve' '{\"jsonrpc\":\"2.0\",\"id\":2,\"method\":\"tools/call\",\"params\":{\"name\":\"tisket_read_issue\",\"arguments\":{\"id\":\"/etc/hosts\"}}}' | jq -r 'select(.id==2) | .result.content[0].text' | grep -q 'not found'"
+  - name: "an ordinary id still resolves"
+    command: "mcp 'tisket serve' '{\"jsonrpc\":\"2.0\",\"id\":2,\"method\":\"tools/call\",\"params\":{\"name\":\"tisket_read_issue\",\"arguments\":{\"id\":\"ship-the-integration\"}}}' | jq -r 'select(.id==2) | .result.content[0].text' | jq -e '.title == \"Ship the integration\"'"
