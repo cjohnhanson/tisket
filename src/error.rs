@@ -24,6 +24,14 @@ pub enum Error {
     #[error("store: {0}")]
     Store(String),
 
+    /// A served tracker takes its arguments from the network, and a
+    /// wrong type is a caller mistake, not an empty filter.
+    #[error("'{0}' must be a string")]
+    InvalidArgument(String),
+
+    #[error("{tool} needs the '{arg}' argument")]
+    MissingArgument { tool: String, arg: String },
+
     #[error("invalid selector '{0}'; a selector is namespace:value")]
     InvalidSelector(String),
 

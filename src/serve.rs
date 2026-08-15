@@ -16,10 +16,9 @@ use camino::Utf8PathBuf;
 use mdstore::mcp::{Access, DocUri, ServeConfig, Surface};
 use rmcp::model::{
     CallToolRequestParams, CallToolResponse, CallToolResult, ContentBlock, ErrorData as McpError,
-    Implementation, InitializeResult, ListResourcesResult, ListToolsResult,
-    PaginatedRequestParams, ProtocolVersion, ReadResourceRequestParams, ReadResourceResponse,
-    ReadResourceResult, Resource, ResourceContents, ResourcesCapability, ServerCapabilities, Tool,
-    ToolsCapability,
+    Implementation, InitializeResult, ListResourcesResult, ListToolsResult, PaginatedRequestParams,
+    ProtocolVersion, ReadResourceRequestParams, ReadResourceResponse, ReadResourceResult, Resource,
+    ResourceContents, ResourcesCapability, ServerCapabilities, Tool, ToolsCapability,
 };
 use rmcp::service::RequestContext;
 use rmcp::{RoleServer, ServerHandler};
@@ -121,26 +120,23 @@ impl TisketServer {
     }
 
     fn call(&self, name: &str, args: &Map<String, Value>) -> Result<String> {
-        let text = |key: &str| args.get(key).and_then(Value::as_str).map(str::to_string);
+        // An optional argument of the wrong type was dropped, so a
+        // filtered query came back unfiltered and marked as success.
+        // Absent is fine; wrong is an error.
+        let text = |key: &str| -> Result<Option<String>> {
+            match args.get(key) {
+                None | Some(Value::Null) => Ok(None),
+                Some(Value::String(v)) => Ok(Some(v.clone())),
+                Some(_) => Err(Error::InvalidArgument(key.to_string())),
+            }
+        };
         match name {
             "tisket_list_issues" => {
                 let repo = crate::Repo::open(&self.root())?;
-                // A terminal status lives in the closed directory, so
-                // asking for it while looking only at open issues
-                // returned an empty list.
-                let status = text("status");
-                let closed = match status.as_deref() {
-                    Some(text) => text
-                        .parse::<crate::issue::Status>()
-                        .map_err(|_| {
-                            Error::Store(format!(
-                                "'{text}' is not a status; use todo, in_progress, done, or cancelled"
-                            ))
-                        })?
-                        .is_terminal(),
-                    None => false,
-                };
-                let issues = repo.list_issues(None, status.as_deref(), None, closed, &[])?;
+                // The library decides what a status filter covers, so
+                // this answers exactly what the CLI answers.
+                let status = text("status")?;
+                let issues = repo.list_issues(None, status.as_deref(), None, false, &[])?;
                 let listed: Vec<Value> = issues
                     .iter()
                     .map(|i| {
@@ -156,7 +152,8 @@ impl TisketServer {
                 Ok(pretty(&listed))
             }
             "tisket_read_issue" => {
-                let id = text("id").ok_or_else(|| Error::IssueNotFound("id is required".into()))?;
+                let id =
+                    text("id")?.ok_or_else(|| Error::IssueNotFound("id is required".into()))?;
                 // An ID that names another tracker goes through the
                 // workspace. A bare ID stays on the repository, which
                 // also holds the closed issues.
@@ -183,7 +180,8 @@ impl TisketServer {
                 })))
             }
             "tisket_rollup" => {
-                let id = text("id").ok_or_else(|| Error::IssueNotFound("id is required".into()))?;
+                let id =
+                    text("id")?.ok_or_else(|| Error::IssueNotFound("id is required".into()))?;
                 let ws = self.workspace()?;
                 let view = ws.find(&id)?;
                 Ok(pretty(&ws.rollup(&view)))
@@ -200,9 +198,10 @@ impl TisketServer {
                 self.config
                     .ensure_writable()
                     .map_err(|e| Error::Store(e.to_string()))?;
-                let id = text("id").ok_or_else(|| Error::IssueNotFound("id is required".into()))?;
+                let id =
+                    text("id")?.ok_or_else(|| Error::IssueNotFound("id is required".into()))?;
                 let body =
-                    text("text").ok_or_else(|| Error::IssueNotFound("text is required".into()))?;
+                    text("text")?.ok_or_else(|| Error::IssueNotFound("text is required".into()))?;
                 let repo = crate::Repo::open(&self.root())?;
                 repo.scratch_append(&id, &body)?;
                 Ok(format!("appended to the working notes of {id}"))
@@ -346,7 +345,9 @@ impl ServerHandler for TisketServer {
                 None,
             ));
         }
-        let id = self.issue_id_of(&request.uri).map_err(|e| to_mcp_error(&e))?;
+        let id = self
+            .issue_id_of(&request.uri)
+            .map_err(|e| to_mcp_error(&e))?;
         let mut args = Map::new();
         args.insert("id".into(), json!(id));
         let text = self
@@ -383,6 +384,34 @@ async fn serve_stdio(config: ServeConfig) -> Result<()> {
     Ok(())
 }
 
+/// Refuse a request a web page made.
+///
+/// A page on the open web can post to a server on this machine, and
+/// the name it used may resolve here after the page loaded. The reply
+/// stays inside the browser only if the server refuses the request,
+/// and a served store has no authentication to fall back on.
+///
+/// A request with no `Origin` header is not a browser request, so a
+/// client that sends none is left alone.
+async fn refuse_foreign_origin(
+    request: axum::extract::Request,
+    next: axum::middleware::Next,
+) -> axum::response::Response {
+    use axum::response::IntoResponse as _;
+
+    if let Some(origin) = request.headers().get(axum::http::header::ORIGIN)
+        && let Ok(text) = origin.to_str()
+        && !mdstore::mcp::origin_is_local(text)
+    {
+        return (
+            axum::http::StatusCode::FORBIDDEN,
+            "this server answers only a client on this machine",
+        )
+            .into_response();
+    }
+    next.run(request).await
+}
+
 async fn serve_http(config: ServeConfig, addr: &str) -> Result<()> {
     use rmcp::transport::streamable_http_server::{
         StreamableHttpService, session::local::LocalSessionManager,
@@ -395,7 +424,9 @@ async fn serve_http(config: ServeConfig, addr: &str) -> Result<()> {
         LocalSessionManager::default().into(),
         rmcp::transport::streamable_http_server::StreamableHttpServerConfig::default(),
     );
-    let router = axum::Router::new().nest_service("/mcp", service);
+    let router = axum::Router::new()
+        .nest_service("/mcp", service)
+        .layer(axum::middleware::from_fn(refuse_foreign_origin));
     let listener = tokio::net::TcpListener::bind(addr)
         .await
         .map_err(|e| Error::Store(e.to_string()))?;
@@ -406,6 +437,14 @@ async fn serve_http(config: ServeConfig, addr: &str) -> Result<()> {
         "tisket serving on http://{bound}/mcp ({})",
         if read_only { "read-only" } else { "read-write" }
     );
+    // A served store has no authentication, so the operator must know
+    // when it is reachable from more than this machine.
+    if !mdstore::mcp::addr_is_loopback(&bound.to_string()) {
+        eprintln!(
+            "warning: {bound} is not a loopback address, and a served store authenticates nobody. \
+             Put an authenticating proxy in front of it, or bind 127.0.0.1."
+        );
+    }
     axum::serve(listener, router)
         .with_graceful_shutdown(async {
             let _ = tokio::signal::ctrl_c().await;
@@ -424,7 +463,9 @@ pub fn config_from(
 ) -> Result<ServeConfig> {
     let surfaces =
         mdstore::mcp::Surfaces::parse_list(surfaces).map_err(|e| Error::Store(e.to_string()))?;
-    let access: Access = access.parse().map_err(|e: mdstore::Error| Error::Store(e.to_string()))?;
+    let access: Access = access
+        .parse()
+        .map_err(|e: mdstore::Error| Error::Store(e.to_string()))?;
     let mut config = ServeConfig::read_only(root, surfaces, server_name);
     config.access = access;
     Ok(config)

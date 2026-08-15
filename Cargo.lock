@@ -1126,7 +1126,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1a791e6620676a875f362f3156ed213e73ca099a09bf992c18812abe65cc37b1"
 dependencies = [
  "bstr",
- "hashbrown 0.16.1",
+ "hashbrown 0.17.1",
 ]
 
 [[package]]
@@ -1593,9 +1593,6 @@ name = "hashbrown"
 version = "0.16.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "841d1cc9bed7f9236f321df977030373f4a4163ae1a7dbfe1a51a2c1a51d9100"
-dependencies = [
- "foldhash 0.2.0",
-]
 
 [[package]]
 name = "hashbrown"
@@ -1890,7 +1887,7 @@ checksum = "47e1ffaa40ddd1f3ed91f717a33c8c0ee23fff369e3aa8772b9605cc1d22f4c3"
 [[package]]
 name = "mdstore"
 version = "0.2.0"
-source = "git+https://github.com/cjohnhanson/mdstore?rev=b458808#b458808fe0551ad494c3eb62d49df198a7adfa0c"
+source = "git+https://github.com/cjohnhanson/mdstore?rev=36f13b6#36f13b6ded7831084323fe8275f8f1576e6041b7"
 dependencies = [
  "rand",
  "serde",

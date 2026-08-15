@@ -225,8 +225,7 @@ impl Repo {
             let entry = entry?;
             let path = Utf8PathBuf::try_from(entry.path())
                 .map_err(|e| std::io::Error::new(std::io::ErrorKind::InvalidData, e))?;
-            if path.extension() == Some("md")
-                && mdstore::store::is_regular_file(path.as_std_path())
+            if path.extension() == Some("md") && mdstore::store::is_regular_file(path.as_std_path())
             {
                 let stem = path.file_stem().unwrap_or("");
                 if stem.starts_with(prefix_dash) && !out.contains(&stem.to_string()) {
@@ -245,8 +244,7 @@ impl Repo {
             let entry = entry?;
             let path = Utf8PathBuf::try_from(entry.path())
                 .map_err(|e| std::io::Error::new(std::io::ErrorKind::InvalidData, e))?;
-            if path.extension() == Some("md")
-                && mdstore::store::is_regular_file(path.as_std_path())
+            if path.extension() == Some("md") && mdstore::store::is_regular_file(path.as_std_path())
             {
                 let stem = path.file_stem().unwrap_or("");
                 if let Some((_, file_slug)) = extract_prefix(stem)
@@ -281,8 +279,7 @@ impl Repo {
             let entry = entry?;
             let path = Utf8PathBuf::try_from(entry.path())
                 .map_err(|e| std::io::Error::new(std::io::ErrorKind::InvalidData, e))?;
-            if path.extension() == Some("md")
-                && mdstore::store::is_regular_file(path.as_std_path())
+            if path.extension() == Some("md") && mdstore::store::is_regular_file(path.as_std_path())
             {
                 let stem = path.file_stem().unwrap_or("");
                 if let Some((prefix, _)) = extract_prefix(stem)
@@ -319,8 +316,7 @@ impl Repo {
             let entry = entry?;
             let path = Utf8PathBuf::try_from(entry.path())
                 .map_err(|e| std::io::Error::new(std::io::ErrorKind::InvalidData, e))?;
-            if path.extension() == Some("md")
-                && mdstore::store::is_regular_file(path.as_std_path())
+            if path.extension() == Some("md") && mdstore::store::is_regular_file(path.as_std_path())
             {
                 let stem = path.file_stem().unwrap_or("");
                 // Compare the slug part of this filename.
@@ -402,24 +398,38 @@ impl Repo {
             None => self.list_projects()?,
         };
 
+        // A status names a set of issues, not a directory. A terminal
+        // status lives under .closed, so a filter that looked only at
+        // open issues answered 'done' with an empty list, and a filter
+        // that looked only at .closed answered 'todo' the same way.
+        // One rule now serves the flag and the served argument: the
+        // --closed flag picks the closed directory, a status filter
+        // reads both, and neither reads .closed by accident.
+        let wanted = match status_filter {
+            Some(text) => Some(text.parse::<Status>().map_err(|_| {
+                Error::Store(format!(
+                    "'{text}' is not a status; use todo, in_progress, done, or cancelled"
+                ))
+            })?),
+            None => None,
+        };
+
         let mut issues = Vec::new();
         for proj in &projects {
             let project_dir = self.tisket_dir().join(proj);
+            let closed_dir = project_dir.join(".closed");
             if closed {
-                let closed_dir = project_dir.join(".closed");
                 self.collect_issues_from_dir(&closed_dir, proj, true, &mut issues)?;
             } else {
                 self.collect_issues_from_dir(&project_dir, proj, false, &mut issues)?;
+                if wanted.is_some() {
+                    self.collect_issues_from_dir(&closed_dir, proj, true, &mut issues)?;
+                }
             }
         }
 
-        if let Some(status) = status_filter {
-            if let Ok(s) = status.parse::<Status>() {
-                issues.retain(|i| i.frontmatter.status == s);
-            } else {
-                // An invalid status filter matches no issue.
-                issues.clear();
-            }
+        if let Some(s) = wanted {
+            issues.retain(|i| i.frontmatter.status == s);
         }
 
         if let Some(label) = label_filter {
@@ -461,8 +471,7 @@ impl Repo {
             let entry = entry?;
             let path = Utf8PathBuf::try_from(entry.path())
                 .map_err(|e| std::io::Error::new(std::io::ErrorKind::InvalidData, e))?;
-            if path.extension() == Some("md")
-                && mdstore::store::is_regular_file(path.as_std_path())
+            if path.extension() == Some("md") && mdstore::store::is_regular_file(path.as_std_path())
             {
                 let id = path.file_stem().unwrap_or("").to_string();
                 let content = mdstore::store::read_document(path.as_std_path())
