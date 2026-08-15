@@ -244,6 +244,13 @@ impl Workspace {
         }
     }
 
+    /// True when a reference names another tracker.
+    #[must_use]
+    pub fn is_qualified(&self, input: &str) -> bool {
+        let aliases = self.snapshot.graph.config(0).aliases();
+        StoreRef::parse(input, &aliases).is_foreign()
+    }
+
     /// Find an issue by a reference written at the vantage.
     pub fn find(&self, input: &str) -> Result<View<'_>> {
         let aliases = self.snapshot.graph.config(0).aliases();
