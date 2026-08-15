@@ -464,7 +464,12 @@ pub fn run_command(root: &camino::Utf8Path, command: Command) -> crate::Result<(
 
         Command::Hooks(cmd) => match cmd {
             HooksCommand::Setup(_setup_args) => {
-                todo!("hooks setup not yet implemented")
+                // A panic on a documented subcommand tells the user
+                // nothing and produces a backtrace. Exit through the
+                // ordinary error path until the command exists.
+                Err(crate::Error::Store(
+                    "hooks setup is not implemented yet".to_string(),
+                ))
             }
         },
 
@@ -614,8 +619,8 @@ pub fn run_command(root: &camino::Utf8Path, command: Command) -> crate::Result<(
                     let selectors: Vec<Selector> = a
                         .r#where
                         .iter()
-                        .filter_map(|s| Selector::parse(s))
-                        .collect();
+                        .map(|s| crate::selector::parse_selector(s))
+                        .collect::<Result<Vec<_>, _>>()?;
                     let issues = repo.list_issues(
                         a.project.as_deref(),
                         a.status.as_deref(),
@@ -630,14 +635,28 @@ pub fn run_command(root: &camino::Utf8Path, command: Command) -> crate::Result<(
                     Ok(())
                 }
                 IssueCommand::Show(a) => {
-                    let iss = repo.find_issue(&a.id)?;
+                    // An ID that names another tracker goes through the
+                    // workspace. A bare ID stays on the repository,
+                    // which also holds the closed issues that the
+                    // workspace loader does not carry.
+                    let ws = crate::workspace::Workspace::open(root)?;
+                    let owned;
+                    let iss = if ws.is_qualified(&a.id) {
+                        let view = ws.find(&a.id)?;
+                        owned = None;
+                        view.issue
+                    } else {
+                        owned = Some(repo.find_issue(&a.id)?);
+                        owned.as_ref().expect("just assigned")
+                    };
+                    let _ = &owned;
                     if let Some(field) = &a.field {
-                        print_issue_field(&iss, field)?;
+                        print_issue_field(iss, field)?;
                     } else {
                         match a.format {
-                            OutputFormat::Json => print_issue_json(&iss)?,
+                            OutputFormat::Json => print_issue_json(iss)?,
                             OutputFormat::Text => {
-                                print_issue_show(&iss);
+                                print_issue_show(iss);
                                 print_rollup(root, &a.id);
                             }
                         }

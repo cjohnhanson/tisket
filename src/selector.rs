@@ -27,3 +27,15 @@ pub fn matches_issue(selector: &Selector, issue: &Issue) -> bool {
 pub fn matches_all(selectors: &[Selector], issue: &Issue) -> bool {
     mdstore::selector::matches_all(selectors, issue, matches_issue)
 }
+
+/// Parse one selector, or say why it is not one.
+///
+/// A selector with no colon used to be dropped, so a typo such as
+/// `labelbug` returned the whole list and exit 0. Silently widening a
+/// filter is the worst direction to fail in.
+///
+/// A namespace this file does not name is a tag name, so any namespace
+/// is accepted. Only the shape is checked.
+pub fn parse_selector(s: &str) -> crate::Result<Selector> {
+    Selector::parse(s).ok_or_else(|| crate::Error::InvalidSelector(s.into()))
+}

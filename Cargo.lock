@@ -1813,7 +1813,7 @@ dependencies = [
 [[package]]
 name = "mdstore"
 version = "0.2.0"
-source = "git+https://github.com/cjohnhanson/mdstore?rev=e0f383c#e0f383c9adc28b1d70f4b2b1305368f8dced85ed"
+source = "git+https://github.com/cjohnhanson/mdstore?rev=4c1b18a#4c1b18a864ba15e874d8efdd06e66307db4ad2c2"
 dependencies = [
  "rand",
  "serde",
