@@ -36,6 +36,30 @@ transitions:
         - path: "stores.yml"
           ignore: true
 
+  # A tracker declared by git URL: a sibling repository, read-only from
+  # here, and not readable at all until an explicit sync.
+  - name: "declare a remote tracker"
+    command: |
+      mkdir -p upstream && (cd upstream &&
+        tisket init >/dev/null &&
+        tisket issue create 'Upstream bug' >/dev/null &&
+        git init -q -b main && git add tisket.yml .tisket &&
+        git -c user.email=t@e -c user.name=t commit -qm one &&
+        git tag v1 &&
+        tisket issue create 'Later issue' >/dev/null &&
+        git add .tisket && git -c user.email=t@e -c user.name=t commit -qm two &&
+        git branch side) &&
+      printf 'format: 2\nstores:\n  - alias: up\n    git: file://%s/upstream\n' "$PWD" > stores.yml
+    target: "../has-remote-tracker"
+    comparators:
+      files:
+        - path: ".tisket/"
+          ignore: true
+        - path: "upstream/"
+          ignore: true
+        - path: "stores.yml"
+          ignore: true
+
 assertions:
   - name: "prime succeeds"
     command: "tisket prime"
