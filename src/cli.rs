@@ -4,15 +4,14 @@ use camino::Utf8PathBuf;
 use clap::Parser;
 use colored::Colorize;
 
-use crate::{git, CreateIssueOptions, EditIssueOptions, Issue, Repo, SearchResult, Selector};
+use crate::{CreateIssueOptions, EditIssueOptions, Issue, Repo, SearchResult, Selector, git};
+
+/// The one-line description. `--help` prints it and `prime` prints it, from
+/// this one place, so the two cannot drift.
+pub const ABOUT: &str = "Plaintext issue tracker for humans and coding agents";
 
 #[derive(Parser)]
-#[command(
-    name = "tisket",
-    version,
-    about = "Plaintext issue tracker for humans and coding agents",
-    max_term_width = 98
-)]
+#[command(name = "tisket", version, about = ABOUT, max_term_width = 98)]
 pub struct Args {
     /// Root directory of the repository (default: current directory)
     #[arg(long, global = true, default_value = ".")]
@@ -41,7 +40,7 @@ pub enum Command {
         shell: clap_complete::Shell,
     },
 
-    /// Print agent instructions to stdout
+    /// Print what tisket is and how to use it, for an agent's context
     Prime,
 
     /// Manage agent hooks
@@ -425,6 +424,36 @@ pub struct ScratchTextArgs {
 }
 
 /// Run tisket with the given arguments.
+/// The prime: what tisket is, for an agent's context.
+///
+/// A pure function of the binary. It states the issue and tracker
+/// model, how trackers find each other, and the one invariant the
+/// binary enforces, then the commands an agent reaches for. It names
+/// no other tool, no host, and no location, and it directs nothing:
+/// which issue to read, and when, is the caller's policy. Under 700
+/// bytes, checked by a test.
+#[must_use]
+pub fn prime() -> String {
+    format!(
+        "# tisket\n\
+         {ABOUT}\n\
+         An issue is a markdown file with frontmatter and a status; body and scratch are separate. \
+         A tracker is a directory with tisket.yml; --root <dir> names one, \
+         default the current directory. Its stores.yml may declare other trackers by \
+         alias; an id may read <alias>:<id>. A declared tracker is read-only; write from \
+         the tracker that owns the issue.\n\
+         Commands:\n\
+         \x20 tisket issue list [-s <status>] [-p <proj>]\n\
+         \x20 tisket issue show <id>\n\
+         \x20 tisket issue create <title> [-p <proj>] [--body-file <f>]\n\
+         \x20 tisket issue close <id>\n\
+         \x20 tisket scratch <id> read\n\
+         \x20 tisket scratch <id> append <text>\n\
+         \x20 tisket search <pattern>\n\
+         More: tisket --help; tisket docs\n"
+    )
+}
+
 pub fn run(args: Args) -> crate::Result<()> {
     let root = if args.root.is_relative() {
         let cwd = std::env::current_dir()?;
@@ -452,13 +481,17 @@ pub fn run_command(root: &camino::Utf8Path, command: Command) -> crate::Result<(
 
         Command::GenCompletions { shell } => {
             use clap::CommandFactory as _;
-            clap_complete::generate(shell, &mut Args::command(), "tisket", &mut std::io::stdout());
+            clap_complete::generate(
+                shell,
+                &mut Args::command(),
+                "tisket",
+                &mut std::io::stdout(),
+            );
             Ok(())
         }
 
         Command::Prime => {
-            let repo = Repo::open(root)?;
-            print!("{}", repo.prime());
+            print!("{}", prime());
             Ok(())
         }
 
@@ -538,15 +571,26 @@ pub fn run_command(root: &camino::Utf8Path, command: Command) -> crate::Result<(
         }
 
         Command::Check => {
-            Repo::open(root)?;
+            let repo = Repo::open(root)?;
             let ws = crate::workspace::Workspace::open(root)?;
             let findings = ws.check(root);
-            if findings.is_empty() {
+            // The key stays parseable so an old tisket.yml still loads,
+            // but nothing reads it: prime is a pure function of the
+            // binary, and policy text belongs to whoever assembles the
+            // agent's context.
+            let stale_key = !repo.config.additional_instructions.is_empty();
+            let count = findings.len() + usize::from(stale_key);
+            if count == 0 {
                 println!("no problems found");
             } else {
-                println!("{} problem(s):", findings.len());
+                println!("{count} problem(s):");
                 for f in &findings {
                     println!("  {} → {} [{}]", f.source, f.target, f.kind);
+                }
+                if stale_key {
+                    println!(
+                        "  tisket.yml → additional_instructions [unread: prime no longer prints it; put that text where the agent's context is assembled]"
+                    );
                 }
                 std::process::exit(1);
             }
@@ -1035,6 +1079,105 @@ fn print_issue_show(iss: &Issue) {
                 println!("    {}", bs.branch);
             } else {
                 println!("    {}   {}", bs.branch, diffs.join(", "));
+            }
+        }
+    }
+}
+
+#[cfg(test)]
+mod prime_tests {
+    use super::*;
+    use clap::CommandFactory as _;
+
+    #[test]
+    fn prime_has_the_contract_shape() {
+        let p = prime();
+        let lines: Vec<&str> = p.lines().collect();
+        assert!(p.len() <= 700, "prime is {} bytes; the cap is 700", p.len());
+        assert_eq!(lines[0], "# tisket");
+        assert_eq!(lines[1], ABOUT, "line 2 is the --help about string");
+        assert!(
+            p.ends_with('\n') && !p.ends_with("\n\n"),
+            "one trailing newline"
+        );
+        assert!(!p.contains('\t'), "no tabs");
+        assert!(!p.contains("[gaff:"), "no spoofable prefix");
+        assert!(
+            !p.chars().any(|c| c.is_control() && c != '\n'),
+            "no control chars"
+        );
+        assert!(
+            lines.iter().skip(1).all(|l| !l.starts_with('#')),
+            "no headings below line 1"
+        );
+        assert!(
+            lines
+                .last()
+                .unwrap()
+                .starts_with("More: tisket --help; tisket docs")
+        );
+        for word in [
+            "gaff",
+            "zettel",
+            "almanac",
+            "mdstore",
+            "Claude",
+            "always",
+            "never",
+            "session start",
+            "before you",
+            "This repository",
+            "Workflow",
+            "1.",
+        ] {
+            assert!(!p.contains(word), "prime must not say {word:?}");
+        }
+    }
+
+    /// Every `Commands:` line resolves against the clap table, and every
+    /// flag it names exists on the resolved subcommand.
+    #[test]
+    fn every_prime_command_exists() {
+        let p = prime();
+        let cmd = Args::command();
+        let start = p.find("Commands:\n").expect("a Commands: block") + "Commands:\n".len();
+        let end = p.find("More:").expect("a More: line");
+        assert!(p[start..end].lines().count() <= 7, "at most seven commands");
+        for line in p[start..end].lines() {
+            let mut words = line.split_whitespace();
+            assert_eq!(
+                words.next(),
+                Some("tisket"),
+                "{line:?} starts with the tool"
+            );
+            let mut node = &cmd;
+            let mut rest: Vec<&str> = Vec::new();
+            for w in words {
+                if let Some(sub) = node.get_subcommands().find(|s| s.get_name() == w) {
+                    node = sub;
+                } else {
+                    rest.push(w);
+                }
+            }
+            assert!(node.get_name() != "tisket", "{line:?} names no subcommand");
+            for w in rest {
+                let flag = w.trim_start_matches('[').trim_end_matches(']');
+                if let Some(long) = flag.strip_prefix("--") {
+                    assert!(
+                        node.get_arguments().any(|a| a.get_long() == Some(long)),
+                        "{line:?}: `--{long}` is not a flag of `{}`",
+                        node.get_name()
+                    );
+                } else if let Some(short) = flag.strip_prefix('-')
+                    && short.len() == 1
+                {
+                    let c = short.chars().next().unwrap();
+                    assert!(
+                        node.get_arguments().any(|a| a.get_short() == Some(c)),
+                        "{line:?}: `-{c}` is not a flag of `{}`",
+                        node.get_name()
+                    );
+                }
             }
         }
     }

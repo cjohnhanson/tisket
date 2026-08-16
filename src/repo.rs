@@ -106,7 +106,7 @@ impl Repo {
         if config_path.exists() {
             return Err(Error::AlreadyInitialized);
         }
-        let content = "tisket_dir: .tisket\nadditional_instructions: \"\"\n";
+        let content = "tisket_dir: .tisket\n";
         std::fs::write(&config_path, content)?;
 
         let default_project_dir = root.join(".tisket").join("default");
@@ -887,34 +887,6 @@ impl Repo {
         }
 
         Ok(())
-    }
-
-    // -- Prime --
-
-    pub fn prime(&self) -> String {
-        let mut out = String::new();
-        out.push_str("# Tisket Issue Tracker\n\n");
-        out.push_str("This repository uses tisket for issue tracking.\n");
-        out.push_str("Issues are stored as markdown files with YAML frontmatter.\n\n");
-        out.push_str("## Commands\n\n");
-        out.push_str("  tisket issue list [-p <project>]     List open issues\n");
-        out.push_str("  tisket issue show <id>                Show issue details\n");
-        out.push_str("  tisket issue create <title> -p <proj> Create a new issue\n");
-        out.push_str("  tisket issue edit <id> --status <s>   Update issue status\n");
-        out.push_str("  tisket issue close <id>               Close an issue\n");
-        out.push_str("  tisket issue reopen <id>              Reopen a closed issue\n\n");
-        out.push_str("## Workflow\n\n");
-        out.push_str("1. Check available issues: tisket issue list\n");
-        out.push_str("2. Pick an issue: tisket issue edit <id> --status in_progress\n");
-        out.push_str("3. When done: tisket issue close <id>\n");
-
-        if !self.config.additional_instructions.is_empty() {
-            out.push_str("\n## Additional Instructions\n\n");
-            out.push_str(&self.config.additional_instructions);
-            out.push('\n');
-        }
-
-        out
     }
 
     // -- Search --
