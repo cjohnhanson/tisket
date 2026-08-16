@@ -26,7 +26,7 @@ The command fails if `tisket.yml` already exists.
 
 ### `tisket prime`
 
-Print agent instructions to stdout. The output is a text block that lists the available commands, the workflow steps, and any `additional_instructions` from `tisket.yml`. Put this text into the context of a coding agent.
+Print what tisket is and how to use it, for an agent's context. The output depends only on the binary version: no arguments, config, or tracker changes it, and it runs outside a tracker. Put it into an agent's context; policy about when to use tisket belongs to the caller.
 
 ### `tisket hooks setup <agent>`
 
@@ -224,13 +224,12 @@ This file is at the repository root.
 
 ```yaml
 tisket_dir: .tisket
-additional_instructions: ""
 ```
 
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
 | `tisket_dir` | string | `.tisket` | Directory that holds the projects and the issues |
-| `additional_instructions` | string | `""` | Extra text that tisket adds to the end of the `prime` output |
+| `additional_instructions` | string | `""` | Unread. `prime` once appended it. The key still parses; `tisket check` reports it when set |
 
 ### Project Configuration: `<tisket_dir>/<project>/project.yml`
 
