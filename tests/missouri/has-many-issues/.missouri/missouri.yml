@@ -100,3 +100,29 @@ assertions:
   - name: "show field labels"
     command: "tisket issue show fix-oauth2-token-refresh-bug --field labels"
     stdout: "bug, auth, security\n"
+
+  # --- Round three: --assignee was documented and never filtered ---
+  - name: "assignee filter returns only that person's issues"
+    command: "test $(tisket issue list -a alice --format json | jq 'length') -gt 0"
+  - name: "and every issue it returns is theirs"
+    command: "tisket issue list -a alice --format json | jq -e 'all(.assignee == \"alice\")'"
+  - name: "a name nobody holds returns nothing"
+    command: "test $(tisket issue list -a nobody-at-all --format json | jq 'length') -eq 0"
+  - name: "the unfiltered list is still larger"
+    command: "test $(tisket issue list --format json | jq 'length') -gt $(tisket issue list -a alice --format json | jq 'length')"
+
+  # --- A project name becomes a directory ---
+  - name: "a project name that is a path is refused"
+    command: "tisket project create ../escape"
+    should_fail: true
+  - name: "an absolute project name is refused"
+    command: "tisket project create /tmp/escape"
+    should_fail: true
+
+  # --- The Repo and the loader must agree on the issue directory ---
+  - name: "an issue directory that climbs out is refused at open"
+    command: "cp tisket.yml tisket.yml.bak && printf 'tisket_dir: ../outside\n' > tisket.yml; ! tisket issue list >/dev/null 2>&1"
+  - name: "the refusal names the reason"
+    command: "tisket issue list 2>&1 | grep -q 'leaves the store root'"
+  - name: "restoring the config restores the tracker"
+    command: "mv tisket.yml.bak tisket.yml && test $(tisket issue list --format json | jq 'length') -gt 0"
