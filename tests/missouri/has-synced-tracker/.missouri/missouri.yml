@@ -1,0 +1,49 @@
+# The remote tracker is in the cache. Its issues read out of git
+# objects at the declared revision: HEAD here, so both commits.
+assertions:
+  - name: "the remote tracker reports its issues"
+    command: "tisket store list | grep '^up ' | grep -q '2 issue(s)'"
+  - name: "the row shows how old the cache is"
+    command: "tisket store list | grep '^up ' | grep -q 'synced'"
+  - name: "a remote issue resolves through its alias"
+    command: "tisket issue show up:upstream-bug | grep -q 'Upstream bug'"
+  - name: "the local list shows only local issues"
+    command: "tisket issue list"
+    stdout: ""
+  - name: "the remote tracker is read-only"
+    command: "! tisket issue edit up:upstream-bug -s in_progress >/dev/null 2>&1 && tisket issue edit up:upstream-bug -s in_progress 2>&1 | grep -qiE 'read-only|owns|read only'"
+  - name: "scratch on a remote issue is refused too"
+    command: "tisket scratch up:upstream-bug append 'no' >/dev/null 2>&1"
+    should_fail: true
+
+  # A second consumer pins the tag, which sits at the first commit.
+  - name: "a consumer pinned to a tag sees only that revision"
+    command: |
+      mkdir -p pinned && (cd pinned && tisket init >/dev/null) &&
+      printf 'format: 2\nstores:\n  - alias: hb\n    git: file://%s/upstream\n    rev: v1\n' "$PWD" > pinned/stores.yml &&
+      tisket --root pinned store sync >/dev/null &&
+      tisket --root pinned issue show hb:upstream-bug | grep -q 'Upstream bug' &&
+      ! tisket --root pinned issue show hb:later-issue >/dev/null 2>&1
+  - name: "a consumer pinned to the side branch sees it"
+    command: |
+      printf 'format: 2\nstores:\n  - alias: hb\n    git: file://%s/upstream\n    rev: side\n' "$PWD" > pinned/stores.yml &&
+      tisket --root pinned store sync >/dev/null &&
+      tisket --root pinned issue show hb:later-issue | grep -q 'Later issue'
+  - name: "both consumers share one clone"
+    command: "test $(ls .mdstore-cache | wc -l) -eq 1"
+
+  # Upstream moves on, deletes the side branch; the follower sees the
+  # new issue, and the pinned consumer's branch is pruned.
+  - name: "the follower sees a new upstream issue after a sync"
+    command: |
+      (cd upstream && tisket issue create 'Third issue' >/dev/null &&
+        git add .tisket && git -c user.email=t@e -c user.name=t commit -qm three &&
+        git branch -D side >/dev/null) &&
+      tisket store sync >/dev/null &&
+      tisket issue show up:third-issue | grep -q 'Third issue'
+  - name: "a branch deleted upstream is pruned on the next sync"
+    command: "tisket --root pinned store sync >/dev/null && ! tisket --root pinned issue show hb:later-issue >/dev/null 2>&1 && tisket --root pinned store list | grep '^hb ' | grep -q 'unavailable'"
+  - name: "the tag pin still resolves after the fetch"
+    command: |
+      printf 'format: 2\nstores:\n  - alias: hb\n    git: file://%s/upstream\n    rev: v1\n' "$PWD" > pinned/stores.yml &&
+      tisket --root pinned issue show hb:upstream-bug | grep -q 'Upstream bug'
