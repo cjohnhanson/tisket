@@ -1,0 +1,1 @@
+fresh-eyes: subagent review of the merge gate (2 rounds; stdin capture, notes smuggle, tag peel, note gate all verified by real pushes). The restore commit re-lands a transition the reviewer's suite run flagged as missing; suite green at 29 paths, 1035 assertions.
