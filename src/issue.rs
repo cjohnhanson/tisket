@@ -112,7 +112,6 @@ pub struct IssueFrontmatter {
     pub extra: yaml_serde::Mapping,
 }
 
-
 #[derive(Debug, Serialize)]
 pub struct Issue {
     pub id: String,
@@ -284,7 +283,11 @@ mod tests {
 mod serialize_tests {
     use super::*;
 
-    fn round_trip(fm: &IssueFrontmatter, body: &str, scratch: &str) -> (IssueFrontmatter, String, String) {
+    fn round_trip(
+        fm: &IssueFrontmatter,
+        body: &str,
+        scratch: &str,
+    ) -> (IssueFrontmatter, String, String) {
         let text = serialize_issue(fm, body, scratch);
         parse_issue(&text).expect("a serialized issue must parse back")
     }
@@ -294,7 +297,10 @@ mod serialize_tests {
         // Commas, brackets, quotes, colons, and a backslash used to break
         // the hand-rolled writer and produce an unparseable file.
         let mut tags = std::collections::BTreeMap::new();
-        tags.insert("note".to_string(), yaml_serde::Value::String("has: colon, and \"quote\"".to_string()));
+        tags.insert(
+            "note".to_string(),
+            yaml_serde::Value::String("has: colon, and \"quote\"".to_string()),
+        );
         let fm = IssueFrontmatter {
             title: r#"a: "quoted", [x] and a \ backslash"#.to_string(),
             status: Status::InProgress,
@@ -327,7 +333,13 @@ mod serialize_tests {
         assert!(fm.extra.contains_key("sprint"), "unknown key captured");
         update_timestamp(&mut fm);
         let (back, _, _) = round_trip(&fm, &body, &scratch);
-        assert_eq!(back.extra.get("owner").and_then(|v| v.as_str()), Some("alice"));
-        assert_eq!(back.extra.get("sprint").and_then(yaml_serde::Value::as_i64), Some(42));
+        assert_eq!(
+            back.extra.get("owner").and_then(|v| v.as_str()),
+            Some("alice")
+        );
+        assert_eq!(
+            back.extra.get("sprint").and_then(yaml_serde::Value::as_i64),
+            Some(42)
+        );
     }
 }
