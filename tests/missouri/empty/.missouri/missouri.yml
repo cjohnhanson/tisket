@@ -12,7 +12,5 @@ assertions:
     command: "tisket project list"
     should_fail: true
     stderr: "error: not a tisket repository (tisket.yml not found)\n"
-  - name: "prime fails before init"
+  - name: "prime needs no tracker"
     command: "tisket prime"
-    should_fail: true
-    stderr: "error: not a tisket repository (tisket.yml not found)\n"
