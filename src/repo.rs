@@ -65,6 +65,11 @@ pub struct Repo {
     pub root: Utf8PathBuf,
     pub config: TisketConfig,
     pub git: Option<GitContext>,
+    /// The issue directory, already checked against the store root.
+    ///
+    /// The loader guarded this and the Repo did not, so the two layers
+    /// disagreed about which directory this tracker holds.
+    issues_dir: Utf8PathBuf,
 }
 
 impl Repo {
@@ -76,15 +81,22 @@ impl Repo {
         let content = std::fs::read_to_string(&config_path)?;
         let config: TisketConfig = yaml_serde::from_str(&content)?;
         let git = GitContext::open(root)?;
+        // Resolve the directory once, here, through the one function
+        // that decides containment.
+        let issues_dir = mdstore::store::document_dir(root.as_std_path(), &config.tisket_dir)
+            .map_err(|e| Error::Store(e.to_string()))?;
+        let issues_dir = Utf8PathBuf::try_from(issues_dir)
+            .map_err(|e| std::io::Error::new(std::io::ErrorKind::InvalidData, e))?;
         Ok(Repo {
             root: root.to_owned(),
             config,
             git,
+            issues_dir,
         })
     }
 
     pub fn tisket_dir(&self) -> Utf8PathBuf {
-        self.root.join(&self.config.tisket_dir)
+        self.issues_dir.clone()
     }
 
     // -- Init --
@@ -107,6 +119,12 @@ impl Repo {
     // -- Projects --
 
     pub fn create_project(&self, name: &str) -> Result<()> {
+        // A project name becomes a directory under the tracker, and a
+        // served tracker takes it from the network. is_plain_stem is
+        // applied to issue ids for exactly this reason.
+        if !mdstore::is_plain_stem(name) {
+            return Err(Error::ProjectNotFound(name.into()));
+        }
         let project_dir = self.tisket_dir().join(name);
         if project_dir.exists() {
             return Err(Error::ProjectAlreadyExists(name.into()));
@@ -139,6 +157,9 @@ impl Repo {
     }
 
     pub fn load_project(&self, name: &str) -> Result<ProjectConfig> {
+        if !mdstore::is_plain_stem(name) {
+            return Err(Error::ProjectNotFound(name.into()));
+        }
         let project_dir = self.tisket_dir().join(name);
         let config_path = project_dir.join("project.yml");
         if !config_path.exists() {
@@ -386,6 +407,7 @@ impl Repo {
         project: Option<&str>,
         status_filter: Option<&str>,
         label_filter: Option<&str>,
+        assignee_filter: Option<&str>,
         closed: bool,
         selectors: &[Selector],
     ) -> Result<Vec<Issue>> {
@@ -436,6 +458,13 @@ impl Repo {
             issues.retain(|i| i.frontmatter.labels.iter().any(|l| l == label));
         }
 
+        // --assignee was documented, advertised in --help, and never
+        // reached this function, so it filtered nothing and said so to
+        // nobody.
+        if let Some(assignee) = assignee_filter {
+            issues.retain(|i| i.frontmatter.assignee.as_deref() == Some(assignee));
+        }
+
         if !selectors.is_empty() {
             issues.retain(|i| selector::matches_all(selectors, i));
         }
@@ -474,9 +503,20 @@ impl Repo {
             if path.extension() == Some("md") && mdstore::store::is_regular_file(path.as_std_path())
             {
                 let id = path.file_stem().unwrap_or("").to_string();
-                let content = mdstore::store::read_document(path.as_std_path())
-                    .map_err(|e| Error::Store(e.to_string()))?;
-                let (fm, body, scratch) = issue::parse_issue(&content)?;
+                // One unreadable or unparseable issue must not take
+                // down a tracker-wide command. The workspace loader
+                // skips and names them; this one failed the whole call.
+                let Ok(content) = mdstore::store::read_document(path.as_std_path()) else {
+                    eprintln!("warning: skipping {id}: unreadable");
+                    continue;
+                };
+                let (fm, body, scratch) = match issue::parse_issue(&content) {
+                    Ok(parsed) => parsed,
+                    Err(e) => {
+                        eprintln!("warning: skipping {id}: {e}");
+                        continue;
+                    }
+                };
                 out.push(Issue {
                     id,
                     project: project.into(),
