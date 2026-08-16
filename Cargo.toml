@@ -8,8 +8,8 @@ repository = "https://github.com/cjohnhanson/tisket"
 homepage = "https://github.com/cjohnhanson/tisket"
 readme = "README.md"
 authors = ["Cody Hanson"]
-keywords = ["issue-tracker", "cli", "markdown", "gitops"]
-categories = ["command-line-utilities"]
+keywords = ["issue-tracker", "mcp", "markdown", "plaintext", "cli"]
+categories = ["command-line-utilities", "development-tools"]
 
 [dependencies]
 rmcp = { version = "3", features = ["server", "transport-io", "transport-streamable-http-server"] }
@@ -29,5 +29,5 @@ colored = "3.1.1"
 grep-regex = "0.1.14"
 grep-matcher = "0.1.8"
 gix = { version = "0.86.0", default-features = false, features = ["basic", "sha1"] }
-mdstore = { git = "https://github.com/cjohnhanson/mdstore", rev = "e28d521", features = ["mcp"] }
+mdstore = { git = "https://github.com/cjohnhanson/mdstore", rev = "f843ae4", features = ["mcp"] }
 sigpipe = "0.1.3"

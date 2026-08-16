@@ -119,16 +119,31 @@ impl TisketServer {
         tools
     }
 
+    /// Run a closure that touches the filesystem off the async
+    /// workers.
+    ///
+    /// Every surface here reads files. On the async pool that work
+    /// blocks the runtime, so one slow call delays every other client.
+    /// `call_tool` got this treatment; the resource surface did not.
+    async fn blocking<T, F>(&self, work: F) -> std::result::Result<T, McpError>
+    where
+        T: Send + 'static,
+        F: FnOnce(Self) -> std::result::Result<T, McpError> + Send + 'static,
+    {
+        let this = self.clone();
+        tokio::task::spawn_blocking(move || work(this))
+            .await
+            .map_err(|e| McpError::internal_error(format!("the call did not finish: {e}"), None))?
+    }
+
     fn call(&self, name: &str, args: &Map<String, Value>) -> Result<String> {
-        // An optional argument of the wrong type was dropped, so a
-        // filtered query came back unfiltered and marked as success.
-        // Absent is fine; wrong is an error.
+        // One accessor for every tool argument, in the crate all three
+        // servers already share. A local copy is a second answer to
+        // the same question, and the copies drifted.
         let text = |key: &str| -> Result<Option<String>> {
-            match args.get(key) {
-                None | Some(Value::Null) => Ok(None),
-                Some(Value::String(v)) => Ok(Some(v.clone())),
-                Some(_) => Err(Error::InvalidArgument(key.to_string())),
-            }
+            mdstore::mcp::optional_str(args, key)
+                .map(|v| v.map(str::to_string))
+                .map_err(|e| Error::InvalidArgument(e.to_string()))
         };
         match name {
             "tisket_list_issues" => {
@@ -136,7 +151,7 @@ impl TisketServer {
                 // The library decides what a status filter covers, so
                 // this answers exactly what the CLI answers.
                 let status = text("status")?;
-                let issues = repo.list_issues(None, status.as_deref(), None, false, &[])?;
+                let issues = repo.list_issues(None, status.as_deref(), None, None, false, &[])?;
                 let listed: Vec<Value> = issues
                     .iter()
                     .map(|i| {
@@ -317,20 +332,24 @@ impl ServerHandler for TisketServer {
         if !self.config.surfaces.has(Surface::Resources) {
             return Ok(ListResourcesResult::default());
         }
-        let repo = crate::Repo::open(&self.root()).map_err(|e| to_mcp_error(&e))?;
-        let issues = repo
-            .list_issues(None, None, None, false, &[])
-            .map_err(|e| to_mcp_error(&e))?;
-        let resources = issues
-            .iter()
-            .map(|i| {
-                let mut resource =
-                    Resource::new(Self::uri_of(&i.id, &[]), i.frontmatter.title.clone());
-                resource.mime_type = Some("text/markdown".into());
-                resource.description = Some(format!("status: {}", i.frontmatter.status));
-                resource
+        let resources = self
+            .blocking(|this| {
+                let repo = crate::Repo::open(&this.root()).map_err(|e| to_mcp_error(&e))?;
+                let issues = repo
+                    .list_issues(None, None, None, None, false, &[])
+                    .map_err(|e| to_mcp_error(&e))?;
+                Ok(issues
+                    .iter()
+                    .map(|i| {
+                        let mut resource =
+                            Resource::new(Self::uri_of(&i.id, &[]), i.frontmatter.title.clone());
+                        resource.mime_type = Some("text/markdown".into());
+                        resource.description = Some(format!("status: {}", i.frontmatter.status));
+                        resource
+                    })
+                    .collect::<Vec<_>>())
             })
-            .collect();
+            .await?;
         Ok(ListResourcesResult::with_all_items(resources))
     }
 
@@ -345,14 +364,16 @@ impl ServerHandler for TisketServer {
                 None,
             ));
         }
-        let id = self
-            .issue_id_of(&request.uri)
-            .map_err(|e| to_mcp_error(&e))?;
-        let mut args = Map::new();
-        args.insert("id".into(), json!(id));
+        let uri = request.uri.clone();
         let text = self
-            .call("tisket_read_issue", &args)
-            .map_err(|e| to_mcp_error(&e))?;
+            .blocking(move |this| {
+                let id = this.issue_id_of(&uri).map_err(|e| to_mcp_error(&e))?;
+                let mut args = Map::new();
+                args.insert("id".into(), json!(id));
+                this.call("tisket_read_issue", &args)
+                    .map_err(|e| to_mcp_error(&e))
+            })
+            .await?;
         Ok(ReadResourceResult::new(vec![ResourceContents::text(text, request.uri)]).into())
     }
 }
