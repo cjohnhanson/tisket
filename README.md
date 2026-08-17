@@ -96,11 +96,11 @@ proxy that authenticates in front of it.
 Tisket belongs to a group of plaintext, git-tracked, agent-readable
 tools.
 
-- [zettel](https://github.com/cjohnhanson/zettel) — a zettelkasten knowledge base
-- [almanac](https://github.com/cjohnhanson/almanac) — an agent skill aggregator
-- [belmont](https://github.com/cjohnhanson/belmont) — a secrets manager for LLM agents
-- [mdstore](https://github.com/cjohnhanson/mdstore) — the frontmattered markdown library that tisket uses
-- [codelikecody](https://github.com/cjohnhanson/codelikecody) — the workflow engine that bundles these tools
+- [zettel](https://github.com/cjohnhanson/zettel) — zettelkasten notes for a repository
+- [almanac](https://github.com/cjohnhanson/almanac) — agent skill index, over pluggable sources
+- [gaff](https://github.com/cjohnhanson/gaff) — context-lifecycle handler for coding agents
+- [missouri](https://github.com/cjohnhanson/missouri) — end-to-end tests as directed graphs of filesystem states
+- [mdstore](https://github.com/cjohnhanson/mdstore) — the frontmattered markdown library tisket stores issues with
 
 ## License
 
