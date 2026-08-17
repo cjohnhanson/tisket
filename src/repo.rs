@@ -166,9 +166,22 @@ impl Repo {
         // .closed linked outside took down `issue list` and `search`
         // for the whole tracker. The code one level down already keeps
         // a single bad file from doing that; the same holds here.
-        let Ok(scan) = self.issues.scan(project) else {
-            eprintln!("warning: skipping {project}: not a directory this tracker holds");
-            return Ok(Vec::new());
+        // A directory the tracker refuses holds no issues, and one
+        // project must not take down a tracker-wide command. A
+        // directory the tracker cannot READ is a different thing: a
+        // permissions failure reported as an empty project answers
+        // zero issues with a success status, and `issue show` then
+        // calls an existing issue missing.
+        //
+        // cap-std reports both as PermissionDenied. The errno is what
+        // separates them, and mdstore carries it for this reason.
+        let scan = match self.issues.scan(project) {
+            Ok(scan) => scan,
+            Err(e) if e.refused_by_confinement() => {
+                eprintln!("warning: skipping {project}: {e}");
+                return Ok(Vec::new());
+            }
+            Err(e) => return Err(Error::Store(e.to_string())),
         };
         Ok(scan.entries.into_iter().map(|e| e.stem).collect())
     }
@@ -251,10 +264,15 @@ impl Repo {
         if !self.issues.is_document(&rel) {
             return Err(Error::ProjectNotFound(name.into()));
         }
+        // is_document already answered whether the project is there.
+        // Mapping a read failure onto ProjectNotFound made an
+        // unreadable or non-UTF-8 project.yml report as missing, which
+        // is the same split this function exists to close: list says
+        // it is there, load says it is not.
         let content = self
             .issues
             .read(&rel)
-            .map_err(|_| Error::ProjectNotFound(name.into()))?;
+            .map_err(|e| Error::Store(e.to_string()))?;
         let config: ProjectConfig = yaml_serde::from_str(&content)?;
         Ok(config)
     }
@@ -1191,7 +1209,15 @@ mod search_tests {
     #[test]
     fn one_refused_directory_does_not_abort_the_tracker() {
         let base = tracker("badclosed");
+        // The directory beyond the link holds a real issue. Left
+        // empty, an implementation that followed the link produced the
+        // same empty list, so the assertion proved nothing.
         std::fs::create_dir_all(base.join("elsewhere")).unwrap();
+        std::fs::write(
+            base.join("elsewhere/zzzz-outside.md"),
+            "---\ntitle: Outside\nstatus: done\n---\n\nbody\n",
+        )
+        .unwrap();
         std::os::unix::fs::symlink(
             base.join("elsewhere"),
             base.join("tracker/.tisket/default/.closed"),
@@ -1201,16 +1227,35 @@ mod search_tests {
         let root = Utf8PathBuf::try_from(base.join("tracker")).unwrap();
         let repo = Repo::open(&root).unwrap();
 
-        let open = repo
-            .list_issues(None, None, None, None, false, &[])
+        // The scan itself, before the read layer gets a chance to
+        // hide the difference. An ambient scan lists the outside stem
+        // and the read then refuses it, so at the list_issues level
+        // both answers are empty and nothing tells them apart. Here
+        // they differ.
+        let stems = repo.issue_stems("default/.closed").unwrap();
+        assert!(
+            stems.is_empty(),
+            "the scan walked through the link and listed {stems:?}"
+        );
+
+        // --closed is what reaches .closed. A plain list never scans
+        // it, so asserting on that proved nothing about this bug.
+        let closed = repo.list_issues(None, None, None, None, true, &[]).unwrap();
+        assert!(
+            closed.iter().all(|i| i.id != "zzzz-outside"),
+            "an issue from outside the tracker was listed"
+        );
+        assert!(closed.is_empty(), "a refused directory yielded issues");
+
+        // A status filter reaches .closed too, and must survive it.
+        let filtered = repo
+            .list_issues(None, Some("todo"), None, None, false, &[])
             .unwrap();
         assert_eq!(
-            open.len(),
+            filtered.len(),
             1,
             "the open issue vanished with the bad .closed"
         );
-        let closed = repo.list_issues(None, None, None, None, true, &[]).unwrap();
-        assert!(closed.is_empty(), "a refused directory yielded issues");
         let _ = std::fs::remove_dir_all(&base);
     }
 
