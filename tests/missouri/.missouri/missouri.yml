@@ -1,8 +1,19 @@
 setup:
   - name: "build tisket"
     command: "cargo build --quiet --manifest-path ../../Cargo.toml"
-  - name: "link tisket binary"
-    command: "mkdir -p .missouri/bin && ln -sf $(cd ../.. && pwd)/target/debug/tisket .missouri/bin/tisket"
+  # A wrapper over a copied binary: the wrapper pins --user-config to a
+  # path that never exists, so the machine's real
+  # ~/.config/mdstore/config.yml cannot leak a root-store fallback into
+  # the suite. The flag's last occurrence wins, so a test that needs a
+  # config passes its own. The binary is copied beside the wrapper, so
+  # nothing that touches target/ mid-run can turn the wrapper into a
+  # self-exec loop.
+  - name: "wrap tisket binary"
+    command: |
+      mkdir -p .missouri/bin &&
+      cp ../../target/debug/tisket .missouri/bin/tisket-bin &&
+      printf '#!/bin/sh\nexec "$(dirname "$0")/tisket-bin" --user-config /nonexistent-missouri-user-config.yml "$@"\n' > .missouri/bin/tisket &&
+      chmod +x .missouri/bin/tisket .missouri/bin/tisket-bin
 
 packages:
   - git
