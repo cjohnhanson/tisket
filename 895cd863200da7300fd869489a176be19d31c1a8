@@ -1,0 +1,45 @@
+fresh-eyes: independent cold reviewer (subagent, no authorship of this branch), full scope of the branch closing the load_project split and the .closed abort.
+
+Verdict LAND, given on 8f372c9. This tip is 895cd86, one commit past
+it, moving the mdstore pin from bf12ff1 to e57ff8d and regenerating
+the lock. git diff between the two touches Cargo.toml and Cargo.lock
+only. The reviewer's whole run used e57ff8d's content through a patch
+file, so the code under review is what the pin now names.
+
+Three rounds. Round one returned DO-NOT-LAND on three items, two of
+them regressions this branch introduced in the fix itself: swallowing
+every scan failure turned a mode-000 .closed into zero issues at exit
+0, and mapping a read failure onto ProjectNotFound reintroduced the
+layer split one line below where it was closed. Round two returned
+DO-NOT-LAND on the fault half being untested and a relative in-store
+link still splitting the layers, and found that switching the mdstore
+worktree branch mid-review had pulled the API out from under the
+build.
+
+Round three verified by execution against the real binary: a mode-000
+.closed errors at exit 1, an out-of-store .closed warns and continues,
+a relative link named mirror is missing to both layers and nothing
+lands in default.
+
+Mutations, each killed by a named test: Err(e) if true restoring the
+blanket swallow, killed by
+an_unreadable_closed_directory_is_an_error_not_an_empty_project with
+Ok([]); dropping the project_names gate, killed by
+a_linked_project_is_missing_to_both_layers at the mirror arm with
+default's config; an ambient scan walking the link, killed by
+one_refused_directory_does_not_abort_the_tracker naming zzzz-outside;
+mapping the read failure back onto ProjectNotFound, killed by
+an_unreadable_project_is_not_reported_as_missing.
+
+The reviewer read cap-primitives source and established the escape
+error is built errno-less by one cold constructor on every backend,
+which is what makes the discriminator hold, and that the risk runs
+loud rather than silent.
+
+19 tests, clippy clean, fmt clean, missouri 30 passed 0 failed, 101
+steps, 1051 assertions.
+
+Follow-ups, none blocking: dropping the is_document gate alone changes
+only an error message; a .closed linked inside the store lists an
+issue twice and reopen lands it in the wrong project, same class as
+resolve_id and find_issue walking .closed ambiently at five sites.
