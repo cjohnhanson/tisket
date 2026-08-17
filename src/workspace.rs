@@ -501,3 +501,41 @@ pub struct StoreRow {
     pub unavailable: Option<String>,
     pub age: Option<String>,
 }
+
+#[cfg(test)]
+mod projects_of_tests {
+    use super::*;
+
+    /// projects_of answers for a local directory and for a git tree,
+    /// through the store's own listing. Replacing its body with an
+    /// empty vector broke no test and no missouri path, while a
+    /// tracker's issue count silently dropped to zero.
+    #[test]
+    fn projects_of_lists_the_real_project_directories() {
+        let base = std::env::temp_dir().join(format!("tisket-projectsof-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&base);
+        std::fs::create_dir_all(base.join("tracker/.tisket/default")).unwrap();
+        std::fs::create_dir_all(base.join("tracker/.tisket/other")).unwrap();
+        std::fs::write(base.join("tracker/tisket.yml"), "tisket_dir: .tisket\n").unwrap();
+
+        // A dot directory is not a project, and neither is a link to
+        // one outside the tracker.
+        std::fs::create_dir_all(base.join("tracker/.tisket/.hidden")).unwrap();
+        std::fs::create_dir_all(base.join("elsewhere")).unwrap();
+        std::os::unix::fs::symlink(base.join("elsewhere"), base.join("tracker/.tisket/linked"))
+            .unwrap();
+
+        let content = StoreContent::Dir(
+            mdstore::confined::StoreDir::open(base.join("tracker").as_path()).unwrap(),
+        );
+        let mut names = projects_of(&content, ".tisket");
+        names.sort();
+
+        assert_eq!(
+            names,
+            vec!["default".to_string(), "other".to_string()],
+            "the project listing changed"
+        );
+        let _ = std::fs::remove_dir_all(&base);
+    }
+}
