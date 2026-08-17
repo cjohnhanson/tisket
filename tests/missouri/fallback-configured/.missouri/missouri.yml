@@ -39,3 +39,22 @@ assertions:
       ! tisket --user-config bad.yml issue list >/dev/null 2>&1 &&
       tisket --user-config bad.yml issue list 2>&1 | grep -q 'has no tisket.yml' &&
       rm bad.yml
+  - name: "store root shows, refuses a markerless dir, and writes the seam"
+    command: |
+      tisket --user-config cfg.yml store root | grep -q 'root_store:' &&
+      ! tisket --user-config cfg.yml store root work >/dev/null 2>&1 &&
+      tisket --user-config cfg.yml store root work 2>&1 | grep -q 'no tisket.yml' &&
+      cp cfg.yml seam.yml &&
+      mkdir -p other && (cd other && tisket init >/dev/null) &&
+      ! tisket --user-config seam.yml store root other >/dev/null 2>&1 &&
+      tisket --user-config seam.yml store root other --force >/dev/null &&
+      grep -q "$PWD/other" seam.yml &&
+      ! grep -q "$PWD/other" cfg.yml &&
+      rm -rf other seam.yml
+  - name: "store root with the same path reports unchanged"
+    command: "cp cfg.yml seam2.yml && tisket --user-config seam2.yml store root rootstore | grep -q 'unchanged' && rm seam2.yml"
+  - name: "--home on a rootless command is refused, not ignored"
+    command: "! tisket --user-config cfg.yml --home init >/dev/null 2>&1 && tisket --user-config cfg.yml --home init 2>&1 | grep -q 'does not apply'"
+  - name: "--home with --root is a usage error"
+    command: "tisket --user-config cfg.yml --home --root rootstore issue list"
+    should_fail: true

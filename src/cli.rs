@@ -524,6 +524,11 @@ pub fn run(args: Args) -> crate::Result<()> {
     // Rootless commands never resolve a store, so `tisket prime` and
     // `tisket store root` work from any cwd with no config at all.
     let Some(intent) = intent(&args.command) else {
+        if args.home {
+            return Err(crate::Error::Io(std::io::Error::other(
+                "--home does not apply to this command; it names the root tracker for reads and writes",
+            )));
+        }
         if let Command::Store(StoreCommand::Root(a)) = args.command {
             return run_store_root(&a, args.user_config.as_deref());
         }
@@ -640,16 +645,24 @@ fn run_store_root(args: &StoreRootArgs, user_config: Option<&Utf8Path>) -> crate
             );
         }
     }
+    if config.root_store.as_deref() == Some(abs.as_std_path()) {
+        println!("root_store: {abs} (unchanged)");
+        return Ok(());
+    }
     let old = config.root_store.clone();
-    let written = mdstore::userconfig::UserConfig::save_root(abs.as_std_path())
+    let target = user_config
+        .map(|p| p.as_std_path().to_path_buf())
+        .or_else(mdstore::userconfig::config_path)
+        .ok_or_else(|| err("no home directory resolves".to_string()))?;
+    mdstore::userconfig::UserConfig::save_root_to(&target, abs.as_std_path())
         .map_err(|e| err(e.to_string()))?;
     match old {
         Some(o) => println!(
             "root_store: {} -> {abs} ({})",
             o.display(),
-            written.display()
+            target.display()
         ),
-        None => println!("root_store: {abs} ({})", written.display()),
+        None => println!("root_store: {abs} ({})", target.display()),
     }
     Ok(())
 }
