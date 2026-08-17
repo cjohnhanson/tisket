@@ -25,3 +25,11 @@ env:
   # never reads or writes the user's real ones.
   MDSTORE_CACHE_DIR: ".mdstore-cache"
   MDSTORE_REGISTRY: ".mdstore-registry.yml"
+  # missouri clears the child environment, so bare `git commit` falls
+  # back to ident auto-detection. On a host whose hostname has no
+  # domain, that detection fails. The explicit identity removes the
+  # host dependence.
+  GIT_AUTHOR_NAME: "test"
+  GIT_AUTHOR_EMAIL: "test@example.com"
+  GIT_COMMITTER_NAME: "test"
+  GIT_COMMITTER_EMAIL: "test@example.com"
