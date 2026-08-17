@@ -1119,10 +1119,23 @@ mod search_tests {
             repo.remove_issue_file(&outside).is_err(),
             "a climbing delete"
         );
+        // The source must exist, or the call fails on ENOENT and the
+        // assertion proves nothing. An ambient rename here would move
+        // the issue out of the tracker and this test would still pass.
+        let inside = repo.tisket_dir().join("default/x.md");
+        std::fs::write(inside.as_std_path(), "INSIDE").unwrap();
         assert!(
-            repo.rename_issue_file(&repo.tisket_dir().join("default/x.md"), &outside)
-                .is_err(),
+            repo.rename_issue_file(&inside, &outside).is_err(),
             "a climbing move carried an issue out"
+        );
+        assert!(
+            inside.exists(),
+            "the issue left the tracker; the source name is gone"
+        );
+        // And the same move inwards.
+        assert!(
+            repo.rename_issue_file(&outside, &inside).is_err(),
+            "a climbing move brought a file in"
         );
         assert_eq!(
             std::fs::read_to_string(base.join("secret.md")).unwrap(),
