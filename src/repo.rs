@@ -161,10 +161,15 @@ impl Repo {
     /// A project that does not exist yet holds no issues. A link
     /// planted among them is skipped by type rather than resolved.
     fn issue_stems(&self, project: &str) -> Result<Vec<String>> {
-        let scan = self
-            .issues
-            .scan(project)
-            .map_err(|e| Error::Store(e.to_string()))?;
+        // A directory this store refuses holds no issues this store
+        // can list. Propagating the error aborted every project: one
+        // .closed linked outside took down `issue list` and `search`
+        // for the whole tracker. The code one level down already keeps
+        // a single bad file from doing that; the same holds here.
+        let Ok(scan) = self.issues.scan(project) else {
+            eprintln!("warning: skipping {project}: not a directory this tracker holds");
+            return Ok(Vec::new());
+        };
         Ok(scan.entries.into_iter().map(|e| e.stem).collect())
     }
 
@@ -237,12 +242,19 @@ impl Repo {
         if !mdstore::is_plain_stem(name) {
             return Err(Error::ProjectNotFound(name.into()));
         }
-        let project_dir = self.tisket_dir().join(name);
-        let config_path = project_dir.join("project.yml");
-        if !config_path.exists() {
+        // Through the handle, like list_projects. Path::exists follows
+        // a link, so a linked project directory was said to exist here
+        // and refused there, and the two layers disagreed about what
+        // the tracker holds. The user then got a store error naming a
+        // temporary staging file instead of a project that is missing.
+        let rel = format!("{name}/project.yml");
+        if !self.issues.is_document(&rel) {
             return Err(Error::ProjectNotFound(name.into()));
         }
-        let content = std::fs::read_to_string(&config_path)?;
+        let content = self
+            .issues
+            .read(&rel)
+            .map_err(|_| Error::ProjectNotFound(name.into()))?;
         let config: ProjectConfig = yaml_serde::from_str(&content)?;
         Ok(config)
     }
@@ -1144,5 +1156,79 @@ mod search_tests {
         );
 
         let _ = std::fs::remove_dir_all(&base);
+    }
+
+    /// load_project and list_projects must answer the same question.
+    ///
+    /// Path::exists follows a link, so a linked project directory was
+    /// said to exist by one and refused by the other, and the user got
+    /// a store error naming a temporary staging file.
+    #[test]
+    fn a_linked_project_is_missing_to_both_layers() {
+        let base = tracker("linkedproj");
+        std::fs::create_dir_all(base.join("elsewhere")).unwrap();
+        std::fs::write(base.join("elsewhere/project.yml"), "name: elsewhere\n").unwrap();
+        std::os::unix::fs::symlink(base.join("elsewhere"), base.join("tracker/.tisket/linked"))
+            .unwrap();
+
+        let root = Utf8PathBuf::try_from(base.join("tracker")).unwrap();
+        let repo = Repo::open(&root).unwrap();
+
+        assert!(!repo.list_projects().unwrap().iter().any(|p| p == "linked"));
+        match repo.load_project("linked") {
+            Err(Error::ProjectNotFound(_)) => {}
+            other => panic!("the two layers disagree: {other:?}"),
+        }
+        let _ = std::fs::remove_dir_all(&base);
+    }
+
+    /// One refused directory must not take down the tracker.
+    ///
+    /// issue_stems propagated the scan error, so a single .closed
+    /// linked outside aborted `issue list` and `search` for every
+    /// project. The code one level down already keeps one bad file
+    /// from doing that.
+    #[test]
+    fn one_refused_directory_does_not_abort_the_tracker() {
+        let base = tracker("badclosed");
+        std::fs::create_dir_all(base.join("elsewhere")).unwrap();
+        std::os::unix::fs::symlink(
+            base.join("elsewhere"),
+            base.join("tracker/.tisket/default/.closed"),
+        )
+        .unwrap();
+
+        let root = Utf8PathBuf::try_from(base.join("tracker")).unwrap();
+        let repo = Repo::open(&root).unwrap();
+
+        let open = repo
+            .list_issues(None, None, None, None, false, &[])
+            .unwrap();
+        assert_eq!(
+            open.len(),
+            1,
+            "the open issue vanished with the bad .closed"
+        );
+        let closed = repo.list_issues(None, None, None, None, true, &[]).unwrap();
+        assert!(closed.is_empty(), "a refused directory yielded issues");
+        let _ = std::fs::remove_dir_all(&base);
+    }
+
+    fn tracker(tag: &str) -> std::path::PathBuf {
+        let base = std::env::temp_dir().join(format!("tisket-{tag}-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&base);
+        std::fs::create_dir_all(base.join("tracker/.tisket/default")).unwrap();
+        std::fs::write(base.join("tracker/tisket.yml"), "tisket_dir: .tisket\n").unwrap();
+        std::fs::write(
+            base.join("tracker/.tisket/default/project.yml"),
+            "name: default\n",
+        )
+        .unwrap();
+        std::fs::write(
+            base.join("tracker/.tisket/default/aaaa-real.md"),
+            "---\ntitle: Real\nstatus: todo\n---\n\nbody\n",
+        )
+        .unwrap();
+        base
     }
 }
