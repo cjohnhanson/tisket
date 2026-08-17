@@ -260,6 +260,16 @@ impl Repo {
         // and refused there, and the two layers disagreed about what
         // the tracker holds. The user then got a store error naming a
         // temporary staging file instead of a project that is missing.
+        // The same two questions list_projects asks, in the same
+        // order: is the directory one the tracker holds, and does it
+        // carry a project.yml. Asking only the second let a relative
+        // link inside the store through, because the handle follows a
+        // link that stays beneath the root while the listing skips it
+        // by dirent type. A project named through such a link then
+        // read and wrote another project's issues.
+        if !self.project_names().iter().any(|p| p == name) {
+            return Err(Error::ProjectNotFound(name.into()));
+        }
         let rel = format!("{name}/project.yml");
         if !self.issues.is_document(&rel) {
             return Err(Error::ProjectNotFound(name.into()));
@@ -1197,6 +1207,18 @@ mod search_tests {
             Err(Error::ProjectNotFound(_)) => {}
             other => panic!("the two layers disagree: {other:?}"),
         }
+
+        // A relative link that stays inside the store. The handle
+        // follows this one, because it never leaves the root, while
+        // the listing skips it by dirent type. Asking the two layers
+        // different questions let a project named 'mirror' read and
+        // write default's issues.
+        std::os::unix::fs::symlink("default", base.join("tracker/.tisket/mirror")).unwrap();
+        assert!(!repo.list_projects().unwrap().iter().any(|p| p == "mirror"));
+        match repo.load_project("mirror") {
+            Err(Error::ProjectNotFound(_)) => {}
+            other => panic!("an in-store link is a project to one layer: {other:?}"),
+        }
         let _ = std::fs::remove_dir_all(&base);
     }
 
@@ -1255,6 +1277,45 @@ mod search_tests {
             filtered.len(),
             1,
             "the open issue vanished with the bad .closed"
+        );
+        let _ = std::fs::remove_dir_all(&base);
+    }
+
+    /// A directory the tracker cannot read is a fault, not an empty
+    /// project. Swallowing every scan failure reported zero closed
+    /// issues with a success status, and issue show then called an
+    /// existing issue missing.
+    #[test]
+    fn an_unreadable_closed_directory_is_an_error_not_an_empty_project() {
+        let base = tracker("lockedclosed");
+        let closed = base.join("tracker/.tisket/default/.closed");
+        std::fs::create_dir_all(&closed).unwrap();
+        std::fs::write(
+            closed.join("cccc-done.md"),
+            "---\ntitle: Done\nstatus: done\n---\n\nbody\n",
+        )
+        .unwrap();
+        let root = Utf8PathBuf::try_from(base.join("tracker")).unwrap();
+        let repo = Repo::open(&root).unwrap();
+        assert_eq!(
+            repo.list_issues(None, None, None, None, true, &[])
+                .unwrap()
+                .len(),
+            1,
+            "the closed issue is not there to begin with"
+        );
+
+        let mut perms = std::fs::metadata(&closed).unwrap().permissions();
+        std::os::unix::fs::PermissionsExt::set_mode(&mut perms, 0o000);
+        std::fs::set_permissions(&closed, perms).unwrap();
+        let listed = repo.list_issues(None, None, None, None, true, &[]);
+        let mut perms = std::fs::metadata(&closed).unwrap().permissions();
+        std::os::unix::fs::PermissionsExt::set_mode(&mut perms, 0o755);
+        std::fs::set_permissions(&closed, perms).unwrap();
+
+        assert!(
+            listed.is_err(),
+            "a locked .closed listed as an empty project: {listed:?}"
         );
         let _ = std::fs::remove_dir_all(&base);
     }
