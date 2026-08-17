@@ -148,41 +148,14 @@ fn resolve_within(input: &str, ids: &[&str]) -> Option<usize> {
 }
 
 /// The project directories of a tracker.
+///
+/// One implementation answers for a local directory and for a git
+/// tree. This held a second copy of that logic for the local case, and
+/// the copy skipped a link by is_dir() alone rather than by dirent
+/// type, which is how a symlinked project directory let a tracker read
+/// outside its own root.
 fn projects_of(content: &StoreContent, dir_name: &str) -> Vec<String> {
-    match content.dir() {
-        Some(root) => {
-            let dir = root.join(dir_name);
-            let Ok(entries) = std::fs::read_dir(&dir) else {
-                return Vec::new();
-            };
-            let mut names: Vec<String> = entries
-                .flatten()
-                .filter(|e| e.file_type().map(|t| t.is_dir()).unwrap_or(false))
-                .filter_map(|e| e.file_name().to_str().map(|s| s.to_string()))
-                .filter(|n| !n.starts_with('.'))
-                .collect();
-            names.sort();
-            names
-        }
-        None => {
-            // A remote tracker lists its projects from the git tree.
-            let mut names: Vec<String> = Vec::new();
-            if let StoreContent::GitTree { cache, rev, .. } = content
-                && let Ok(paths) = mdstore::git::list_tree(cache, rev, dir_name)
-            {
-                for path in paths {
-                    if let Some((project, _)) = path.split_once('/')
-                        && !project.starts_with('.')
-                        && !names.contains(&project.to_string())
-                    {
-                        names.push(project.to_string());
-                    }
-                }
-            }
-            names.sort();
-            names
-        }
-    }
+    content.subdirectories(dir_name)
 }
 
 /// An issue as seen from a vantage.
