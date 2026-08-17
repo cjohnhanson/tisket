@@ -2319,8 +2319,8 @@ checksum = "4facc753ae494aeb6e3c22f839b158aebd4f9270f55cd3c79906c45476c47ab4"
 
 [[package]]
 name = "mdstore"
-version = "0.3.1"
-source = "git+https://github.com/cjohnhanson/mdstore?rev=bf12ff1#bf12ff185b4d8abf861b0e4205627103ea005ceb"
+version = "0.3.2"
+source = "git+https://github.com/cjohnhanson/mdstore?rev=e57ff8d#e57ff8d063c17aab7e60368e3d6b4dba567ec7ee"
 dependencies = [
  "cap-std",
  "gix",
