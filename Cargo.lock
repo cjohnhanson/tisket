@@ -1388,6 +1388,7 @@ checksum = "6d5446127b269706e85998065267ddd2ccc3550179da6780b22fe496175ccb20"
 dependencies = [
  "clru",
  "gix-chunk",
+ "gix-diff",
  "gix-error",
  "gix-features",
  "gix-hash",
@@ -1395,6 +1396,7 @@ dependencies = [
  "gix-object",
  "gix-path",
  "gix-tempfile",
+ "gix-traverse",
  "gix-zlib",
  "memmap2",
  "parking_lot",
@@ -2318,12 +2320,13 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4facc753ae494aeb6e3c22f839b158aebd4f9270f55cd3c79906c45476c47ab4"
 
 [[package]]
-name = "mdstore"
-version = "0.3.2"
-source = "git+https://github.com/cjohnhanson/mdstore?rev=e57ff8d#e57ff8d063c17aab7e60368e3d6b4dba567ec7ee"
+name = "mdstore-core"
+version = "0.3.6"
 dependencies = [
  "cap-std",
  "gix",
+ "gix-odb",
+ "gix-pack",
  "nix",
  "rand",
  "reqwest",
@@ -3377,7 +3380,7 @@ dependencies = [
  "gix",
  "grep-matcher",
  "grep-regex",
- "mdstore",
+ "mdstore-core",
  "miette",
  "rmcp",
  "serde",
