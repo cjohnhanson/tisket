@@ -1,6 +1,6 @@
 use std::io::IsTerminal;
 
-use camino::Utf8PathBuf;
+use camino::{Utf8Path, Utf8PathBuf};
 use clap::Parser;
 use colored::Colorize;
 
@@ -13,12 +13,66 @@ pub const ABOUT: &str = "Plaintext issue tracker for humans and coding agents";
 #[derive(Parser)]
 #[command(name = "tisket", version, about = ABOUT, max_term_width = 98)]
 pub struct Args {
-    /// Root directory of the repository (default: current directory)
-    #[arg(long, global = true, default_value = ".")]
-    pub root: Utf8PathBuf,
+    /// Tracker directory. Literal: the directory must hold tisket.yml;
+    /// no walk, no fallback. Without it, the nearest tisket.yml at or
+    /// above the cwd is used; with none, reads use the configured root
+    /// tracker and a write needs --home.
+    #[arg(long, global = true)]
+    pub root: Option<Utf8PathBuf>,
+
+    /// Act on the configured root tracker (`tisket store root`),
+    /// wherever the command runs.
+    #[arg(long, global = true, conflicts_with = "root")]
+    pub home: bool,
+
+    /// Read the user config from this file instead of its fixed path.
+    /// A test seam; a flag is visible where an env var is not. The last
+    /// occurrence wins, so a wrapper can pin a default that a specific
+    /// call still overrides.
+    #[arg(long, global = true, hide = true, overrides_with = "user_config")]
+    pub user_config: Option<Utf8PathBuf>,
 
     #[command(subcommand)]
     pub command: Command,
+}
+
+/// Whether a command needs a store at all, and whether it writes.
+/// Exhaustive on the leaf action, so a new subcommand does not compile
+/// until it is classified.
+fn intent(command: &Command) -> Option<mdstore::resolve::Intent> {
+    use mdstore::resolve::Intent::{Read, Write};
+    Some(match command {
+        // Rootless: these never resolve a store.
+        Command::Init
+        | Command::GenMan { .. }
+        | Command::GenCompletions { .. }
+        | Command::Prime
+        | Command::Hooks(_)
+        | Command::Docs(_)
+        | Command::Store(StoreCommand::Root(_)) => return None,
+        Command::Search(_) | Command::Check | Command::Store(StoreCommand::List) => Read,
+        // A served store is a standing surface whose clients never see
+        // a fallback notice, so serve never falls back.
+        Command::Serve { .. } => Write,
+        // Sync mutates the cache.
+        Command::Store(StoreCommand::Sync) => Write,
+        Command::Project(ProjectCommand::List) => Read,
+        Command::Project(ProjectCommand::Create(_)) => Write,
+        Command::Scratch(a) => match &a.action {
+            None | Some(ScratchAction::Read) => Read,
+            Some(ScratchAction::Append(_) | ScratchAction::Write(_) | ScratchAction::Clear) => {
+                Write
+            }
+        },
+        Command::Issue(cmd) => match **cmd {
+            IssueCommand::List(_) | IssueCommand::Show(_) | IssueCommand::Path(_) => Read,
+            IssueCommand::Create(_)
+            | IssueCommand::Edit(_)
+            | IssueCommand::Close(_)
+            | IssueCommand::Reopen(_)
+            | IssueCommand::Move(_) => Write,
+        },
+    })
 }
 
 #[derive(Parser)]
@@ -384,6 +438,18 @@ pub enum StoreCommand {
     List,
     /// Fetch the declared remote trackers into the local cache
     Sync,
+    /// Show or set the root tracker that reads fall back to
+    Root(StoreRootArgs),
+}
+
+#[derive(Parser)]
+pub struct StoreRootArgs {
+    /// The directory of the root tracker. Without it, print the
+    /// current setting.
+    pub path: Option<Utf8PathBuf>,
+    /// Replace an already-set root with a different one.
+    #[arg(long)]
+    pub force: bool,
 }
 
 #[derive(Parser)]
@@ -437,11 +503,11 @@ pub fn prime() -> String {
     format!(
         "# tisket\n\
          {ABOUT}\n\
-         An issue is a markdown file with frontmatter and a status; body and scratch are separate. \
-         A tracker is a directory with tisket.yml; --root <dir> names one, \
-         default the current directory. Its stores.yml may declare other trackers by \
-         alias; an id may read <alias>:<id>. A declared tracker is read-only; write from \
-         the tracker that owns the issue.\n\
+         An issue is a markdown file with frontmatter and a status; body and scratch \
+         are separate. A tracker is a directory with tisket.yml, found upward from the \
+         cwd or named by --root; with none, reads use the root tracker, writes need \
+         --home. Declared trackers (stores.yml aliases; ids read <alias>:<id>) are \
+         read-only; write from the owning tracker.\n\
          Commands:\n\
          \x20 tisket issue list [-s <status>] [-p <proj>]\n\
          \x20 tisket issue show <id>\n\
@@ -455,16 +521,137 @@ pub fn prime() -> String {
 }
 
 pub fn run(args: Args) -> crate::Result<()> {
-    let root = if args.root.is_relative() {
-        let cwd = std::env::current_dir()?;
-        Utf8PathBuf::try_from(cwd)
-            .map_err(|e| std::io::Error::new(std::io::ErrorKind::InvalidData, e))?
-            .join(&args.root)
-    } else {
-        args.root.clone()
+    // Rootless commands never resolve a store, so `tisket prime` and
+    // `tisket store root` work from any cwd with no config at all.
+    let Some(intent) = intent(&args.command) else {
+        if let Command::Store(StoreCommand::Root(a)) = args.command {
+            return run_store_root(&a, args.user_config.as_deref());
+        }
+        // A rootless command acts on the literal --root when one is
+        // given (as `tisket --root dir init` always has), else the cwd.
+        let cwd = cwd_utf8()?;
+        let root = match &args.root {
+            Some(r) if r.is_relative() => cwd.join(r),
+            Some(r) => r.clone(),
+            None => cwd,
+        };
+        return run_command(&root, args.command);
     };
-
+    let cwd = cwd_utf8()?;
+    let config = load_user_config(args.user_config.as_deref())?;
+    let resolved = mdstore::resolve::resolve_root(
+        cwd.as_std_path(),
+        args.root.as_ref().map(|r| r.as_std_path()),
+        args.home,
+        intent,
+        &config,
+        VOCAB,
+    )
+    .map_err(|e| crate::Error::Io(std::io::Error::other(e.to_string())))?;
+    let root = Utf8PathBuf::from_path_buf(resolved.root)
+        .map_err(|p| std::io::Error::other(format!("non-UTF-8 root {}", p.display())))?;
+    announce(&root, &cwd, resolved.via, intent);
     run_command(&root, args.command)
+}
+
+const VOCAB: mdstore::resolve::Vocabulary<'static> = mdstore::resolve::Vocabulary {
+    marker: "tisket.yml",
+    noun: "tracker",
+    tool: "tisket",
+};
+
+fn cwd_utf8() -> crate::Result<Utf8PathBuf> {
+    let cwd = std::env::current_dir()?;
+    Ok(Utf8PathBuf::try_from(cwd)
+        .map_err(|e| std::io::Error::new(std::io::ErrorKind::InvalidData, e))?)
+}
+
+fn load_user_config(path: Option<&Utf8Path>) -> crate::Result<mdstore::userconfig::UserConfig> {
+    let loaded = match path {
+        Some(p) => mdstore::userconfig::UserConfig::load_from(p.as_std_path()),
+        None => mdstore::userconfig::UserConfig::load(),
+    };
+    loaded.map_err(|e| crate::Error::Io(std::io::Error::other(e.to_string())))
+}
+
+/// One stderr line whenever the answer to "where did that act" is not
+/// visible in the command line itself. A read found by walking or by
+/// fallback names its source; every write names its target.
+fn announce(
+    root: &Utf8Path,
+    cwd: &Utf8Path,
+    via: mdstore::resolve::Via,
+    intent: mdstore::resolve::Intent,
+) {
+    use mdstore::resolve::{Intent, Via};
+    match (intent, via) {
+        (_, Via::Flag) => {}
+        (Intent::Write, Via::Home) => eprintln!("tisket: writing to root tracker {root}"),
+        // A write into the cwd's own tracker is what the command line
+        // already says; only a target elsewhere needs naming.
+        (Intent::Write, _) if root != cwd => eprintln!("tisket: writing to tracker {root}"),
+        (Intent::Read, Via::Walk) if root != cwd => {
+            eprintln!("tisket: using tracker at {root} (tisket.yml above {cwd})");
+        }
+        (Intent::Read, Via::Config) => {
+            eprintln!("tisket: no tisket.yml at or above {cwd}; reading root tracker {root}");
+        }
+        (Intent::Read | Intent::Write, _) => {}
+    }
+}
+
+/// `tisket store root [<path>] [--force]`: show or set the root
+/// tracker in ~/.config/mdstore/config.yml. Rootless, and acts on its
+/// literal argument; resolution here would be circular.
+fn run_store_root(args: &StoreRootArgs, user_config: Option<&Utf8Path>) -> crate::Result<()> {
+    let err = |m: String| crate::Error::Io(std::io::Error::other(m));
+    let config = load_user_config(user_config)?;
+    let Some(path) = &args.path else {
+        match config.root_store {
+            Some(r) => println!("root_store: {} (~/.config/mdstore/config.yml)", r.display()),
+            None => println!("root_store: unset"),
+        }
+        return Ok(());
+    };
+    let cwd = cwd_utf8()?;
+    let abs = if path.is_relative() {
+        cwd.join(path)
+    } else {
+        path.clone()
+    };
+    if !abs.join("tisket.yml").is_file() {
+        return Err(err(format!(
+            "no tisket.yml in {abs}; run `tisket init` there first"
+        )));
+    }
+    if let Some(old) = &config.root_store
+        && old != abs.as_std_path()
+        && !args.force
+    {
+        return Err(err(format!(
+            "root_store is {}; pass --force to change it to {abs}",
+            old.display()
+        )));
+    }
+    for sibling in ["zettel.yml", "almanac.yml"] {
+        if !abs.join(sibling).is_file() {
+            eprintln!(
+                "tisket: note: {abs} has no {sibling}; the other tools will not treat it as their root"
+            );
+        }
+    }
+    let old = config.root_store.clone();
+    let written = mdstore::userconfig::UserConfig::save_root(abs.as_std_path())
+        .map_err(|e| err(e.to_string()))?;
+    match old {
+        Some(o) => println!(
+            "root_store: {} -> {abs} ({})",
+            o.display(),
+            written.display()
+        ),
+        None => println!("root_store: {abs} ({})", written.display()),
+    }
+    Ok(())
 }
 
 /// Run a tisket subcommand against the given root directory.
@@ -534,6 +721,9 @@ pub fn run_command(root: &camino::Utf8Path, command: Command) -> crate::Result<(
                         };
                         println!("{label}  {}  {state}{age}", m.source);
                     }
+                }
+                StoreCommand::Root(_) => {
+                    unreachable!("store root is rootless and handled in run()")
                 }
                 StoreCommand::Sync => {
                     let ws = crate::workspace::Workspace::open_fetching(root)?;

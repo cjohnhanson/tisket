@@ -1,0 +1,8 @@
+doc: |
+  Terminal: the --home write landed in the root tracker, and the work
+  cwd still has no tracker of its own.
+assertions:
+  - name: "the root tracker holds the filed issue"
+    command: "tisket --root rootstore issue list | grep -q 'Filed from work'"
+  - name: "the work directory gained no tracker"
+    command: "test ! -f work/tisket.yml"

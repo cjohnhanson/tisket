@@ -10,11 +10,27 @@ tisket is a plaintext issue tracker for humans and coding agents. Each issue is 
 
 ## Global Options
 
-`--root <path>` — Root directory of the repository. The default is `.`, the current directory. This flag applies to every subcommand.
+| Option | Description |
+|--------|-------------|
+| `--root <dir>` | Tracker directory, literal: the directory must hold `tisket.yml`; no walk, no fallback |
+| `--home` | Act on the configured root tracker, wherever the command runs |
 
-`--version` — Print version and exit.
+## Root resolution
 
-`--help` — Print help and exit.
+Without `--root`, a command finds its tracker by one rule, identical in
+zettel and almanac: the nearest `tisket.yml` at or above the working
+directory wins. The walk requires a regular file and stops at the first
+directory the invoking user does not own, so a marker planted in a
+shared ancestor captures nothing. With no tracker found, a read falls
+back to the root tracker set in `~/.config/mdstore/config.yml` and says
+so on stderr; a write never falls back — it fails and names `--home`.
+No environment variable participates: an env var is the one input an
+agent cannot see in a transcript, and a repository can set one through
+direnv or mise. The config path itself is fixed, and the home directory
+comes from the passwd database, not `$HOME`, for the same reason.
+
+Every write prints its resolved target on stderr unless `--root` was
+passed. A read resolved by walking or by fallback prints its source.
 
 ## Commands
 
@@ -363,6 +379,14 @@ This comparison only reads and never blocks. Tisket ignores a git failure withou
 List the trackers that this tracker reads. The first row is the tracker
 itself. Each other row shows a declared tracker, its source, and its
 issue count. A remote tracker also shows the age of its cache.
+
+## `tisket store root`
+
+Show or set the root tracker that reads fall back to. `tisket store
+root` prints the current setting; `tisket store root <path>` writes it
+to `~/.config/mdstore/config.yml` (the path must hold `tisket.yml`;
+changing an existing setting needs `--force`). The file is shared with
+zettel and almanac, so one private repo serves all three tools.
 
 ## `tisket store sync`
 

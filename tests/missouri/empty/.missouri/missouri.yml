@@ -3,14 +3,31 @@ transitions:
     command: "tisket init"
     target: "../initialized"
 
+  # The user-level fallback scenario: a root tracker beside a storeless
+  # work directory, bound by a config file the commands name with
+  # --user-config so the real user config never participates.
+  - name: "configure a root tracker"
+    command: |
+      mkdir -p rootstore work/src &&
+      (cd rootstore && tisket init >/dev/null &&
+        tisket issue create 'Root issue' >/dev/null) &&
+      printf 'format: 1\nroot_store: %s/rootstore\n' "$PWD" > cfg.yml
+    target: "../fallback-configured"
+    comparators:
+      files:
+        - path: "rootstore/"
+          ignore: true
+        - path: "work/"
+          ignore: true
+        - path: "cfg.yml"
+          ignore: true
+
 assertions:
-  - name: "issue list fails before init"
-    command: "tisket issue list"
-    should_fail: true
-    stderr: "error: not a tisket repository (tisket.yml not found)\n"
+  # The message names the cwd and the fix, so it is grepped, not
+  # matched exactly.
+  - name: "issue list fails before init and names the fix"
+    command: "! tisket issue list >/dev/null 2>&1 && tisket issue list 2>&1 | grep -q 'no tisket.yml at or above' && tisket issue list 2>&1 | grep -q 'store root <path>'"
   - name: "project list fails before init"
-    command: "tisket project list"
-    should_fail: true
-    stderr: "error: not a tisket repository (tisket.yml not found)\n"
+    command: "! tisket project list >/dev/null 2>&1 && tisket project list 2>&1 | grep -q 'no tisket.yml at or above'"
   - name: "prime needs no tracker"
     command: "tisket prime"
