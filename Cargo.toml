@@ -29,5 +29,5 @@ colored = "3.1.1"
 grep-regex = "0.1.14"
 grep-matcher = "0.1.8"
 gix = { version = "0.86.0", default-features = false, features = ["basic", "sha1"] }
-mdstore = { git = "https://github.com/cjohnhanson/mdstore", rev = "376040b", features = ["mcp"] }
+mdstore = { git = "https://github.com/cjohnhanson/mdstore", rev = "bf12ff1", features = ["mcp"] }
 sigpipe = "0.1.3"
