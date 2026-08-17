@@ -394,6 +394,13 @@ zettel and almanac, so one private repo serves all three tools.
 Fetch each declared remote tracker into the local cache. This is the
 only command that reaches the network.
 
+Each tracker syncs on its own, and one failure never stops another.
+The command prints a line for each, then exits non-zero if any failed.
+A tracker fails when its source is unreachable, and also when its
+declared revision is absent from what arrived. A fetch that moved
+bytes is not a sync: without that second check the command reports
+success and the revision fails later, on a read.
+
 ## `tisket check`
 
 Report the problems that the declarations create:

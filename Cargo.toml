@@ -52,3 +52,11 @@ gix = { version = "0.86.0", default-features = false, features = ["basic", "sha1
 # for local work belongs in .cargo/config.toml, never here.
 mdstore = { version = "0.3", package = "mdstore-core", features = ["mcp"] }
 sigpipe = "0.1.3"
+
+# A released binary carries no debug symbols, and a user installing a
+# CLI never reads them. Thin LTO with one codegen unit trades build
+# time for size and speed. A release builds once and installs often.
+[profile.release]
+strip = "symbols"
+lto = "thin"
+codegen-units = 1
