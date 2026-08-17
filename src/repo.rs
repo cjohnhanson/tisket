@@ -70,6 +70,13 @@ pub struct Repo {
     /// The loader guarded this and the Repo did not, so the two layers
     /// disagreed about which directory this tracker holds.
     issues_dir: Utf8PathBuf,
+    /// The authority to read and write inside the issue directory, and
+    /// nowhere else.
+    ///
+    /// A checked path is a check every caller must remember. A handle
+    /// is a check none of them can skip: the operating system refuses
+    /// a name that leaves the directory, whoever built it.
+    issues: mdstore::confined::StoreDir,
 }
 
 impl Repo {
@@ -87,12 +94,83 @@ impl Repo {
             .map_err(|e| Error::Store(e.to_string()))?;
         let issues_dir = Utf8PathBuf::try_from(issues_dir)
             .map_err(|e| std::io::Error::new(std::io::ErrorKind::InvalidData, e))?;
+        let issues = mdstore::confined::StoreDir::open(issues_dir.as_std_path())
+            .map_err(|e| Error::Store(e.to_string()))?;
         Ok(Repo {
             root: root.to_owned(),
             config,
             git,
             issues_dir,
+            issues,
         })
+    }
+
+    /// Read one issue through the handle.
+    ///
+    /// The caller passes the path it already built. The name is taken
+    /// back off it against the issue directory, so a path that does
+    /// not sit inside the tracker is refused rather than read.
+    fn read_issue_file(&self, path: &Utf8Path) -> Result<String> {
+        let rel = self.relative(path)?;
+        self.issues
+            .read(&rel)
+            .map_err(|e| Error::Store(e.to_string()))
+    }
+
+    /// Write one issue through the handle.
+    fn write_issue_file(&self, path: &Utf8Path, contents: &str) -> Result<()> {
+        let rel = self.relative(path)?;
+        self.issues
+            .write(&rel, contents)
+            .map_err(|e| Error::Store(e.to_string()))
+    }
+
+    /// Move one issue inside the tracker.
+    fn rename_issue_file(&self, from: &Utf8Path, to: &Utf8Path) -> Result<()> {
+        let from = self.relative(from)?;
+        let to = self.relative(to)?;
+        self.issues
+            .rename(&from, &to)
+            .map_err(|e| Error::Store(e.to_string()))
+    }
+
+    /// Remove one issue through the handle.
+    fn remove_issue_file(&self, path: &Utf8Path) -> Result<()> {
+        let rel = self.relative(path)?;
+        self.issues
+            .remove(&rel)
+            .map_err(|e| Error::Store(e.to_string()))
+    }
+
+    /// Create a directory inside the tracker.
+    fn create_issue_dir(&self, path: &Utf8Path) -> Result<()> {
+        let rel = self.relative(path)?;
+        self.issues
+            .create_dir_all(&rel)
+            .map_err(|e| Error::Store(e.to_string()))
+    }
+
+    fn relative(&self, path: &Utf8Path) -> Result<String> {
+        path.strip_prefix(&self.issues_dir)
+            .map(|rel| rel.as_str().to_string())
+            .map_err(|_| Error::IssueNotFound(path.to_string()))
+    }
+
+    /// Issue stems in one project directory, through the handle.
+    ///
+    /// A project that does not exist yet holds no issues. A link
+    /// planted among them is skipped by type rather than resolved.
+    fn issue_stems(&self, project: &str) -> Result<Vec<String>> {
+        let scan = self
+            .issues
+            .scan(project)
+            .map_err(|e| Error::Store(e.to_string()))?;
+        Ok(scan.entries.into_iter().map(|e| e.stem).collect())
+    }
+
+    /// Project directory names, through the handle.
+    fn project_names(&self) -> Vec<String> {
+        self.issues.subdirectories("")
     }
 
     pub fn tisket_dir(&self) -> Utf8PathBuf {
@@ -129,29 +207,28 @@ impl Repo {
         if project_dir.exists() {
             return Err(Error::ProjectAlreadyExists(name.into()));
         }
-        std::fs::create_dir_all(&project_dir)?;
+        // The name is caller text. is_plain_stem already refuses a
+        // name that spells a path, and the handle refuses one that
+        // gets past it.
+        self.issues
+            .create_dir_all(name)
+            .map_err(|e| Error::Store(e.to_string()))?;
         let content = format!("name: {name}\n");
-        std::fs::write(project_dir.join("project.yml"), content)?;
+        self.issues
+            .write(&format!("{name}/project.yml"), &content)
+            .map_err(|e| Error::Store(e.to_string()))?;
         Ok(())
     }
 
     pub fn list_projects(&self) -> Result<Vec<String>> {
-        let tisket_dir = self.tisket_dir();
-        if !tisket_dir.exists() {
-            return Ok(vec![]);
-        }
-        let mut projects = Vec::new();
-        for entry in std::fs::read_dir(&tisket_dir)? {
-            let entry = entry?;
-            let path = Utf8PathBuf::try_from(entry.path())
-                .map_err(|e| std::io::Error::new(std::io::ErrorKind::InvalidData, e))?;
-            if path.is_dir()
-                && path.join("project.yml").exists()
-                && path.file_name().is_some_and(|name| !name.starts_with('.'))
-            {
-                projects.push(path.file_name().unwrap().to_string());
-            }
-        }
+        // The handle lists the directory, so a link pointing at
+        // another tracker is skipped by type rather than walked. Dot
+        // names are already omitted, which is what keeps .closed out.
+        let mut projects: Vec<String> = self
+            .project_names()
+            .into_iter()
+            .filter(|name| self.issues.is_document(&format!("{name}/project.yml")))
+            .collect();
         projects.sort();
         Ok(projects)
     }
@@ -209,10 +286,8 @@ impl Repo {
             let prefix_dash = format!("{input}-");
             let mut matches = Vec::new();
             for proj in &projects {
-                let project_dir = self.tisket_dir().join(proj);
-                Self::scan_prefix_matches(&project_dir, &prefix_dash, &mut matches)?;
-                let closed_dir = project_dir.join(".closed");
-                Self::scan_prefix_matches(&closed_dir, &prefix_dash, &mut matches)?;
+                self.scan_prefix_matches(proj, &prefix_dash, &mut matches)?;
+                self.scan_prefix_matches(&format!("{proj}/.closed"), &prefix_dash, &mut matches)?;
             }
             match matches.len() {
                 0 => {}
@@ -226,10 +301,8 @@ impl Repo {
         // Match the input against the slug part of each prefixed filename.
         let mut slug_matches = Vec::new();
         for proj in &projects {
-            let project_dir = self.tisket_dir().join(proj);
-            Self::scan_slug_matches(&project_dir, input, &mut slug_matches)?;
-            let closed_dir = project_dir.join(".closed");
-            Self::scan_slug_matches(&closed_dir, input, &mut slug_matches)?;
+            self.scan_slug_matches(proj, input, &mut slug_matches)?;
+            self.scan_slug_matches(&format!("{proj}/.closed"), input, &mut slug_matches)?;
         }
         if slug_matches.len() == 1 {
             return Ok(slug_matches.into_iter().next().unwrap());
@@ -238,42 +311,32 @@ impl Repo {
         Err(Error::IssueNotFound(input.into()))
     }
 
-    fn scan_prefix_matches(dir: &Utf8Path, prefix_dash: &str, out: &mut Vec<String>) -> Result<()> {
-        if !dir.exists() {
-            return Ok(());
-        }
-        for entry in std::fs::read_dir(dir)? {
-            let entry = entry?;
-            let path = Utf8PathBuf::try_from(entry.path())
-                .map_err(|e| std::io::Error::new(std::io::ErrorKind::InvalidData, e))?;
-            if path.extension() == Some("md") && mdstore::store::is_regular_file(path.as_std_path())
-            {
-                let stem = path.file_stem().unwrap_or("");
-                if stem.starts_with(prefix_dash) && !out.contains(&stem.to_string()) {
-                    out.push(stem.to_string());
-                }
+    /// Issue stems in one directory whose id begins with this prefix.
+    ///
+    /// The handle lists the directory, so a link planted among the
+    /// issues is skipped by type rather than resolved.
+    fn scan_prefix_matches(
+        &self,
+        rel: &str,
+        prefix_dash: &str,
+        out: &mut Vec<String>,
+    ) -> Result<()> {
+        for stem in self.issue_stems(rel)? {
+            if stem.starts_with(prefix_dash) && !out.contains(&stem) {
+                out.push(stem);
             }
         }
         Ok(())
     }
 
-    fn scan_slug_matches(dir: &Utf8Path, slug: &str, out: &mut Vec<String>) -> Result<()> {
-        if !dir.exists() {
-            return Ok(());
-        }
-        for entry in std::fs::read_dir(dir)? {
-            let entry = entry?;
-            let path = Utf8PathBuf::try_from(entry.path())
-                .map_err(|e| std::io::Error::new(std::io::ErrorKind::InvalidData, e))?;
-            if path.extension() == Some("md") && mdstore::store::is_regular_file(path.as_std_path())
+    /// Issue stems whose slug matches, whatever their prefix.
+    fn scan_slug_matches(&self, rel: &str, slug: &str, out: &mut Vec<String>) -> Result<()> {
+        for stem in self.issue_stems(rel)? {
+            if let Some((_, file_slug)) = extract_prefix(&stem)
+                && file_slug == slug
+                && !out.contains(&stem)
             {
-                let stem = path.file_stem().unwrap_or("");
-                if let Some((_, file_slug)) = extract_prefix(stem)
-                    && file_slug == slug
-                    && !out.contains(&stem.to_string())
-                {
-                    out.push(stem.to_string());
-                }
+                out.push(stem);
             }
         }
         Ok(())
@@ -284,30 +347,18 @@ impl Repo {
         let projects = self.list_projects()?;
         let mut prefixes = Vec::new();
         for proj in &projects {
-            let project_dir = self.tisket_dir().join(proj);
-            Self::collect_prefixes_from_dir(&project_dir, &mut prefixes)?;
-            let closed_dir = project_dir.join(".closed");
-            Self::collect_prefixes_from_dir(&closed_dir, &mut prefixes)?;
+            self.collect_prefixes_from_dir(proj, &mut prefixes)?;
+            self.collect_prefixes_from_dir(&format!("{proj}/.closed"), &mut prefixes)?;
         }
         Ok(prefixes)
     }
 
-    fn collect_prefixes_from_dir(dir: &Utf8Path, out: &mut Vec<String>) -> Result<()> {
-        if !dir.exists() {
-            return Ok(());
-        }
-        for entry in std::fs::read_dir(dir)? {
-            let entry = entry?;
-            let path = Utf8PathBuf::try_from(entry.path())
-                .map_err(|e| std::io::Error::new(std::io::ErrorKind::InvalidData, e))?;
-            if path.extension() == Some("md") && mdstore::store::is_regular_file(path.as_std_path())
+    fn collect_prefixes_from_dir(&self, rel: &str, out: &mut Vec<String>) -> Result<()> {
+        for stem in self.issue_stems(rel)? {
+            if let Some((prefix, _)) = extract_prefix(&stem)
+                && !out.iter().any(|p| p == prefix)
             {
-                let stem = path.file_stem().unwrap_or("");
-                if let Some((prefix, _)) = extract_prefix(stem)
-                    && !out.iter().any(|p| p == prefix)
-                {
-                    out.push(prefix.to_string());
-                }
+                out.push(prefix.to_string());
             }
         }
         Ok(())
@@ -317,38 +368,25 @@ impl Repo {
     fn slug_exists(&self, slug: &str) -> Result<bool> {
         let projects = self.list_projects()?;
         for proj in &projects {
-            let project_dir = self.tisket_dir().join(proj);
-            if Self::slug_exists_in_dir(&project_dir, slug)? {
+            if self.slug_exists_in_dir(proj, slug)? {
                 return Ok(true);
             }
-            let closed_dir = project_dir.join(".closed");
-            if Self::slug_exists_in_dir(&closed_dir, slug)? {
+            if self.slug_exists_in_dir(&format!("{proj}/.closed"), slug)? {
                 return Ok(true);
             }
         }
         Ok(false)
     }
 
-    fn slug_exists_in_dir(dir: &Utf8Path, slug: &str) -> Result<bool> {
-        if !dir.exists() {
-            return Ok(false);
-        }
-        for entry in std::fs::read_dir(dir)? {
-            let entry = entry?;
-            let path = Utf8PathBuf::try_from(entry.path())
-                .map_err(|e| std::io::Error::new(std::io::ErrorKind::InvalidData, e))?;
-            if path.extension() == Some("md") && mdstore::store::is_regular_file(path.as_std_path())
-            {
-                let stem = path.file_stem().unwrap_or("");
-                // Compare the slug part of this filename.
-                if let Some((_, file_slug)) = extract_prefix(stem) {
-                    if file_slug == slug {
-                        return Ok(true);
-                    }
-                } else if stem == slug {
-                    // A legacy file with no prefix.
+    fn slug_exists_in_dir(&self, rel: &str, slug: &str) -> Result<bool> {
+        for stem in self.issue_stems(rel)? {
+            if let Some((_, file_slug)) = extract_prefix(&stem) {
+                if file_slug == slug {
                     return Ok(true);
                 }
+            } else if stem == slug {
+                // A legacy file with no prefix.
+                return Ok(true);
             }
         }
         Ok(false)
@@ -396,8 +434,7 @@ impl Repo {
 
         let body = opts.body.as_deref().unwrap_or("");
         let content = issue::serialize_issue(&fm, body, "");
-        mdstore::store::write_document(issue_path.as_std_path(), &content)
-            .map_err(|e| Error::Store(e.to_string()))?;
+        self.write_issue_file(&issue_path, &content)?;
 
         Ok(id)
     }
@@ -438,14 +475,13 @@ impl Repo {
 
         let mut issues = Vec::new();
         for proj in &projects {
-            let project_dir = self.tisket_dir().join(proj);
-            let closed_dir = project_dir.join(".closed");
+            let closed_rel = format!("{proj}/.closed");
             if closed {
-                self.collect_issues_from_dir(&closed_dir, proj, true, &mut issues)?;
+                self.collect_issues_from_dir(&closed_rel, proj, true, &mut issues)?;
             } else {
-                self.collect_issues_from_dir(&project_dir, proj, false, &mut issues)?;
+                self.collect_issues_from_dir(proj, proj, false, &mut issues)?;
                 if wanted.is_some() {
-                    self.collect_issues_from_dir(&closed_dir, proj, true, &mut issues)?;
+                    self.collect_issues_from_dir(&closed_rel, proj, true, &mut issues)?;
                 }
             }
         }
@@ -488,25 +524,20 @@ impl Repo {
 
     fn collect_issues_from_dir(
         &self,
-        dir: &Utf8Path,
+        rel: &str,
         project: &str,
         closed: bool,
         out: &mut Vec<Issue>,
     ) -> Result<()> {
-        if !dir.exists() {
-            return Ok(());
-        }
-        for entry in std::fs::read_dir(dir)? {
-            let entry = entry?;
-            let path = Utf8PathBuf::try_from(entry.path())
-                .map_err(|e| std::io::Error::new(std::io::ErrorKind::InvalidData, e))?;
-            if path.extension() == Some("md") && mdstore::store::is_regular_file(path.as_std_path())
+        let dir = self.tisket_dir().join(rel);
+        for stem in self.issue_stems(rel)? {
             {
-                let id = path.file_stem().unwrap_or("").to_string();
+                let path = dir.join(format!("{stem}.md"));
+                let id = stem;
                 // One unreadable or unparseable issue must not take
                 // down a tracker-wide command. The workspace loader
                 // skips and names them; this one failed the whole call.
-                let Ok(content) = mdstore::store::read_document(path.as_std_path()) else {
+                let Ok(content) = self.read_issue_file(&path) else {
                     eprintln!("warning: skipping {id}: unreadable");
                     continue;
                 };
@@ -578,8 +609,7 @@ impl Repo {
             // Look for an open issue.
             let active_path = project_dir.join(format!("{resolved}.md"));
             if active_path.exists() {
-                let content = mdstore::store::read_document(active_path.as_std_path())
-                    .map_err(|e| Error::Store(e.to_string()))?;
+                let content = self.read_issue_file(&active_path)?;
                 let (fm, body, scratch) = issue::parse_issue(&content)?;
                 let mut iss = Issue {
                     id: resolved.clone(),
@@ -598,8 +628,7 @@ impl Repo {
             // Look for a closed issue.
             let closed_path = project_dir.join(".closed").join(format!("{resolved}.md"));
             if closed_path.exists() {
-                let content = mdstore::store::read_document(closed_path.as_std_path())
-                    .map_err(|e| Error::Store(e.to_string()))?;
+                let content = self.read_issue_file(&closed_path)?;
                 let (fm, body, scratch) = issue::parse_issue(&content)?;
                 let mut iss = Issue {
                     id: resolved.clone(),
@@ -639,8 +668,7 @@ impl Repo {
 
         let project_dir = self.tisket_dir().join(&iss.project);
         let issue_path = project_dir.join(format!("{}.md", iss.id));
-        let content = mdstore::store::read_document(issue_path.as_std_path())
-            .map_err(|e| Error::Store(e.to_string()))?;
+        let content = self.read_issue_file(&issue_path)?;
         let (mut fm, mut body, scratch) = issue::parse_issue(&content)?;
 
         if let Some(new_status) = opts.status {
@@ -715,8 +743,7 @@ impl Repo {
 
         issue::update_timestamp(&mut fm);
         let new_content = issue::serialize_issue(&fm, &body, &scratch);
-        mdstore::store::write_document(issue_path.as_std_path(), &new_content)
-            .map_err(|e| Error::Store(e.to_string()))?;
+        self.write_issue_file(&issue_path, &new_content)?;
         Ok(())
     }
 
@@ -735,8 +762,7 @@ impl Repo {
         } else {
             project_dir.join(format!("{}.md", iss.id))
         };
-        let content = mdstore::store::read_document(issue_path.as_std_path())
-            .map_err(|e| Error::Store(e.to_string()))?;
+        let content = self.read_issue_file(&issue_path)?;
         let (fm, body, scratch) = issue::parse_issue(&content)?;
         let new_scratch = if scratch.is_empty() {
             text.to_string()
@@ -744,8 +770,7 @@ impl Repo {
             format!("{scratch}\n{text}")
         };
         let new_content = issue::serialize_issue(&fm, &body, &new_scratch);
-        mdstore::store::write_document(issue_path.as_std_path(), &new_content)
-            .map_err(|e| Error::Store(e.to_string()))?;
+        self.write_issue_file(&issue_path, &new_content)?;
         Ok(())
     }
 
@@ -757,12 +782,10 @@ impl Repo {
         } else {
             project_dir.join(format!("{}.md", iss.id))
         };
-        let content = mdstore::store::read_document(issue_path.as_std_path())
-            .map_err(|e| Error::Store(e.to_string()))?;
+        let content = self.read_issue_file(&issue_path)?;
         let (fm, body, _) = issue::parse_issue(&content)?;
         let new_content = issue::serialize_issue(&fm, &body, text);
-        mdstore::store::write_document(issue_path.as_std_path(), &new_content)
-            .map_err(|e| Error::Store(e.to_string()))?;
+        self.write_issue_file(&issue_path, &new_content)?;
         Ok(())
     }
 
@@ -786,7 +809,7 @@ impl Repo {
         let (source_path, target_path) = if iss.closed {
             let closed_source = source_dir.join(".closed").join(format!("{}.md", iss.id));
             let closed_target_dir = target_dir.join(".closed");
-            std::fs::create_dir_all(&closed_target_dir)?;
+            self.create_issue_dir(&closed_target_dir)?;
             (
                 closed_source,
                 closed_target_dir.join(format!("{}.md", iss.id)),
@@ -798,8 +821,11 @@ impl Repo {
             )
         };
 
-        std::fs::rename(&source_path, &target_path)?;
-        Ok(())
+        // One confined rename. Both ends go through the handle, so
+        // neither can leave the tracker, and the move stays atomic. A
+        // read, write and remove leaves a copy at both names when the
+        // remove fails.
+        self.rename_issue_file(&source_path, &target_path)
     }
 
     /// Add a `## Scratch Notes` section to the issue file. Do nothing if the
@@ -814,15 +840,14 @@ impl Repo {
         }
         let project_dir = self.tisket_dir().join(&iss.project);
         let issue_path = project_dir.join(format!("{}.md", iss.id));
-        let mut content = std::fs::read_to_string(&issue_path)?;
+        let mut content = self.read_issue_file(&issue_path)?;
         if !content.contains("\n## Scratch Notes") {
             if !content.ends_with('\n') {
                 content.push('\n');
             }
             content.push_str("\n## Scratch Notes\n");
         }
-        mdstore::store::write_document(issue_path.as_std_path(), &content)
-            .map_err(|e| Error::Store(e.to_string()))?;
+        self.write_issue_file(&issue_path, &content)?;
         Ok(())
     }
 
@@ -841,17 +866,15 @@ impl Repo {
         let closed_dir = project_dir.join(".closed");
         let closed_path = closed_dir.join(format!("{}.md", iss.id));
 
-        let content = mdstore::store::read_document(issue_path.as_std_path())
-            .map_err(|e| Error::Store(e.to_string()))?;
+        let content = self.read_issue_file(&issue_path)?;
         let (mut fm, body, scratch) = issue::parse_issue(&content)?;
         fm.status = terminal_status;
         issue::update_timestamp(&mut fm);
 
-        std::fs::create_dir_all(&closed_dir)?;
+        self.create_issue_dir(&closed_dir)?;
         let new_content = issue::serialize_issue(&fm, &body, &scratch);
-        mdstore::store::write_document(closed_path.as_std_path(), &new_content)
-            .map_err(|e| Error::Store(e.to_string()))?;
-        std::fs::remove_file(&issue_path)?;
+        self.write_issue_file(&closed_path, &new_content)?;
+        self.remove_issue_file(&issue_path)?;
 
         Ok(())
     }
@@ -870,20 +893,23 @@ impl Repo {
         let closed_path = project_dir.join(".closed").join(format!("{}.md", iss.id));
         let active_path = project_dir.join(format!("{}.md", iss.id));
 
-        let content = std::fs::read_to_string(&closed_path)?;
+        let content = self.read_issue_file(&closed_path)?;
         let (mut fm, body, scratch) = issue::parse_issue(&content)?;
         fm.status = reopen_status;
         issue::update_timestamp(&mut fm);
 
         let new_content = issue::serialize_issue(&fm, &body, &scratch);
-        mdstore::store::write_document(active_path.as_std_path(), &new_content)
-            .map_err(|e| Error::Store(e.to_string()))?;
-        std::fs::remove_file(&closed_path)?;
+        self.write_issue_file(&active_path, &new_content)?;
+        self.remove_issue_file(&closed_path)?;
 
-        // Remove the .closed/ directory if it is now empty.
-        let closed_dir = project_dir.join(".closed");
-        if closed_dir.exists() && std::fs::read_dir(&closed_dir)?.next().is_none() {
-            std::fs::remove_dir(&closed_dir)?;
+        // Remove the .closed/ directory if it is now empty. Every
+        // entry counts, a dotfile included, so a directory that still
+        // holds something is never removed.
+        let closed_rel = format!("{}/.closed", iss.project);
+        if self.issues.dir_is_empty(&closed_rel) {
+            self.issues
+                .remove_dir(&closed_rel)
+                .map_err(|e| Error::Store(e.to_string()))?;
         }
 
         Ok(())
@@ -906,14 +932,17 @@ impl Repo {
         let mut results = Vec::new();
 
         for proj in &projects {
-            let project_dir = self.tisket_dir().join(proj);
-
             // Search the open issues.
-            self.search_issues_in_dir(&project_dir, proj, false, &matcher, &mut results)?;
+            self.search_issues_in_dir(proj, proj, false, &matcher, &mut results)?;
 
             // Search the closed issues.
-            let closed_dir = project_dir.join(".closed");
-            self.search_issues_in_dir(&closed_dir, proj, true, &matcher, &mut results)?;
+            self.search_issues_in_dir(
+                &format!("{proj}/.closed"),
+                proj,
+                true,
+                &matcher,
+                &mut results,
+            )?;
         }
 
         results.sort_by(|a, b| a.issue.id.cmp(&b.issue.id));
@@ -922,27 +951,16 @@ impl Repo {
 
     fn search_issues_in_dir(
         &self,
-        dir: &Utf8Path,
+        rel: &str,
         project: &str,
         closed: bool,
         matcher: &RegexMatcher,
         out: &mut Vec<SearchResult>,
     ) -> Result<()> {
-        if !dir.exists() {
-            return Ok(());
-        }
-
-        for entry in std::fs::read_dir(dir)? {
-            let entry = entry?;
-            let path = Utf8PathBuf::try_from(entry.path())
-                .map_err(|e| std::io::Error::new(std::io::ErrorKind::InvalidData, e))?;
-            if path.extension() != Some("md")
-                || !mdstore::store::is_regular_file(path.as_std_path())
-            {
-                continue;
-            }
-
-            let content = std::fs::read_to_string(&path)?;
+        let dir = self.tisket_dir().join(rel);
+        for stem in self.issue_stems(rel)? {
+            let path = dir.join(format!("{stem}.md"));
+            let content = self.read_issue_file(&path)?;
             let (fm, body, scratch) = issue::parse_issue(&content)?;
 
             // Match against the parsed field values, not the raw YAML
@@ -1070,5 +1088,48 @@ mod search_tests {
             vec!["title".to_string(), "labels".to_string()],
             "the term matches the title and a block-style label"
         );
+    }
+
+    /// The predicate above refuses a path-shaped id. This asserts that
+    /// the handle refuses one anyway, so a caller that reaches the
+    /// filesystem without the predicate still cannot leave.
+    #[test]
+    fn an_issue_path_cannot_leave_the_tracker() {
+        let base = std::env::temp_dir().join(format!("tisket-escape-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&base);
+        std::fs::create_dir_all(base.join("tracker/.tisket/default")).unwrap();
+        std::fs::write(base.join("tracker/tisket.yml"), "tisket_dir: .tisket\n").unwrap();
+        std::fs::write(
+            base.join("tracker/.tisket/default/project.yml"),
+            "name: default\n",
+        )
+        .unwrap();
+        std::fs::write(base.join("secret.md"), "SECRET").unwrap();
+
+        let root = Utf8PathBuf::try_from(base.join("tracker")).unwrap();
+        let repo = Repo::open(&root).unwrap();
+        let outside = repo.tisket_dir().join("../../secret.md");
+
+        assert!(repo.read_issue_file(&outside).is_err(), "a climbing read");
+        assert!(
+            repo.write_issue_file(&outside, "overwritten").is_err(),
+            "a climbing write"
+        );
+        assert!(
+            repo.remove_issue_file(&outside).is_err(),
+            "a climbing delete"
+        );
+        assert!(
+            repo.rename_issue_file(&repo.tisket_dir().join("default/x.md"), &outside)
+                .is_err(),
+            "a climbing move carried an issue out"
+        );
+        assert_eq!(
+            std::fs::read_to_string(base.join("secret.md")).unwrap(),
+            "SECRET",
+            "the file outside the tracker changed"
+        );
+
+        let _ = std::fs::remove_dir_all(&base);
     }
 }
