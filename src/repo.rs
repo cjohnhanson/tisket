@@ -1320,6 +1320,40 @@ mod search_tests {
         let _ = std::fs::remove_dir_all(&base);
     }
 
+    /// A project that exists but cannot be read is not missing.
+    ///
+    /// Mapping a read failure onto ProjectNotFound reported a mode-000
+    /// project.yml as absent while list_projects showed it, which is
+    /// the split load_project exists to close, one line below the fix.
+    #[test]
+    fn an_unreadable_project_is_not_reported_as_missing() {
+        let base = tracker("lockedproj");
+        let cfg = base.join("tracker/.tisket/default/project.yml");
+        let root = Utf8PathBuf::try_from(base.join("tracker")).unwrap();
+        let repo = Repo::open(&root).unwrap();
+        assert!(repo.list_projects().unwrap().iter().any(|p| p == "default"));
+
+        let mut perms = std::fs::metadata(&cfg).unwrap().permissions();
+        std::os::unix::fs::PermissionsExt::set_mode(&mut perms, 0o000);
+        std::fs::set_permissions(&cfg, perms).unwrap();
+        let loaded = repo.load_project("default");
+        let mut perms = std::fs::metadata(&cfg).unwrap().permissions();
+        std::os::unix::fs::PermissionsExt::set_mode(&mut perms, 0o644);
+        std::fs::set_permissions(&cfg, perms).unwrap();
+
+        // Still listed, so it exists. Whatever load says, it must not
+        // say missing.
+        assert!(repo.list_projects().unwrap().iter().any(|p| p == "default"));
+        match loaded {
+            Err(Error::ProjectNotFound(_)) => {
+                panic!("an unreadable project was reported as missing")
+            }
+            Ok(_) => panic!("a mode-000 project.yml was read"),
+            Err(_) => {}
+        }
+        let _ = std::fs::remove_dir_all(&base);
+    }
+
     fn tracker(tag: &str) -> std::path::PathBuf {
         let base = std::env::temp_dir().join(format!("tisket-{tag}-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&base);
