@@ -1,0 +1,35 @@
+fresh-eyes: independent cold reviewer (subagent, no authorship of this branch), full scope of the four commits moving Repo onto the mdstore capability.
+
+Verdict LAND on this tip, bee9023.
+
+Two rounds. Round one returned DO-NOT-LAND on three items. The branch
+did not compile at the revision it pinned. The escape test's move
+assertion named a source file that was never created, so it failed on
+ENOENT: an ambient std::fs::rename left the whole suite and all of
+missouri green while a move carried an issue out of the tracker.
+projects_of had no coverage, and an empty return broke nothing while a
+tracker's issue count read zero in the output a person sees.
+
+Round two verified each fix by execution. The pin builds from the
+remote with no patch file. The move test no longer rests on the error
+return at all: blinding both is_err assertions and keeping only the
+filesystem checks still kills the ambient mutant. projects_of rejects
+three mutations, including the exact pre-branch link-following
+implementation this branch deleted.
+
+Nine of twelve guards survive the suite. The reviewer applied the three
+listing filters as one mutant and drove the real binary against a
+project directory linked outside the tracker: the outside project is
+listed and its id enumerated, and no body is reachable through show,
+list or search. The filters are hardening and the handle is the
+barrier, and the handle is pinned by the repaired escape test.
+
+15 tests, clippy clean, fmt clean. The one missouri failure is a
+pre-existing environment artifact, reproduced identically on the
+reconstructed parent built against the old mdstore pin.
+
+Follow-ups recorded, none blocking: load_project still answers from an
+unconfined exists() and so disagrees with list_projects; one malformed
+.closed aborts every project because issue_stems propagates the scan
+error; the list_projects behaviour change is unpinned; and one test
+calls symlink without a cfg(unix) gate.
