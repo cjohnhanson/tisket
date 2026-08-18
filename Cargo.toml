@@ -11,6 +11,26 @@ authors = ["Cody Hanson"]
 keywords = ["issue-tracker", "mcp", "markdown", "plaintext", "cli"]
 categories = ["command-line-utilities", "development-tools"]
 
+# Repository machinery belongs on GitHub. A consumer installing the
+# crate gets the source, the license, and the README.
+exclude = [
+    ".tisket/",
+    "tisket.yml",
+    ".zettel/",
+    "zettel.yml",
+    ".gaff/",
+    ".github/",
+    ".agents/",
+    "scripts/",
+    # Shells out to scripts/merge-gate.sh, which the line above drops.
+    "tests/merge_gate_guard.rs",
+    "tests/missouri/",
+    "CONTRIBUTING.md",
+    "AGENTS.md",
+    ".editorconfig",
+    "rust-toolchain.toml",
+]
+
 [dependencies]
 rmcp = { version = "3", features = ["server", "transport-io", "transport-streamable-http-server"] }
 tokio = { version = "1", features = ["rt-multi-thread", "macros", "io-std", "signal", "net"] }
