@@ -8,6 +8,22 @@ operations instead of calls to a hosted API.
 
 ## Install
 
+From the first published release onward:
+
+```sh
+cargo install tisket
+```
+
+The crate and the command share the name here. Two of the sibling
+tools do not, because their names were taken on crates.io.
+
+A tagged release also carries a prebuilt binary for macOS and Linux,
+on x86-64 and arm64. Take the archive for your platform from the
+[releases page](https://github.com/cjohnhanson/tisket/releases) and
+put `tisket` on your `PATH`.
+
+To build from a checkout:
+
 ```sh
 cargo install --git https://github.com/cjohnhanson/tisket
 ```
