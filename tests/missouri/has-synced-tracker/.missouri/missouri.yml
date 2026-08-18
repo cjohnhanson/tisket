@@ -41,8 +41,15 @@ assertions:
         git branch -D side >/dev/null) &&
       tisket store sync >/dev/null &&
       tisket issue show up:third-issue | grep -q 'Third issue'
-  - name: "a branch deleted upstream is pruned on the next sync"
-    command: "tisket --root pinned store sync >/dev/null && ! tisket --root pinned issue show hb:later-issue >/dev/null 2>&1 && tisket --root pinned store list | grep '^hb ' | grep -q 'unavailable'"
+  # The fetch prunes the deleted branch, so the pin stops resolving.
+  # A sync whose pin is gone refuses, the same as a sync that cannot
+  # reach its source. Bytes arriving is not a sync.
+  - name: "a branch deleted upstream is pruned, and the pin then refuses"
+    command: |
+      ! tisket --root pinned store sync >/dev/null 2>&1 &&
+      tisket --root pinned store sync 2>&1 | grep -q 'pin side' &&
+      ! tisket --root pinned issue show hb:later-issue >/dev/null 2>&1 &&
+      tisket --root pinned store list | grep '^hb ' | grep -q 'unavailable'
   - name: "the tag pin still resolves after the fetch"
     command: |
       printf 'format: 2\nstores:\n  - alias: hb\n    git: file://%s/upstream\n    rev: v1\n' "$PWD" > pinned/stores.yml &&
