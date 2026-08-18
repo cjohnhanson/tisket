@@ -32,17 +32,33 @@ assertions:
   - name: "both consumers share one clone"
     command: "test $(ls .mdstore-cache | wc -l) -eq 1"
 
-  # Upstream moves on, deletes the side branch; the follower sees the
-  # new issue, and the pinned consumer's branch is pruned.
+  # Upstream moves on and the follower sees the new issue.
   - name: "the follower sees a new upstream issue after a sync"
     command: |
       (cd upstream && tisket issue create 'Third issue' >/dev/null &&
-        git add .tisket && git -c user.email=t@e -c user.name=t commit -qm three &&
-        git branch -D side >/dev/null) &&
+        git add .tisket && git -c user.email=t@e -c user.name=t commit -qm three) &&
       tisket store sync >/dev/null &&
       tisket issue show up:third-issue | grep -q 'Third issue'
-  - name: "a branch deleted upstream is pruned on the next sync"
-    command: "tisket --root pinned store sync >/dev/null && ! tisket --root pinned issue show hb:later-issue >/dev/null 2>&1 && tisket --root pinned store list | grep '^hb ' | grep -q 'unavailable'"
+  # Upstream deletes the side branch. The pinned consumer's next fetch
+  # prunes it, so the pin stops resolving and the sync refuses, the
+  # same as a sync that cannot reach its source. A fetch that moved
+  # bytes is not a sync.
+  #
+  # The deletion sits inside this assertion on purpose. One invocation
+  # then proves the whole chain: the fetch runs, the fetch prunes, and
+  # the sync refuses on a pin no other command removed.
+  #
+  # The message is matched by its two parts rather than as one string.
+  # mdstore's own test asserts the same way, so a reworded message
+  # fails there first rather than only here.
+  - name: "a fetch prunes a branch deleted upstream, and the sync then refuses"
+    command: |
+      (cd upstream && git branch -D side >/dev/null) &&
+      ! tisket --root pinned store sync >/dev/null 2>&1 &&
+      tisket --root pinned store sync 2>&1 | grep -q 'pin' &&
+      tisket --root pinned store sync 2>&1 | grep -q 'side' &&
+      ! tisket --root pinned issue show hb:later-issue >/dev/null 2>&1 &&
+      tisket --root pinned store list | grep '^hb ' | grep -q 'unavailable'
   - name: "the tag pin still resolves after the fetch"
     command: |
       printf 'format: 2\nstores:\n  - alias: hb\n    git: file://%s/upstream\n    rev: v1\n' "$PWD" > pinned/stores.yml &&
