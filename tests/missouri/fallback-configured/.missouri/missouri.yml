@@ -2,7 +2,7 @@ doc: |
   The user-level fallback. A cwd with no tracker reads the configured
   root tracker and says so; a write refuses and names --home; --home
   writes to the root. Every command passes --user-config so the real
-  ~/.config/mdstore/config.yml never participates.
+  ~/.config/tisket/config.yml never participates.
 transitions:
   - name: "a write lands in the root only through --home"
     command: |
