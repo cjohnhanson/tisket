@@ -3,7 +3,7 @@ setup:
     command: "cargo build --quiet --manifest-path ../../Cargo.toml"
   # A wrapper over a copied binary: the wrapper pins --user-config to a
   # path that never exists, so the machine's real
-  # ~/.config/mdstore/config.yml cannot leak a root-store fallback into
+  # ~/.config/tisket/config.yml cannot leak a root-store fallback into
   # the suite. The flag's last occurrence wins, so a test that needs a
   # config passes its own. The binary is copied beside the wrapper, so
   # nothing that touches target/ mid-run can turn the wrapper into a

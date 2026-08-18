@@ -22,7 +22,7 @@ zettel and almanac: the nearest `tisket.yml` at or above the working
 directory wins. The walk requires a regular file and stops at the first
 directory the invoking user does not own, so a marker planted in a
 shared ancestor captures nothing. With no tracker found, a read falls
-back to the root tracker set in `~/.config/mdstore/config.yml` and says
+back to the root tracker set in `~/.config/tisket/config.yml` and says
 so on stderr; a write never falls back — it fails and names `--home`.
 No environment variable participates: an env var is the one input an
 agent cannot see in a transcript, and a repository can set one through
@@ -385,9 +385,10 @@ issue count. A remote tracker also shows the age of its cache.
 
 Show or set the root tracker that reads fall back to. `tisket store
 root` prints the current setting; `tisket store root <path>` writes it
-to `~/.config/mdstore/config.yml` (the path must hold `tisket.yml`;
-changing an existing setting needs `--force`). The file is shared with
-zettel and almanac, so one private repo serves all three tools.
+to `~/.config/tisket/config.yml` (the path must hold `tisket.yml`;
+changing an existing setting needs `--force`). Each tool reads its own
+file, so this one names the root store for tisket alone. One private repo
+can still serve all three, named once in each.
 
 ## `tisket store sync`
 
