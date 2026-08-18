@@ -386,8 +386,9 @@ issue count. A remote tracker also shows the age of its cache.
 Show or set the root tracker that reads fall back to. `tisket store
 root` prints the current setting; `tisket store root <path>` writes it
 to `~/.config/tisket/config.yml` (the path must hold `tisket.yml`;
-changing an existing setting needs `--force`). The file is shared with
-zettel and almanac, so one private repo serves all three tools.
+changing an existing setting needs `--force`). Each tool reads its own
+file, so this one names the root store for tisket alone. One private repo
+can still serve all three, named once in each.
 
 ## `tisket store sync`
 
