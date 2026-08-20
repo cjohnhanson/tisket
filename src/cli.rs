@@ -141,14 +141,13 @@ pub enum Command {
     Docs(DocsArgs),
 }
 
-#[derive(clap::Args)]
-pub struct DocsArgs {
-    /// Topic slug to show, or "search" to search the docs
-    pub topic: Option<String>,
+pub use diataxis::DocsArgs;
 
-    /// Search query (when topic is "search")
-    pub query: Option<String>,
-}
+/// This tool's own documentation, compiled in.
+///
+/// The build script embedded every page in `docs/`, so nothing here
+/// lists them and `tisket docs` works from any directory.
+static DOCS: &[(&str, &str)] = diataxis::embedded_docs!();
 
 #[derive(Parser)]
 pub enum HooksCommand {
@@ -978,31 +977,22 @@ pub fn run_command(root: &camino::Utf8Path, command: Command) -> crate::Result<(
             }
         }
 
-        Command::Docs(args) => match args.topic.as_deref() {
-            None | Some("list") => {
-                crate::docs::list();
-                Ok(())
-            }
-            Some("search") => {
-                let query = args.query.as_deref().unwrap_or("");
-                if query.is_empty() {
-                    eprintln!("usage: tisket docs search <query>");
-                    std::process::exit(1);
-                }
-                crate::docs::search(query);
-                Ok(())
-            }
-            Some(identifier) => {
-                if crate::docs::show(identifier) {
+        Command::Docs(args) => {
+            let set = diataxis::DocSet::from_embedded(DOCS)
+                .map_err(|e| crate::Error::Docs(e.to_string()))?;
+            match args.request().and_then(|request| set.render(request)) {
+                Ok(text) => {
+                    print!("{text}");
                     Ok(())
-                } else {
-                    eprintln!("unknown doc: {identifier}");
+                }
+                Err(e) => {
+                    eprintln!("{e}");
                     eprintln!();
-                    crate::docs::list();
+                    print!("{}", set.listing());
                     std::process::exit(1);
                 }
             }
-        },
+        }
     }
 }
 
