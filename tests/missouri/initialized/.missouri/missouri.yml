@@ -81,3 +81,23 @@ assertions:
     command: "tisket init"
     should_fail: true
     stderr: "error: already initialized (tisket.yml exists)\n"
+  # The bundled documentation. These assertions sat in an orphaned
+  # state directory that no transition reached, so they never ran.
+  - name: "docs lists every page"
+    command: "tisket docs | grep -q what-is-tisket && tisket docs | grep -q cli-reference"
+  - name: "docs lists in Diataxis order"
+    command: "tisket docs | head -1 | grep -q getting-started"
+  - name: "docs prints one page"
+    command: "tisket docs what-is-tisket | grep -q 'markdown files in the git repository'"
+  - name: "docs takes a prefix"
+    command: "tisket docs what | grep -q 'What is Tisket'"
+  - name: "docs search finds a match"
+    command: "tisket docs search frontmatter | grep -q what-is-tisket"
+  - name: "docs search with no match fails"
+    command: "tisket docs search zzzznotathing"
+    should_fail: true
+  - name: "docs --all prints every page whole"
+    command: "tisket docs --all | grep -q '<!-- page: cli-reference (reference) -->'"
+  - name: "an unknown topic fails and lists"
+    command: "tisket docs nope"
+    should_fail: true

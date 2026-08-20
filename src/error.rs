@@ -64,6 +64,9 @@ pub enum Error {
     #[error("{0}")]
     Yaml(#[from] yaml_serde::Error),
 
+    #[error("{0}")]
+    Docs(String),
+
     #[error("git: {0}")]
     Git(String),
 }
