@@ -1,0 +1,20 @@
+{
+  "name": "tisket",
+  "description": "Plaintext issue tracker for humans and coding agents",
+  "bin": {
+    "tisket": "bin/run.js"
+  },
+  "files": [
+    "bin/run.js"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "license": "MIT",
+  "optionalDependencies": {
+    "@tisket/cli-darwin-arm64": "0.0.0",
+    "@tisket/cli-darwin-x64": "0.0.0",
+    "@tisket/cli-linux-arm64-musl": "0.0.0",
+    "@tisket/cli-linux-x64-musl": "0.0.0"
+  }
+}
