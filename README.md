@@ -8,19 +8,29 @@ operations instead of calls to a hosted API.
 
 ## Install
 
-From the first published release onward:
+Pick the line for a tool you already use. Every one installs the same
+binary.
+
+Run it without installing:
+
+```sh
+uvx tisket
+npx tisket
+```
+
+Install it for good:
 
 ```sh
 cargo install tisket
+uv tool install tisket
+npm install -g tisket
+brew install cjohnhanson/tap/tisket
 ```
 
-The crate and the command share the name here. Two of the sibling
-tools do not, because their names were taken on crates.io.
-
-A tagged release also carries a prebuilt binary for macOS and Linux,
-on x86-64 and arm64. Take the archive for your platform from the
-[releases page](https://github.com/cjohnhanson/tisket/releases) and
-put `tisket` on your `PATH`.
+A tagged release also carries a prebuilt binary and the man page, for
+macOS and Linux on x86-64 and arm64. Take the archive for your platform
+from the [releases page](https://github.com/cjohnhanson/tisket/releases),
+put `tisket` on your `PATH`, and put `man/tisket.1` where `man` looks.
 
 To build from a checkout:
 
