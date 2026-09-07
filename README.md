@@ -8,6 +8,10 @@ operations instead of calls to a hosted API.
 
 ## Install
 
+Nothing is published yet. Every line below works from the first
+tagged release onward, and none of them works before it. To use the tool
+today, build it from a checkout with the last command in this section.
+
 Pick the line for a tool you already use. Every one installs the same
 binary.
 
