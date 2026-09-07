@@ -12,9 +12,9 @@
   },
   "license": "MIT",
   "optionalDependencies": {
-    "@tisket/cli-darwin-arm64": "0.0.0",
-    "@tisket/cli-darwin-x64": "0.0.0",
-    "@tisket/cli-linux-arm64-musl": "0.0.0",
-    "@tisket/cli-linux-x64-musl": "0.0.0"
+    "@cjohnhanson/tisket-darwin-arm64": "0.0.0",
+    "@cjohnhanson/tisket-darwin-x64": "0.0.0",
+    "@cjohnhanson/tisket-linux-arm64-musl": "0.0.0",
+    "@cjohnhanson/tisket-linux-x64-musl": "0.0.0"
   }
 }
