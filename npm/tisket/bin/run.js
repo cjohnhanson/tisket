@@ -16,12 +16,12 @@ const os = require("os");
 // host libc is needed.
 const PLATFORMS = {
   darwin: {
-    arm64: "@tisket/cli-darwin-arm64/tisket",
-    x64: "@tisket/cli-darwin-x64/tisket",
+    arm64: "@cjohnhanson/tisket-darwin-arm64/tisket",
+    x64: "@cjohnhanson/tisket-darwin-x64/tisket",
   },
   linux: {
-    arm64: "@tisket/cli-linux-arm64-musl/tisket",
-    x64: "@tisket/cli-linux-x64-musl/tisket",
+    arm64: "@cjohnhanson/tisket-linux-arm64-musl/tisket",
+    x64: "@cjohnhanson/tisket-linux-x64-musl/tisket",
   },
 };
 
