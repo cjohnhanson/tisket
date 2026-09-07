@@ -63,3 +63,19 @@ diataxis = { version = "0.1", default-features = false, features = ["cli"] }
 # documentation set the `docs` subcommand reads.
 [build-dependencies]
 diataxis = { version = "0.1", default-features = false, features = ["build"] }
+
+# `cargo deb` reads this. It produces target/debian/*.deb, which the
+# release attaches to the GitHub release. Installing that file is
+# `dpkg -i`, and it is not an apt repository: `apt-get install tisket`
+# needs a hosted, signed repository that does not exist yet.
+[package.metadata.deb]
+maintainer = "cjohnhanson <cody@codyjhanson.com>"
+section = "utils"
+priority = "optional"
+depends = "$auto"
+extended-description = "Plaintext issue tracker for humans and coding agents"
+assets = [
+    ["target/release/tisket", "usr/bin/", "755"],
+    ["README.md", "usr/share/doc/tisket/README", "644"],
+    ["LICENSE", "usr/share/doc/tisket/LICENSE", "644"],
+]
