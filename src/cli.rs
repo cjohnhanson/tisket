@@ -518,7 +518,6 @@ pub struct ScratchTextArgs {
     pub text: String,
 }
 
-/// Run tisket with the given arguments.
 /// The prime: what tisket is, for an agent's context.
 ///
 /// A pure function of the binary. It states the issue and tracker
@@ -549,6 +548,7 @@ pub fn prime() -> String {
     )
 }
 
+/// Run tisket with the given arguments.
 pub fn run(args: Args) -> crate::Result<()> {
     // Rootless commands never resolve a store, so `tisket prime` and
     // `tisket store root` work from any cwd with no config at all.
@@ -980,10 +980,15 @@ pub fn run_command(root: &camino::Utf8Path, command: Command) -> crate::Result<(
                     if let Some(project) = &a.project {
                         let issue = repo.find_issue(&a.id)?;
                         if &issue.project != project {
-                            return Err(crate::Error::IssueNotFound(format!(
-                                "{} in project {project}",
-                                a.id
-                            )));
+                            // The id the user typed, not the resolved
+                            // one: a resolved id carries a random
+                            // prefix, and the message echoes what they
+                            // wrote.
+                            return Err(crate::Error::IssueInAnotherProject(
+                                a.id.clone(),
+                                issue.project.clone(),
+                                project.clone(),
+                            ));
                         }
                     }
                     repo.close_issue(&a.id, a.status.as_deref())?;
