@@ -163,7 +163,7 @@ Close an issue. The command moves the file from `<project>/` to `<project>/.clos
 
 | Option | Short | Default | Description |
 |--------|-------|---------|-------------|
-| `--project <name>` | `-p` | | Project that holds the issue. Resolution does not use this flag today; tisket finds the issue by ID in every project |
+| `--project <name>` | `-p` | | The project that holds the issue. tisket finds the issue by ID in every project, and refuses when the issue is in another project than the one named |
 | `--status <status>` | `-s` | `done` | Terminal status to set, usually `done` or `cancelled` |
 
 ### `tisket issue reopen <id>`
@@ -383,6 +383,18 @@ tisket is git-aware. In a git repository, `issue list` and `issue show` compare 
 This comparison only reads and never blocks. Tisket ignores a git failure without a message.
 
 
+## `tisket docs`
+
+Print the bundled documentation. The pages are compiled into the
+binary, so the command works from any directory.
+
+```
+tisket docs                     List the pages
+tisket docs <slug>              Print one page
+tisket docs search <query>      List the pages that carry the query
+tisket docs --all               Print every page, in one stream
+```
+
 ## `tisket store list`
 
 List the trackers that this tracker reads. The first row is the tracker
@@ -458,8 +470,8 @@ issue, change a status, or edit a body through the server.
 A served tracker has none. The server answers whoever opens the
 connection.
 
-This is deliberate. Authentication belongs in front of the server, in
-something built for it: a reverse proxy that terminates TLS and checks
+Authentication belongs in front of the server, in a program built for
+it. A reverse proxy terminates TLS and checks
 a token or an identity provider.
 
 Bind to `127.0.0.1` for a client on this machine. To serve anybody

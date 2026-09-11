@@ -43,8 +43,8 @@
           toolchain = pkgs.rust-bin.stable.latest.default;
           craneLib = (crane.mkLib pkgs).overrideToolchain toolchain;
 
-          # cleanCargoSource strips non-Rust files; the bundled docs and
-          # missouri fixtures must survive the filter.
+          # crane's default source filter strips non-Rust files; the
+          # bundled docs and missouri fixtures must survive the filter.
           src = pkgs.lib.cleanSourceWith {
             src = ./.;
             filter =
@@ -58,9 +58,9 @@
               || (builtins.match ".*/skills$" path != null)
               || (builtins.match ".*/skills/.*" path != null)
               # tests/merge_gate_guard.rs runs scripts/merge-gate.sh, so the
-              # script has to reach the sandbox. Without it five of seven
-              # cases fail on a missing file and the package cannot build,
-              # while the gate stays green because a runner has the script.
+              # script has to reach the sandbox. Without it the cases fail
+              # on a missing file and the package cannot build, while the
+              # gate stays green because a runner has the script.
               || (builtins.match ".*/scripts$" path != null)
               || (builtins.match ".*/scripts/.*" path != null);
           };

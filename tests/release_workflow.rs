@@ -128,6 +128,17 @@ fn the_formula_names_the_archive_the_build_uploads() {
         src.contains(&format!("dl/{BIN}-*-\"${{target}}\".tar.gz.sha256")),
         "the tap job does not read the build's checksum files"
     );
+    // The tap job replaces the version by matching one exact line of
+    // the template. A reformat of that line leaves 0.0.0 in the formula
+    // with correct checksums and four URLs that 404.
+    assert!(
+        template.lines().any(|l| l == "  version \"0.0.0\""),
+        "{template_path} has no `  version \"0.0.0\"` line for the tap job to replace"
+    );
+    assert!(
+        src.contains("s/^  version \\\".*\\\"$/  version \\\"${version}\\\"/"),
+        "the tap job does not replace the formula's version line"
+    );
 }
 
 #[test]
@@ -155,13 +166,22 @@ fn a_dispatch_runs_the_deb_and_tap_jobs() {
     // its `needs`, so the push step must require the publishes itself.
     // Without that, a failed publish pushed a formula for a draft.
     let tap = job("tap");
-    for publish in ["publish-crate", "publish-pypi", "publish-npm"] {
+    for publish in ["publish-crate", "publish-pypi", "publish-npm", "finalize"] {
         assert!(
             tap.iter()
                 .any(|l| l.contains(&format!("needs.{publish}.result == 'success'"))),
             "the tap job pushes without requiring {publish}"
         );
     }
+    // A draft release serves no asset to an anonymous reader, so the
+    // formula must follow finalize, which clears the draft flag. With
+    // the order reversed, `brew install` met a 404 on every release.
+    assert!(
+        !job("finalize")
+            .iter()
+            .any(|l| l.trim().starts_with("needs:") && l.contains("tap")),
+        "finalize waits for tap, so the formula names a draft release"
+    );
 }
 
 #[test]

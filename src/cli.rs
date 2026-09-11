@@ -15,7 +15,7 @@ pub const ABOUT: &str = "Plaintext issue tracker for humans and coding agents";
 pub struct Args {
     /// Tracker directory. Literal: the directory must hold tisket.yml;
     /// no walk, no fallback. Without it, the nearest tisket.yml at or
-    /// above the cwd is used; with none, reads use the configured root
+    /// above the cwd is used. With none, reads use the configured root
     /// tracker and a write needs --home.
     #[arg(long, global = true)]
     pub root: Option<Utf8PathBuf>,
@@ -426,7 +426,8 @@ pub struct IssueCloseArgs {
     /// Issue ID (filename without .md)
     pub id: String,
 
-    /// Project containing the issue
+    /// The project that holds the issue. Refused when the issue is in
+    /// another project.
     #[arg(short, long)]
     pub project: Option<String>,
 
@@ -973,6 +974,18 @@ pub fn run_command(root: &camino::Utf8Path, command: Command) -> crate::Result<(
                     Ok(())
                 }
                 IssueCommand::Close(a) => {
+                    // The flag once did nothing while its help text
+                    // said it scoped the close. A named project that
+                    // does not hold the issue is a refusal.
+                    if let Some(project) = &a.project {
+                        let issue = repo.find_issue(&a.id)?;
+                        if &issue.project != project {
+                            return Err(crate::Error::IssueNotFound(format!(
+                                "{} in project {project}",
+                                a.id
+                            )));
+                        }
+                    }
                     repo.close_issue(&a.id, a.status.as_deref())?;
                     Ok(())
                 }
