@@ -15,6 +15,11 @@ pub enum Error {
     #[error("issue '{0}' not found")]
     IssueNotFound(String),
 
+    /// `issue close --project` names a project that does not hold the
+    /// issue. The issue exists, so "not found" would be false.
+    #[error("issue '{0}' is in project '{1}', not '{2}'")]
+    IssueInAnotherProject(String, String, String),
+
     #[error("ambiguous prefix '{0}': more than one issue matches")]
     AmbiguousPrefix(String),
 
