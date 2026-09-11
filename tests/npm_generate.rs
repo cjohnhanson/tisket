@@ -80,7 +80,13 @@ fn a_partial_build_writes_one_package_npm_will_install() {
         return;
     }
     let root = scratch_repo("partial");
-    let first = &generated_targets()[0];
+    // A musl target, because that is where the generator wrote the
+    // `libc` field npm enforces; a darwin manifest never carried it.
+    let targets = generated_targets();
+    let first = targets
+        .iter()
+        .find(|t| t.package.ends_with("-musl"))
+        .expect("a musl target in the generator's list");
     put_binary(&root, &first.triple);
     let out = generate(&root, &["--partial"]);
     assert!(

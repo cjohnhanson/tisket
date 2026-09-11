@@ -403,8 +403,9 @@ b:m4p1]`. The alias must be declared in `stores.yml`. An entry whose
 text before the first colon is not a declared alias stays local. An
 entry such as `x: y` keeps the meaning it always had.
 
-`tisket check` reports a child that names no issue, and a cycle in the
-children of an epic.
+`tisket check` reports a child in another tracker that names no issue
+there, and a cycle in the children of an epic. It does not report a
+missing child in the same tracker.
 
 Containment is not blocking. `children` says what an epic contains;
 `depends_on` says what an issue waits for. Use `depends_on` when work
