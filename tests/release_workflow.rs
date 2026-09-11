@@ -210,6 +210,58 @@ fn the_deb_job_fetches_the_binary_it_packages() {
 }
 
 #[test]
+fn the_verify_job_holds_a_tag_to_main_and_to_the_manifest() {
+    // Anyone who can push a tag can point one at any commit, and a tag
+    // that disagrees with Cargo.toml publishes a version nobody asked
+    // for. Both checks need the full history: a shallow clone answers
+    // the ancestry question wrong.
+    let lines = job("verify");
+    assert!(
+        lines.iter().any(|l| l.trim() == "fetch-depth: 0"),
+        "the verify checkout is shallow, so the ancestry check cannot answer"
+    );
+    let step = |name: &str| -> Vec<&String> {
+        let start = lines
+            .iter()
+            .position(|l| l.trim() == format!("- name: {name}"))
+            .unwrap_or_else(|| panic!("no step named {name} in verify"));
+        lines[start + 1..]
+            .iter()
+            .take_while(|l| !l.trim().starts_with("- "))
+            .collect()
+    };
+    let on_main = step("Check the tag is on main");
+    assert!(
+        on_main
+            .iter()
+            .any(|l| l.contains("merge-base --is-ancestor") && l.contains("origin/main")),
+        "the tag-on-main step does not ask git for ancestry against main"
+    );
+    let manifest = step("Check the tag matches Cargo.toml");
+    assert!(
+        manifest
+            .iter()
+            .any(|l| l.contains("Cargo.toml") && l.contains("version")),
+        "the manifest step does not read the version from Cargo.toml"
+    );
+    assert!(
+        manifest.iter().any(|l| l.contains("GITHUB_REF_NAME")),
+        "the manifest step does not compare against the tag"
+    );
+    for (name, body) in [("on main", &on_main), ("manifest", &manifest)] {
+        assert!(
+            body.iter()
+                .any(|l| l.trim() == "if: github.event_name == 'push'"),
+            "the {name} check runs on a dispatch, where there is no tag"
+        );
+        assert!(
+            body.iter().any(|l| l.trim() == "exit 1"),
+            "the {name} check cannot refuse"
+        );
+    }
+}
+
+#[test]
 fn git_ignores_the_generator_output() {
     // A generated package holds a binary, and one staged by accident
     // ships inside the crate.

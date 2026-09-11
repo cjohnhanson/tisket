@@ -3,10 +3,12 @@
 # hook is the merge check. A push needs green tests, a green missouri
 # suite, and a sign-off for every review .gaff/gaff.yml declares.
 #
-# The review record is a git note on the pushed tip:
-#   git notes --ref=reviews add -m 'signoff[<review>] PASS <sha> <evidence>' <sha>
-# Write a note only after an independent reviewer has read the change
-# and its test coverage. A note without a review makes the gate false.
+# The review record is one git note on the pushed tip, one line per
+# review, written once:
+#   git notes --ref=reviews add -m '<the lines>' <sha>
+# Each line reads `signoff[<review>] PASS <sha> <evidence>`. Write a
+# note only after an independent reviewer has read the change and its
+# test coverage. A note without a review makes the gate false.
 #
 # Known limits. The suites test the working tree, not the pushed
 # commit. A fresh clone has no hooks until `gaff init --git` runs, and
