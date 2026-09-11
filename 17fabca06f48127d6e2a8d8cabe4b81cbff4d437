@@ -1,0 +1,36 @@
+signoff[review-tests] PASS 17fabca removed the `chmod +x` from publish-npm, weakened `parse_tag`, disabled the `issue close --project` mismatch guard, disabled the merge-gate's vendored-review loop, and swapped the wrapper's darwin arm64/x64 entries: each went red in a named test (`the_npm_publish_restores_the_execute_bit_first`, `a_tag_without_a_value_is_refused`, missouri's `close with the wrong project fails`, `a_vendored_review_nobody_requires_refuses`, `each_platform_execs_the_package_built_for_it`); baseline `cargo test --workspace --all-features` and `missouri run` both green; minor: the new `NO_COLOR` clause is unreachable by any test, and no repository test covers the wheel job's duplicated `--compatibility` flag.
+signoff[review-docs] PASS 17fabca swept every prose surface in the tree (README, CONTRIBUTING, SECURITY, the four docs pages, six vendored skill bodies, clap help, error strings, code comments, the three scripts, six packaging manifests, workflow comments, 45 commit titles), built the commit in scratch and ran every documented command, and the tutorial's outputs matched line for line; minor findings below, none blocking.
+signoff[review-code] PASS 17fabca built and ran the archived commit in a scratch tree with clippy clean at `-D warnings` across the workspace and all features, read every Rust, shell, node and workflow change beside its neighbors, and exercised the new `close --project` guard, the `KEY=VALUE` parser, `NO_COLOR` and the docs error path against the built binary; minor: an empty `NO_COLOR` disables color against the published spec, flake.nix hardcodes a version the same commit made dynamic in pyproject.toml, and the dispatch rehearsal names archives from a ref that carries a slash on this branch.
+signoff[review-deps] PASS 17fabca ran cargo-audit over the 399-crate locked graph with `--deny yanked --deny warnings` (clean, 1243 advisories loaded), swept every licence in the graph via cargo metadata (no copyleft-only crate; the MPL-2.0 `colored` is gone from the lock), read mdstore-core and diataxis sources for spawns (the one `Command::new("mkfifo")` sits inside `#[cfg(test)]`), and ran `cargo package --locked` to completion, which built the crate from its own excluded tarball; minor: diataxis is a 27-download first-party 0.1.1, the no-spawn test still reads only this crate's own source, and the npm platform packages carry a licence field but no licence file.
+signoff[review-usability] PASS 17fabca built 17fabca from a git archive in scratch and ran it cold from --help in eleven states including no tracker, a half-made tracker, a wrong project on close and a tag without =, plus the npm wrapper's four refusal paths; exit codes 0, 1 and 2 are distinct and every refusal named a flag, file or value; minor: three nouns reach one workflow, and issue create and init write silently, both unchanged from main.
+
+The minor findings review-docs recorded: `hooks setup` is advertised by
+the help text and the man page and answers "not implemented yet", while
+the CLI reference states the true position; the tutorial says a git
+repository is required and `init` works without one; `stores.yml`, `rev`
+and `shared: true` are used and defined in no page; two reference
+sentences pass the 25-word ceiling; and two commit titles on the branch
+name nothing to a reader outside the session.
+
+Declined, with the reason, per signoff-driver step 5.
+
+Third-party licence notices are absent from the binary channels. Every
+review-deps reviewer who weighed it across every round graded it minor:
+the blocking licence band is a copyleft dependency in a permissive
+project, and this change removes the only one, the MPL-2.0 `colored`.
+Tracked as a follow-up. It should land before the packages get wide.
+
+`diataxis` and `mdstore-core` are first-party crates published four days
+before this commit. Both replace hand-rolled code rather than a
+consensus library, both are maintained, and the `mdstore` move off a git
+revision is what makes a crates.io publish possible at all.
+
+The vocabulary is a half-finished rename: tracker, store and repository
+reach one workflow. Three reviewers named it independently and all three
+graded it minor. Recorded rather than fixed, because the `store` command
+group, `stores.yml` and the `root_store:` output key are public surface,
+and renaming them belongs in its own change.
+
+The release workflow has never executed. Every conclusion about it in
+every round rests on reading the file. Run a workflow_dispatch rehearsal
+before the first tag; it builds every target and publishes nothing.
