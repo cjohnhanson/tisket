@@ -183,8 +183,8 @@ supplies what that behavior reads.
 At session start a harness reads the tisket state: the open issue count,
 and whether the current branch name resolves to an issue ID. If an issue
 matches, the harness puts the title, the body, and the scratch notes
-into the starting context, and the agent runs no command to learn what
-its work is.
+into the starting context. The agent runs no command to learn what its
+work is.
 
 The pickable statuses and `depends_on` give the harness a gate. It picks
 up only a `todo`, `blocked`, or `paused` issue whose every dependency is
@@ -194,8 +194,8 @@ list, and the harness decides what they allow.
 
 The short ID is a stable key. A harness names the worktree and its
 branch after the issue ID. It then passes the branch name back to
-`tisket issue show`, which resolves a full ID, a 4-character prefix, or a
-slug, and so finds the active issue for the session.
+`tisket issue show`. That command resolves a full ID, a 4-character
+prefix, or a slug, and so finds the active issue for the session.
 
 For CLI usage details, see the [CLI reference](/tisket/cli-reference). For
 day-to-day issue management, see the [workflow guide](/tisket/workflow).
@@ -230,6 +230,6 @@ who clone the project. A dependency tracker is read-only, so an edit
 runs from the tracker that owns the issue.
 
 `tisket store list` shows the trackers. `tisket store sync` fetches the
-remote ones. `tisket check` reports a reference that names no issue, an
-unreachable tracker, a cycle in the children of an epic, and a
-declaration that other clones could not follow.
+remote ones. `tisket check` reports a reference that names no issue and
+an unreachable tracker. It also reports a cycle in the children of an
+epic, and a declaration that other clones cannot follow.
