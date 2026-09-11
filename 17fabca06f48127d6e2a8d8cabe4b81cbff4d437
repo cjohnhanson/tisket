@@ -34,3 +34,17 @@ and renaming them belongs in its own change.
 The release workflow has never executed. Every conclusion about it in
 every round rests on reading the file. Run a workflow_dispatch rehearsal
 before the first tag; it builds every target and publishes nothing.
+
+Found by the driver after the sign-offs, recorded and not fixed.
+
+`tests/review_gate_workflow.rs` builds each scratch repository at
+`std::env::temp_dir()/tisket_review_gate_<name>`, a fixed path with no
+process id. Two concurrent runs of the suite therefore share those
+directories and can fail each other. It refused one push here, where
+fifteen agents were running the same suite at once, and passed on the
+next clean run. CI gives every job its own runner and its own temp
+directory, so the path cannot collide there, and a contributor running
+the suite once never meets it. `tests/merge_gate_guard.rs` already keys
+its fixture directory on the process id and the review names; this file
+wants the same. Not fixed here because the fix moves the commit and
+voids these five sign-offs.
