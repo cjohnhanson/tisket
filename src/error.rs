@@ -35,11 +35,11 @@ pub enum Error {
     #[error("invalid selector '{0}'; a selector is namespace:value")]
     InvalidSelector(String),
 
-    #[error("store '{0}' is not declared in stores.yml")]
+    #[error("alias '{0}' is not declared in stores.yml")]
     UndeclaredStore(String),
 
     #[error(
-        "'{0}' is in store '{1}'; dependency stores are read-only — run the command from that store to edit it"
+        "'{0}' is in tracker '{1}'. A declared tracker is read-only. Run the command from the tracker that owns the issue."
     )]
     ForeignWrite(String, String),
 

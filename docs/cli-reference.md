@@ -8,7 +8,7 @@ type: reference
 
 tisket is a plaintext issue tracker for humans and coding agents. Each issue is a markdown file with YAML frontmatter. The files live in git next to the code they describe.
 
-## Global Options
+## Global options
 
 | Option | Description |
 |--------|-------------|
@@ -23,7 +23,7 @@ directory wins. The walk requires a regular file and stops at the first
 directory the invoking user does not own, so a marker planted in a
 shared ancestor captures nothing. With no tracker found, a read falls
 back to the root tracker set in `~/.config/tisket/config.yml` and says
-so on stderr; a write never falls back — it fails and names `--home`.
+so on stderr. A write never falls back. It fails and names `--home`.
 No environment variable participates: an env var is the one input an
 agent cannot see in a transcript, and a repository can set one through
 direnv or mise. The config path itself is fixed, and the home directory
@@ -43,7 +43,7 @@ The command fails if `tisket.yml` already exists.
 
 ### `tisket prime`
 
-Print what tisket is and how to use it, for an agent's context. The output depends only on the binary version: no arguments, config, or tracker changes it, and it runs outside a tracker. Put it into an agent's context; policy about when to use tisket belongs to the caller.
+Print what tisket is and how to use it, for an agent's context. The output depends only on the binary version. No argument, config, or tracker changes it, and the command runs outside a tracker. Policy about when to use tisket belongs to the caller.
 
 ### `tisket hooks setup <agent>`
 
@@ -80,7 +80,7 @@ The default action is `read`.
 
 ---
 
-## `tisket issue` Subcommands
+## `tisket issue` subcommands
 
 ### `tisket issue create <title>`
 
@@ -109,7 +109,7 @@ List issues. By default the command lists the open issues in every project.
 | `--status <status>` | `-s` | | Filter by status |
 | `--assignee <name>` | `-a` | | Filter by assignee |
 | `--label <label>` | | | Filter by label |
-| `--where <selector>` | | | Filter by a selector in `namespace:value` form. Repeatable. An issue must match every selector |
+| `--where <selector>` | | | Filter by a selector in `namespace:value` form. `label`, `status`, and `project` read those fields; any other namespace names a tag. Repeatable. An issue must match every selector |
 | `--closed` | | `false` | List the closed issues instead of the open ones |
 | `--format <fmt>` | | `text` | Output format: `text` or `json` |
 
@@ -152,6 +152,8 @@ Edit the metadata or the body of an existing issue. The command changes only the
 | `--due <date>` | | Set the due date (YYYY-MM-DD) |
 | `--body <text>` | | Replace the entire body below the frontmatter |
 | `--append <text>` | | Append text to the body. Adds a blank line first if the body is not empty |
+| `--tag <KEY=VALUE>` | | Set one tag under the `tags` mapping. Repeatable |
+| `--untag <KEY>` | | Remove one tag by key. Repeatable |
 
 The command updates the `updated` timestamp automatically.
 
@@ -186,7 +188,7 @@ The command handles an open issue and a closed issue. It changes nothing if the 
 
 ---
 
-## `tisket project` Subcommands
+## `tisket project` subcommands
 
 ### `tisket project create <name>`
 
@@ -200,7 +202,7 @@ List every project. The command prints one project name per line in alphabetical
 
 ---
 
-## ID Resolution
+## ID resolution
 
 Tisket resolves an issue ID from several forms. Each form works wherever the reference shows `<id>`:
 
@@ -233,9 +235,9 @@ Tisket parses the legacy value `backlog` as `todo`.
 
 ---
 
-## File Format
+## File format
 
-### Repository Configuration: `tisket.yml`
+### Repository configuration: `tisket.yml`
 
 This file is at the repository root.
 
@@ -248,7 +250,7 @@ tisket_dir: .tisket
 | `tisket_dir` | string | `.tisket` | Directory that holds the projects and the issues |
 | `additional_instructions` | string | `""` | Unread. `prime` once appended it. The key still parses; `tisket check` reports it when set |
 
-### Project Configuration: `<tisket_dir>/<project>/project.yml`
+### Project configuration: `<tisket_dir>/<project>/project.yml`
 
 ```yaml
 name: default
@@ -258,7 +260,7 @@ name: default
 |-------|------|-------------|
 | `name` | string | Project name |
 
-### Issue Files
+### Issue files
 
 An open issue is a markdown file at `<tisket_dir>/<project>/<id>.md`. A closed issue is a markdown file at `<tisket_dir>/<project>/.closed/<id>.md`.
 
@@ -280,7 +282,7 @@ The filename stem is the issue ID. It has a 4-character random prefix, a hyphen,
 
 One file holds all three sections: the frontmatter, the body, and the scratch notes. The body and the scratch notes are optional.
 
-#### Frontmatter Schema
+#### Frontmatter schema
 
 ```yaml
 title: "Issue title"
@@ -293,6 +295,8 @@ depends_on: []
 children: []
 created: "2025-01-15T10:30:00Z"
 updated: "2025-01-15T10:30:00Z"
+tags:
+  sprint: 12
 ```
 
 | Field | Type | Required | Default | Description |
@@ -307,8 +311,11 @@ updated: "2025-01-15T10:30:00Z"
 | `children` | list of strings | no | `[]` | The issues this epic contains. An entry may name another tracker, as `alias:id`. Containment does not block pickup |
 | `created` | string or null | no | auto | ISO 8601 timestamp. Tisket sets it at creation |
 | `updated` | string or null | no | auto | ISO 8601 timestamp. Tisket updates it on every edit |
+| `tags` | mapping | no | `{}` | Your own keys and values. `--where <key>:<value>` filters on them, and `issue edit --tag`/`--untag` maintains them |
 
 Tisket writes a null field as a bare key with no value. For example, `priority:` has nothing after the colon.
+
+A key this table does not name survives an edit. Tisket keeps every frontmatter key it does not model, so another tool can add one and tisket will not drop it.
 
 #### Body
 
@@ -320,7 +327,7 @@ The `## Scratch Notes` section is optional and comes at the end of the file. Use
 
 ---
 
-## JSON Output Format
+## JSON output format
 
 With `--format json`, each issue looks like this:
 
@@ -336,6 +343,7 @@ With `--format json`, each issue looks like this:
   "labels": ["bug", "frontend"],
   "depends_on": ["cd34-other-issue"],
   "children": ["ef56-a-child-issue"],
+  "tags": { "sprint": 12 },
   "body": "Full body text here.",
   "scratch": "Agent notes here.",
   "closed": false
@@ -346,7 +354,7 @@ Tisket writes a null field as JSON `null`. `tisket issue list --format json` ret
 
 ---
 
-## Directory Layout
+## Directory layout
 
 ```
 repo/
@@ -365,7 +373,7 @@ repo/
 
 ---
 
-## Git Integration
+## Git integration
 
 tisket is git-aware. In a git repository, `issue list` and `issue show` compare the version of each issue file on the current branch against the version on every other branch. Tisket marks the issue as divergent if the frontmatter differs, or if the presence of a body or of scratch notes differs:
 
@@ -386,9 +394,11 @@ issue count. A remote tracker also shows the age of its cache.
 Show or set the root tracker that reads fall back to. `tisket store
 root` prints the current setting; `tisket store root <path>` writes it
 to `~/.config/tisket/config.yml` (the path must hold `tisket.yml`;
-changing an existing setting needs `--force`). Each tool reads its own
-file, so this one names the root store for tisket alone. One private repo
-can still serve all three, named once in each.
+changing an existing setting needs `--force`). This setting names the
+root store for tisket alone, because each tool reads its own config
+file. One directory can serve as the root store for all of them. If that
+directory holds no `zettel.yml` or no `almanac.yml`, the command says so
+on stderr and still writes the setting.
 
 ## `tisket store sync`
 

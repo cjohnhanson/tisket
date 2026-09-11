@@ -66,9 +66,8 @@ pub struct Repo {
     pub config: TisketConfig,
     pub git: Option<GitContext>,
     /// The issue directory, already checked against the store root.
-    ///
-    /// The loader guarded this and the Repo did not, so the two layers
-    /// disagreed about which directory this tracker holds.
+    /// The loader and the Repo must agree on which directory this
+    /// tracker holds, so both take it from the same function.
     issues_dir: Utf8PathBuf,
     /// The authority to read and write inside the issue directory, and
     /// nowhere else.
@@ -161,17 +160,12 @@ impl Repo {
     /// A project that does not exist yet holds no issues. A link
     /// planted among them is skipped by type rather than resolved.
     fn issue_stems(&self, project: &str) -> Result<Vec<String>> {
-        // A directory this store refuses holds no issues this store
-        // can list. Propagating the error aborted every project: one
-        // .closed linked outside took down `issue list` and `search`
-        // for the whole tracker. The code one level down already keeps
-        // a single bad file from doing that; the same holds here.
         // A directory the tracker refuses holds no issues, and one
-        // project must not take down a tracker-wide command. A
-        // directory the tracker cannot READ is a different thing: a
-        // permissions failure reported as an empty project answers
-        // zero issues with a success status, and `issue show` then
-        // calls an existing issue missing.
+        // project must not take down a tracker-wide command such as
+        // `issue list` or `search`. A directory the tracker cannot
+        // read is a different thing: a permissions failure reported as
+        // an empty project answers zero issues with a success status,
+        // and `issue show` then calls an existing issue missing.
         //
         // cap-std reports both as PermissionDenied. The errno is what
         // separates them, and mdstore carries it for this reason.
@@ -255,18 +249,14 @@ impl Repo {
         if !mdstore::is_plain_stem(name) {
             return Err(Error::ProjectNotFound(name.into()));
         }
-        // Through the handle, like list_projects. Path::exists follows
-        // a link, so a linked project directory was said to exist here
-        // and refused there, and the two layers disagreed about what
-        // the tracker holds. The user then got a store error naming a
-        // temporary staging file instead of a project that is missing.
-        // The same two questions list_projects asks, in the same
-        // order: is the directory one the tracker holds, and does it
-        // carry a project.yml. Asking only the second let a relative
-        // link inside the store through, because the handle follows a
-        // link that stays beneath the root while the listing skips it
-        // by dirent type. A project named through such a link then
-        // read and wrote another project's issues.
+        // Through the handle, and in the same order list_projects
+        // asks: is the directory one the tracker holds, and does it
+        // carry a project.yml. Path::exists follows a link, so it
+        // cannot answer the first question. Both must be asked. The
+        // handle follows a relative link that stays beneath the root,
+        // while the listing skips that link by dirent type, so a
+        // project named through one would otherwise read and write
+        // another project's issues.
         if !self.project_names().iter().any(|p| p == name) {
             return Err(Error::ProjectNotFound(name.into()));
         }
@@ -274,11 +264,11 @@ impl Repo {
         if !self.issues.is_document(&rel) {
             return Err(Error::ProjectNotFound(name.into()));
         }
-        // is_document already answered whether the project is there.
-        // Mapping a read failure onto ProjectNotFound made an
-        // unreadable or non-UTF-8 project.yml report as missing, which
-        // is the same split this function exists to close: list says
-        // it is there, load says it is not.
+        // is_document already answered whether the project is there,
+        // so a read failure past this point is a fault and never a
+        // missing project. Mapping one onto ProjectNotFound would make
+        // an unreadable or non-UTF-8 project.yml report as absent
+        // while list_projects still shows it.
         let content = self
             .issues
             .read(&rel)
@@ -497,17 +487,15 @@ impl Repo {
             None => self.list_projects()?,
         };
 
-        // A status names a set of issues, not a directory. A terminal
-        // status lives under .closed, so a filter that looked only at
-        // open issues answered 'done' with an empty list, and a filter
-        // that looked only at .closed answered 'todo' the same way.
-        // One rule now serves the flag and the served argument: the
-        // --closed flag picks the closed directory, a status filter
-        // reads both, and neither reads .closed by accident.
+        // A status names a set of issues, not a directory, and a
+        // terminal status lives under .closed. One rule serves the
+        // flag and the served argument: the --closed flag picks the
+        // closed directory, a status filter reads both directories,
+        // and neither reads .closed by accident.
         let wanted = match status_filter {
             Some(text) => Some(text.parse::<Status>().map_err(|_| {
                 Error::Store(format!(
-                    "'{text}' is not a status; use todo, in_progress, done, or cancelled"
+                    "'{text}' is not a status; use discovery, todo, in_progress, blocked, paused, done, or cancelled"
                 ))
             })?),
             None => None,
@@ -534,9 +522,6 @@ impl Repo {
             issues.retain(|i| i.frontmatter.labels.iter().any(|l| l == label));
         }
 
-        // --assignee was documented, advertised in --help, and never
-        // reached this function, so it filtered nothing and said so to
-        // nobody.
         if let Some(assignee) = assignee_filter {
             issues.retain(|i| i.frontmatter.assignee.as_deref() == Some(assignee));
         }
@@ -575,8 +560,8 @@ impl Repo {
                 let path = dir.join(format!("{stem}.md"));
                 let id = stem;
                 // One unreadable or unparseable issue must not take
-                // down a tracker-wide command. The workspace loader
-                // skips and names them; this one failed the whole call.
+                // down a tracker-wide command. Skip it by name, the
+                // way the workspace loader does.
                 let Ok(content) = self.read_issue_file(&path) else {
                     eprintln!("warning: skipping {id}: unreadable");
                     continue;
@@ -1188,9 +1173,9 @@ mod search_tests {
 
     /// load_project and list_projects must answer the same question.
     ///
-    /// Path::exists follows a link, so a linked project directory was
-    /// said to exist by one and refused by the other, and the user got
-    /// a store error naming a temporary staging file.
+    /// Path::exists follows a link, so it lets one layer call a linked
+    /// project directory present while the other refuses it. The user
+    /// then gets a store error naming a temporary staging file.
     #[test]
     fn a_linked_project_is_missing_to_both_layers() {
         let base = tracker("linkedproj");
@@ -1224,16 +1209,15 @@ mod search_tests {
 
     /// One refused directory must not take down the tracker.
     ///
-    /// issue_stems propagated the scan error, so a single .closed
-    /// linked outside aborted `issue list` and `search` for every
-    /// project. The code one level down already keeps one bad file
-    /// from doing that.
+    /// A single `.closed` linked outside must not abort `issue list`
+    /// or `search` for every other project. issue_stems must absorb
+    /// the scan error, the way the read layer absorbs one bad file.
     #[test]
     fn one_refused_directory_does_not_abort_the_tracker() {
         let base = tracker("badclosed");
         // The directory beyond the link holds a real issue. Left
-        // empty, an implementation that followed the link produced the
-        // same empty list, so the assertion proved nothing.
+        // empty, an implementation that follows the link returns the
+        // same empty list, and the assertion proves nothing.
         std::fs::create_dir_all(base.join("elsewhere")).unwrap();
         std::fs::write(
             base.join("elsewhere/zzzz-outside.md"),
@@ -1249,11 +1233,10 @@ mod search_tests {
         let root = Utf8PathBuf::try_from(base.join("tracker")).unwrap();
         let repo = Repo::open(&root).unwrap();
 
-        // The scan itself, before the read layer gets a chance to
-        // hide the difference. An ambient scan lists the outside stem
-        // and the read then refuses it, so at the list_issues level
-        // both answers are empty and nothing tells them apart. Here
-        // they differ.
+        // The scan itself, before the read layer hides the
+        // difference. An ambient scan lists the outside stem and the
+        // read then refuses it, so both answers are empty at the
+        // list_issues level. Here they differ.
         let stems = repo.issue_stems("default/.closed").unwrap();
         assert!(
             stems.is_empty(),
@@ -1261,7 +1244,7 @@ mod search_tests {
         );
 
         // --closed is what reaches .closed. A plain list never scans
-        // it, so asserting on that proved nothing about this bug.
+        // it, so an assertion on a plain list covers nothing here.
         let closed = repo.list_issues(None, None, None, None, true, &[]).unwrap();
         assert!(
             closed.iter().all(|i| i.id != "zzzz-outside"),
@@ -1282,9 +1265,9 @@ mod search_tests {
     }
 
     /// A directory the tracker cannot read is a fault, not an empty
-    /// project. Swallowing every scan failure reported zero closed
-    /// issues with a success status, and issue show then called an
-    /// existing issue missing.
+    /// project. A swallowed scan failure answers zero closed issues
+    /// with a success status, and `issue show` then calls an existing
+    /// issue missing.
     #[test]
     fn an_unreadable_closed_directory_is_an_error_not_an_empty_project() {
         let base = tracker("lockedclosed");
@@ -1322,9 +1305,9 @@ mod search_tests {
 
     /// A project that exists but cannot be read is not missing.
     ///
-    /// Mapping a read failure onto ProjectNotFound reported a mode-000
-    /// project.yml as absent while list_projects showed it, which is
-    /// the split load_project exists to close, one line below the fix.
+    /// A read failure mapped onto ProjectNotFound calls a mode-000
+    /// project.yml absent while list_projects still shows it. That is
+    /// the split load_project exists to close.
     #[test]
     fn an_unreadable_project_is_not_reported_as_missing() {
         let base = tracker("lockedproj");

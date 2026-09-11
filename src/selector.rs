@@ -30,9 +30,8 @@ pub fn matches_all(selectors: &[Selector], issue: &Issue) -> bool {
 
 /// Parse one selector, or say why it is not one.
 ///
-/// A selector with no colon used to be dropped, so a typo such as
-/// `labelbug` returned the whole list and exit 0. Silently widening a
-/// filter is the worst direction to fail in.
+/// Text with no colon is an error, never a dropped filter. A typo such
+/// as `labelbug` must not widen the result set and exit 0.
 ///
 /// A namespace this file does not name is a tag name, so any namespace
 /// is accepted. Only the shape is checked.

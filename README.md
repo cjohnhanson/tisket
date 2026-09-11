@@ -116,7 +116,10 @@ proxy that authenticates in front of it.
 
 - [What is Tisket?](docs/what-is-tisket.md) — design, file format, status lifecycle
 - [Getting Started](docs/getting-started.md) — first issue walkthrough
+- [Workflow](docs/workflow.md) — daily issue management past the basics
 - [CLI Reference](docs/cli-reference.md) — complete command documentation
+
+`tisket docs` prints the same pages from the installed binary.
 
 ## Related
 

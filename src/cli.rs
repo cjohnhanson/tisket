@@ -374,12 +374,41 @@ pub struct IssueEditArgs {
     pub append: Option<String>,
 
     /// Set a tag in key=value form. Repeatable
-    #[arg(long = "tag", value_name = "KEY=VALUE")]
-    pub tags: Vec<String>,
+    #[arg(long = "tag", value_name = "KEY=VALUE", value_parser = parse_tag)]
+    pub tags: Vec<(String, String)>,
 
     /// Remove a tag by key. Repeatable
     #[arg(long = "untag", value_name = "KEY")]
     pub untags: Vec<String>,
+}
+
+/// Split `KEY=VALUE`. A value without `=` is refused at parse time; a
+/// silent drop looked like a set that took.
+fn parse_tag(s: &str) -> Result<(String, String), String> {
+    match s.split_once('=') {
+        Some((k, v)) if !k.is_empty() => Ok((k.to_string(), v.to_string())),
+        _ => Err(format!("`{s}` is not KEY=VALUE")),
+    }
+}
+
+#[cfg(test)]
+mod tag_tests {
+    use super::parse_tag;
+
+    #[test]
+    fn a_tag_without_a_value_is_refused() {
+        assert!(parse_tag("owner").is_err());
+        assert!(parse_tag("=x").is_err());
+    }
+
+    #[test]
+    fn a_tag_splits_on_the_first_equals() {
+        assert_eq!(
+            parse_tag("q=a=b").unwrap(),
+            ("q".to_string(), "a=b".to_string())
+        );
+        assert_eq!(parse_tag("k=").unwrap(), ("k".to_string(), String::new()));
+    }
 }
 
 #[derive(Parser)]
@@ -922,14 +951,6 @@ pub fn run_command(root: &camino::Utf8Path, command: Command) -> crate::Result<(
                     Ok(())
                 }
                 IssueCommand::Edit(a) => {
-                    let parsed_tags: Vec<(String, String)> = a
-                        .tags
-                        .iter()
-                        .filter_map(|t| {
-                            let (k, v) = t.split_once('=')?;
-                            Some((k.to_string(), v.to_string()))
-                        })
-                        .collect();
                     repo.edit_issue(
                         &a.id,
                         EditIssueOptions {
@@ -945,7 +966,7 @@ pub fn run_command(root: &camino::Utf8Path, command: Command) -> crate::Result<(
                             children: a.children.as_deref(),
                             body: a.body.as_deref(),
                             append: a.append.as_deref(),
-                            tags: &parsed_tags,
+                            tags: &a.tags,
                             untags: &a.untags,
                         },
                     )?;
@@ -1221,7 +1242,7 @@ fn print_rollup(root: &camino::Utf8Path, id: &str) {
     }
     println!("    {}/{} done", rollup.done, rollup.rows.len());
     for m in &rollup.unreachable {
-        eprintln!("partial — unreachable tracker: {m}");
+        eprintln!("partial count. This tracker could not be read: {m}");
     }
 }
 
