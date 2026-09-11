@@ -34,11 +34,10 @@ The command creates two files:
 - `tisket.yml` — the configuration file at the repo root
 - `.tisket/default/project.yml` — a default project
 
-The configuration file is short:
+The configuration file holds one key:
 
 ```yaml
 tisket_dir: .tisket
-additional_instructions: ""
 ```
 
 `tisket_dir` sets the directory for the issues. The default `.tisket`
@@ -259,8 +258,9 @@ tisket issue edit ef56 --append "Update: vendor confirmed timeline."
 
 ## Search
 
-Search the titles, the metadata, and the body text with a regular
-expression:
+Search the frontmatter fields with a regular expression. The search
+covers the title, the status, the priority, the assignee, the due date,
+the labels, and the dependencies. It does not read the body.
 
 ```
 tisket search "TLS|certificates"

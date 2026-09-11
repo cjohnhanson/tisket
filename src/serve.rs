@@ -102,10 +102,6 @@ impl TisketServer {
             ),
         ];
         if self.config.access.writable() {
-            // Appending to working notes is the write an agent should
-            // make: it records what was found without deciding
-            // anything. Closing an issue or rewriting its body is a
-            // judgment its owner makes at the command line.
             tools.push(Tool::new(
                 "tisket_append_scratch",
                 "Append to an issue's working notes. This is the only write a served \
@@ -124,7 +120,7 @@ impl TisketServer {
     ///
     /// Every surface here reads files. On the async pool that work
     /// blocks the runtime, so one slow call delays every other client.
-    /// `call_tool` got this treatment; the resource surface did not.
+    /// Every surface must route its filesystem work through this.
     async fn blocking<T, F>(&self, work: F) -> std::result::Result<T, McpError>
     where
         T: Send + 'static,
@@ -137,9 +133,8 @@ impl TisketServer {
     }
 
     fn call(&self, name: &str, args: &Map<String, Value>) -> Result<String> {
-        // One accessor for every tool argument, in the crate all three
-        // servers already share. A local copy is a second answer to
-        // the same question, and the copies drifted.
+        // One accessor for every tool argument, from the shared crate.
+        // A local copy is a second answer to the same question.
         let text = |key: &str| -> Result<Option<String>> {
             mdstore::mcp::optional_str(args, key)
                 .map(|v| v.map(str::to_string))
@@ -310,9 +305,7 @@ impl ServerHandler for TisketServer {
             return Err(McpError::invalid_request("tools are not served here", None));
         }
         let args = request.arguments.unwrap_or_default();
-        // Every tool reads files. On the async worker pool that work
-        // blocks the runtime, so one slow call delays every other
-        // client's requests.
+        // Off the async workers, for the reason `blocking` states.
         let this = self.clone();
         let name = request.name.to_string();
         let called = tokio::task::spawn_blocking(move || this.call(&name, &args))

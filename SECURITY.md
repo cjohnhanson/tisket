@@ -22,9 +22,14 @@ are credited unless you ask otherwise.
 
 ## Scope
 
-tisket stores issues as markdown files with YAML frontmatter, inside a repository. It serves a tracker over the Model Context Protocol, and it can read trackers a `stores.yml` declares.
+tisket stores issues as markdown files with YAML frontmatter, inside a
+repository. It serves a tracker over the Model Context Protocol, and it
+reads the trackers a `stores.yml` declares.
 
-A declared tracker can come from content the reader does not control, such as a vendored dependency. What that declaration can reach is the boundary worth attacking. The MCP server is the other one: it exposes a tracker to whatever drives it.
+A declared tracker can come from content the reader does not control,
+such as a vendored dependency. A declaration decides what tisket opens,
+so its reach is one boundary. The MCP server is the other. It answers
+whoever drives it.
 
 In scope:
 
@@ -43,6 +48,7 @@ Out of scope:
 
 ## Known boundaries
 
-Documented limits are not vulnerabilities. `src/confined.rs` carries a
-`# What this does not cover` section in its module documentation. Read
-it before reporting a traversal issue.
+Documented limits are not vulnerabilities. tisket confines every read
+and write through the `mdstore-core` crate, whose `confined` module
+carries a `What this does not cover` section in its module
+documentation. Read that section before you report a traversal issue.
