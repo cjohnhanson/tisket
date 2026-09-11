@@ -88,7 +88,7 @@ assertions:
   - name: "close with the wrong project fails"
     command: "tisket issue close -p docs fix-the-widget"
     should_fail: true
-    stderr: "error: issue 'fix-the-widget in project docs' not found\n"
+    stderr: "error: issue 'fix-the-widget' is in project 'bugs', not 'docs'\n"
   - name: "duplicate issue fails"
     command: "tisket issue create 'Fix the widget' -p bugs"
     should_fail: true

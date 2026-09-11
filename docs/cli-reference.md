@@ -296,7 +296,7 @@ children: []
 created: 2025-01-15T10:30:00Z
 updated: 2025-01-15T10:30:00Z
 tags:
-  sprint: '12'
+  sprint: 12
 ```
 
 | Field | Type | Required | Default | Description |
@@ -313,7 +313,9 @@ tags:
 | `updated` | string or null | no | auto | ISO 8601 timestamp. Tisket updates it on every edit |
 | `tags` | mapping | no | `{}` | Your own keys and values. `--where <key>:<value>` filters on them, and `issue edit --tag`/`--untag` maintains them |
 
-Tisket writes a null field as `null`, so an unset priority reads `priority: null`. A string that YAML would read as a number is quoted, so a priority set to `1` reads `priority: '1'`. A list is written one item per line.
+Tisket writes a null field as `null`, so an unset priority reads `priority: null`. A modelled string that YAML would read as a number is quoted, so a priority set to `1` reads `priority: '1'`. A list is written one item per line.
+
+`tags` is the exception, because its values are not modelled as strings. A tag value that looks like a number is written as one, so `--tag sprint=12` reads `sprint: 12` and `--format json` reports `"sprint": 12`. A caller that reads `tags` accepts a string or a number.
 
 A key this table does not name survives an edit. Tisket keeps every frontmatter key it does not model, so another tool can add one and tisket will not drop it.
 
