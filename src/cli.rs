@@ -2,7 +2,7 @@ use std::io::IsTerminal;
 
 use camino::{Utf8Path, Utf8PathBuf};
 use clap::Parser;
-use colored::Colorize;
+use owo_colors::OwoColorize;
 
 use crate::{CreateIssueOptions, EditIssueOptions, Issue, Repo, SearchResult, Selector, git};
 
@@ -1024,7 +1024,8 @@ pub fn run_command(root: &camino::Utf8Path, command: Command) -> crate::Result<(
 }
 
 fn colorize_status(status: &str) -> String {
-    if !std::io::stdout().is_terminal() {
+    // A pipe gets plain text, and so does a reader who set NO_COLOR.
+    if !std::io::stdout().is_terminal() || std::env::var_os("NO_COLOR").is_some() {
         return status.to_string();
     }
     let (base, suffix) = if let Some(s) = status.strip_suffix('*') {

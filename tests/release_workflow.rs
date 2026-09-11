@@ -146,10 +146,50 @@ fn a_dispatch_runs_the_deb_and_tap_jobs() {
         assert!(
             lines
                 .iter()
-                .any(|l| l.trim() == "if: github.event_name == 'push'"),
+                .any(|l| l.trim() == "if: github.event_name == 'push'"
+                    || l.trim() == "github.event_name == 'push'"),
             "job {name} has no step gated on a push, so a dispatch uploads"
         );
     }
+    // `!cancelled()` on the tap job drops the default success check on
+    // its `needs`, so the push step must require the publishes itself.
+    // Without that, a failed publish pushed a formula for a draft.
+    let tap = job("tap");
+    for publish in ["publish-crate", "publish-pypi", "publish-npm"] {
+        assert!(
+            tap.iter()
+                .any(|l| l.contains(&format!("needs.{publish}.result == 'success'"))),
+            "the tap job pushes without requiring {publish}"
+        );
+    }
+}
+
+#[test]
+fn the_registries_publish_in_sequence_after_every_build() {
+    // A registry allows a yank and never a reuse, so no registry may
+    // take a version while another build fails, and a refusal at one
+    // registry must stop the ones after it.
+    let crate_job = job("publish-crate");
+    for needed in ["build", "wheels", "sdist", "npm-packages"] {
+        assert!(
+            crate_job
+                .iter()
+                .any(|l| l.trim().starts_with("needs:") && l.contains(needed)),
+            "publish-crate does not wait for {needed}"
+        );
+    }
+    assert!(
+        job("publish-pypi")
+            .iter()
+            .any(|l| l.trim() == "needs: publish-crate"),
+        "publish-pypi does not follow publish-crate"
+    );
+    assert!(
+        job("publish-npm")
+            .iter()
+            .any(|l| l.trim() == "needs: publish-pypi"),
+        "publish-npm does not follow publish-pypi"
+    );
 }
 
 #[test]

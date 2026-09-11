@@ -285,27 +285,27 @@ One file holds all three sections: the frontmatter, the body, and the scratch no
 #### Frontmatter schema
 
 ```yaml
-title: "Issue title"
+title: Issue title
 status: todo
-priority:
-assignee:
-due_date: "2025-06-15"
+priority: null
+assignee: null
+due_date: 2025-06-15
 labels: []
 depends_on: []
 children: []
-created: "2025-01-15T10:30:00Z"
-updated: "2025-01-15T10:30:00Z"
+created: 2025-01-15T10:30:00Z
+updated: 2025-01-15T10:30:00Z
 tags:
-  sprint: 12
+  sprint: '12'
 ```
 
 | Field | Type | Required | Default | Description |
 |-------|------|----------|---------|-------------|
-| `title` | string | yes | | Issue title. Tisket quotes it in the file |
+| `title` | string | yes | | Issue title. Tisket writes it unquoted unless YAML needs the quotes |
 | `status` | string | yes | `todo` | One of the fixed statuses. See Statuses above |
 | `priority` | string or null | no | null | Priority level. The convention is `1`=urgent, `2`=high, `3`=medium, `4`=low |
 | `assignee` | string or null | no | null | The person responsible for the issue |
-| `due_date` | string or null | no | null | Due date, usually YYYY-MM-DD. Tisket quotes it in the file |
+| `due_date` | string or null | no | null | Due date, usually YYYY-MM-DD. Tisket writes it unquoted |
 | `labels` | list of strings | no | `[]` | Free-form labels |
 | `depends_on` | list of strings | no | `[]` | Issue IDs that must close first |
 | `children` | list of strings | no | `[]` | The issues this epic contains. An entry may name another tracker, as `alias:id`. Containment does not block pickup |
@@ -313,7 +313,7 @@ tags:
 | `updated` | string or null | no | auto | ISO 8601 timestamp. Tisket updates it on every edit |
 | `tags` | mapping | no | `{}` | Your own keys and values. `--where <key>:<value>` filters on them, and `issue edit --tag`/`--untag` maintains them |
 
-Tisket writes a null field as a bare key with no value. For example, `priority:` has nothing after the colon.
+Tisket writes a null field as `null`, so an unset priority reads `priority: null`. A string that YAML would read as a number is quoted, so a priority set to `1` reads `priority: '1'`. A list is written one item per line.
 
 A key this table does not name survives an edit. Tisket keeps every frontmatter key it does not model, so another tool can add one and tisket will not drop it.
 
@@ -416,7 +416,9 @@ success and the revision fails later, on a read.
 
 Report the problems that the declarations create:
 
-- A `depends_on` or `children` entry names no issue.
+- A `depends_on` or `children` entry names another tracker and no issue
+  there. An entry that names a missing issue in the same tracker is not
+  reported.
 - A declared tracker is not available.
 - The children of an epic form a cycle.
 - A file could not be read.
@@ -431,7 +433,7 @@ Serve this tracker over the Model Context Protocol.
 
 ```
 tisket serve                        Speak MCP on stdin and stdout
-tisket serve --root <DIR>           Serve the tracker at DIR (default: .)
+tisket serve --root <DIR>           Serve the tracker at DIR (default: the nearest tisket.yml at or above the working directory)
 tisket serve --bind <ADDR>          Serve over HTTP at ADDR instead
 tisket serve --surfaces <LIST>      Offer these surfaces (default: resources,tools)
 tisket serve --access <MODE>        read-only (default) or read-write
