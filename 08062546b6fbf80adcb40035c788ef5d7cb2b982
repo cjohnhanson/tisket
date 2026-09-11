@@ -1,0 +1,34 @@
+signoff[review-tests] PASS 0806254 four guards mutated in a `git archive` copy and three went red (the merge gate's fixed-string name match killed a_review_name_is_a_fixed_string, the dispatch gate on publish-crate killed a_dispatch_publishes_nothing, the npm wrapper's signal branch killed a_binary_killed_by_a_signal_does_not_exit_zero); baseline 75 tests green; minor: the new NO_COLOR clause is a guard no test can reach, and `docs search` lost its only test
+signoff[review-docs] PASS 0806254 swept 25 prose surfaces including error text, help output and code comments; built 0806254 in scratch and ran every documented command against a fresh tracker, and each matched its documented output; no undefined term blocks an instruction and no skill body carries an instruction aimed at its reader; minor: a `hooks` refusal prints a `store:` prefix, `stores.yml` is missing from the reference, and two commit titles name nothing to a stranger
+signoff[review-code] PASS 0806254 read the neighbors for each changed surface (repo.rs close/find/resolve, the sibling issue subcommands, both PR gate workflows) and built and ran the suite from a `git archive` of 0806254 in scratch, 76 tests green; exercised the built binary for the three new behaviors, `--tag` without `=` refused at parse, `issue close --project other` refused with the issue's real project, `gen-man` writing the `tisket.1` the Homebrew formula installs; no reach crosses a module boundary and no error path swallows a failure; minor: the CLI enforces close-scoping while every other issue invariant lives in `Repo`, the tip commit's fixture guard reached one helper and not the four fixed-path fixtures beside it, and two PR gates both enforce the review note
+signoff[review-deps] PASS 0806254 built 0806254 from `git archive` in scratch (exit 0) and ran `cargo audit` over the 399-crate lock, exit 0, no advisory and no yanked crate; `colored` 3.1.1, the tree's only MPL-2.0 crate, is gone and `owo-colors` 4.4.0 (MIT, already present through miette) replaces it, leaving no copyleft in the graph; the `gix` 0.86 to 0.87 bump removes the yanked `bisync` that made the crate unresolvable for a consumer; every spawn-capable crate (gix-command, gix-credentials, gix-transport, gix-protocol) and the whole reqwest/rustls stack was already on main at a lower version, so this change adds no external-program surface and `gix::open` plus a HEAD read stays the only gix call; minor: the binary channels carry no third-party licence notice, `tests/single_binary.rs` still reads only this crate's `src/`, and `diataxis` 0.1.1 is a one-user crate
+signoff[review-usability] PASS 0806254 built 0806254 from a git archive and ran it cold from --help through init, issue create, list, edit --tag, close, docs, store and check, plus eleven wrong turns (no tracker, non-tracker --root, --root with --home, bad selector, unparseable --tag, wrong project on close, unknown docs slug, empty and unmatched docs search, two-character id, missing gen-man arg); every refusal names its cause and a flag, file or value to change, exit codes separate 0, 1 and 2, and --format json gives a caller a parseable surface; minor: issue create is silent and the random four-character id needs a second command to learn, the command group is `store` while every description under it says tracker, and getting-started claims a git repository is required where init succeeds without one
+
+Declined, with the reason, per signoff-driver step 5.
+
+Third-party licence notices are absent from the binary channels. Every
+review-deps reviewer across every round graded it minor: the blocking
+licence band is a copyleft dependency in a permissive project, and this
+change removes the only one. Tracked as a follow-up, and it should land
+before the packages get wide.
+
+`diataxis` and `mdstore-core` are first-party crates published days
+before this commit. Both replace hand-rolled code rather than a
+consensus library, both are maintained, and moving `mdstore` off a git
+revision is what makes a crates.io publish possible at all.
+
+The vocabulary is a half-finished rename: tracker, store and repository
+reach one workflow. Reviewers named it independently in both rounds and
+all graded it minor. The `store` command group, `stores.yml` and the
+`root_store:` output key are public surface, so the rename belongs in
+its own change.
+
+`issue create` and `init` write and print nothing. Two reviewers put it
+close to the blocking line and both declined it, because the arms are
+byte-identical to main and this change does not touch them.
+
+The release workflow has never executed. Every conclusion about it in
+every round rests on reading the file. Run a workflow_dispatch
+rehearsal before the first tag; it builds every target and publishes
+nothing, because each publishing job is gated to a tag push, and a test
+now reads that gate.
