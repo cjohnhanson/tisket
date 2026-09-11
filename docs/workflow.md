@@ -7,7 +7,7 @@ type: guide
 # Tisket Workflow
 
 This guide assumes that you initialized tisket. See [Getting
-Started](/tisket/getting-started) if you have not.
+Started](getting-started.md) if you have not.
 
 ## Projects
 

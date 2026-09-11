@@ -432,6 +432,6 @@ the issues with the code. There is no external state to sync.
 
 ## Next
 
-- [What is Tisket?](/tisket/what-is-tisket) — file format, status lifecycle, scratch notes, divergence detection
-- [Workflow Guide](/tisket/workflow) — daily issue management past the basics
-- [CLI Reference](/tisket/cli-reference) — full command and flag documentation
+- [What is Tisket?](what-is-tisket.md): file format, status lifecycle, scratch notes, divergence detection
+- [Workflow Guide](workflow.md): daily issue management past the basics
+- [CLI Reference](cli-reference.md): full command and flag documentation
