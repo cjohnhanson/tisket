@@ -405,7 +405,8 @@ If you run tisket outside the repo root, pass `--root`:
 tisket --root /path/to/repo issue list
 ```
 
-The `--root` flag is global. It works with every subcommand.
+The `--root` flag is global. It works with every subcommand except
+`tisket store root`, which names the root tracker itself.
 
 ## Statuses
 

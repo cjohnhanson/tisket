@@ -348,13 +348,14 @@ fn a_vendored_review_nobody_requires_refuses() {
 
 #[test]
 fn a_review_name_is_a_fixed_string() {
-    // `review-.ests` read as a regular expression matches `review-tests`,
-    // so the orphan check once saw the unrequired name as required and
-    // dropped it with no refusal. A name matches as a fixed string.
-    let (code, out) = run_gate_in(&["review-.ests"], &["review-.ests", "review-tests"]);
+    // The orphan check greps the required list for each vendored name.
+    // A vendored `review-.ests` read as a regular expression matches the
+    // required `review-tests`, so the orphan once passed as required. A
+    // name matches as a fixed string.
+    let (code, out) = run_gate_in(&["review-tests"], &["review-tests", "review-.ests"]);
     assert_ne!(code, 0, "a name that matched by pattern passed: {out}");
     assert!(
-        out.contains("review-tests is vendored and required by nothing"),
+        out.contains("review-.ests is vendored and required by nothing"),
         "expected the orphan refusal, got: {out}"
     );
 }

@@ -8,6 +8,10 @@
 //! of stubs ahead of PATH is the whole seam. `python3`, `sed`, `tail`
 //! and `mktemp` stay real.
 
+// The stub bodies are shell text. `{"packages":...}` is JSON and
+// `${STUB_LOG:?}` is a shell expansion, not a format argument.
+#![allow(clippy::literal_string_with_formatting_args)]
+
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
