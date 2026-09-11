@@ -113,15 +113,17 @@ The command writes a file like this:
 
 ```markdown
 ---
-title: "Upgrade TLS certificates"
+title: Upgrade TLS certificates
 status: todo
-priority: 1
+priority: '1'
 assignee: ops-team
-due_date: "2026-04-15"
-labels: [security, infrastructure]
+due_date: 2026-04-15
+labels:
+- security
+- infrastructure
 depends_on: []
-created: "2026-03-21T14:30:00Z"
-updated: "2026-03-21T14:30:00Z"
+created: 2026-03-21T14:30:00Z
+updated: 2026-03-21T14:30:00Z
 ---
 
 Current certs expire May 1. Need to rotate before then.
@@ -196,7 +198,7 @@ The 4-character prefix identifies an issue, unless more than one issue
 matches. A full ID and a slug also work.
 
 ```
-ef56 (backend)
+ef56-upgrade-tls-certificates (backend)
 
   Title:    Upgrade TLS certificates
   Status:   todo
@@ -373,7 +375,7 @@ tisket issue show ef56
 ```
 
 ```
-ef56 (backend)
+ef56-upgrade-tls-certificates (backend)
 
   Title:    Upgrade TLS certificates
   Status:   in_progress

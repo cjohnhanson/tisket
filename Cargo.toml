@@ -61,7 +61,9 @@ serde_json = "1"
 yaml_serde = "0.10"
 thiserror = "2"
 chrono = { version = "0.4", features = ["serde"] }
-colored = "3.1.1"
+# MIT, and already in the tree through miette. `colored` was MPL-2.0,
+# the one copyleft crate under an MIT label.
+owo-colors = "4.4.0"
 grep-regex = "0.1.14"
 grep-matcher = "0.1.8"
 # 0.87, not 0.86. gix 0.86 pulls gix-protocol 0.64, which requires

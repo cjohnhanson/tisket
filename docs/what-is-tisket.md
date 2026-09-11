@@ -50,14 +50,14 @@ A minimal issue file looks like:
 
 ```
 ---
-title: "Fix the widget"
+title: Fix the widget
 status: todo
-priority:
-assignee:
+priority: null
+assignee: null
 labels: []
 depends_on: []
-created: "2026-03-20T14:00:00Z"
-updated: "2026-03-20T14:00:00Z"
+created: 2026-03-20T14:00:00Z
+updated: 2026-03-20T14:00:00Z
 ---
 
 The widget throws an error when given empty input.

@@ -146,6 +146,60 @@ fn thin_evidence_is_refused() {
 }
 
 #[test]
+fn a_sha_under_seven_characters_is_refused() {
+    // Six characters match too many commits; the floor is seven.
+    let (repo, head) = scratch_repo("short_sha");
+    let short = &head[..7];
+    let note = format!(
+        "signoff[review-a] PASS {short} read every guard and ran the suite\n\
+         signoff[review-b] PASS {} removed a check, one test went red\n",
+        &head[..6]
+    );
+    let (out, code) = gate(&repo, &head, &note);
+    assert_ne!(code, 0, "a six-character sha passed: {out}");
+}
+
+#[test]
+fn two_lines_for_one_review_are_refused() {
+    let (repo, head) = scratch_repo("duplicate");
+    let note = format!(
+        "signoff[review-a] PASS {head} read every guard and ran the suite\n\
+         signoff[review-a] PASS {head} read it again on a second pass\n\
+         signoff[review-b] PASS {head} removed a check, one test went red\n"
+    );
+    let (out, code) = gate(&repo, &head, &note);
+    assert_ne!(code, 0, "two lines for one review passed: {out}");
+    assert!(out.contains("One line each"), "{out}");
+}
+
+#[test]
+fn an_empty_policy_requires_nothing() {
+    // `reviews: []` is the one path that turns the gate off with a
+    // success. An earlier form printed its own hint and exited 1.
+    let (repo, head) = scratch_repo("empty_policy");
+    std::fs::write(repo.join(".gaff/gaff.yml"), "reviews: []\n").expect("policy");
+    let (out, code) = gate(&repo, &head, "no lines at all\n");
+    assert_eq!(code, 0, "{out}");
+    assert!(out.contains("requires no review"), "{out}");
+}
+
+#[test]
+fn a_required_review_with_no_criteria_is_refused() {
+    let (repo, head) = scratch_repo("no_criteria");
+    std::fs::remove_dir_all(repo.join(".agents/skills/review-b")).expect("drop criteria");
+    let note = format!(
+        "signoff[review-a] PASS {head} read every guard and ran the suite\n\
+         signoff[review-b] PASS {head} removed a check, one test went red\n"
+    );
+    let (out, code) = gate(&repo, &head, &note);
+    assert_ne!(code, 0, "a review with no criteria passed: {out}");
+    assert!(
+        out.contains("review-b") && out.contains("no criteria"),
+        "{out}"
+    );
+}
+
+#[test]
 fn a_missing_review_is_refused_by_name() {
     let (repo, head) = scratch_repo("missing");
     let note = format!("signoff[review-a] PASS {head} read every guard and ran the suite\n");
