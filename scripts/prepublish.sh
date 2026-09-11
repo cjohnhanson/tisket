@@ -10,7 +10,8 @@
 # A registry keeps a published version forever. Every check below runs
 # while the version can still change.
 set -eu
-TC="${TOOLCHAIN:-1.98.0}"
+# The toolchain rust-toolchain.toml pins, so the version has one home.
+TC="${TOOLCHAIN:-$(sed -n 's/^channel = "\(.*\)"/\1/p' rust-toolchain.toml)}"
 fail=0
 say() { printf '  %-46s %s\n' "$1" "$2"; }
 
