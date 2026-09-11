@@ -19,7 +19,7 @@ tisket is a plaintext issue tracker for humans and coding agents. Each issue is 
 
 Without `--root`, a command finds its tracker by one rule, identical in
 zettel and almanac: the nearest `tisket.yml` at or above the working
-directory wins. The walk requires a regular file and stops at the first
+directory wins. The walk requires a regular file. It stops at the first
 directory the invoking user does not own, so a marker planted in a
 shared ancestor captures nothing. With no tracker found, a read falls
 back to the root tracker set in `~/.config/tisket/config.yml` and says

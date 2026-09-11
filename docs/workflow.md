@@ -341,9 +341,9 @@ title, and the fields that matched.
 When tisket lists or shows an issue, it reads the issue file from every
 other branch in the repository. It compares each version to the version
 on the current branch. Tisket marks the issue as divergent if any
-compared field differs. The compared fields are the title, the status,
-the priority, the assignee, the due date, the labels, the dependencies,
-the presence of a body, and the presence of scratch notes.
+compared field differs. The compared fields are title, status, priority,
+assignee, due date, labels, and dependencies, plus whether a body and
+scratch notes are present.
 
 In the list output, a divergent issue shows an asterisk after the
 status:
@@ -400,7 +400,7 @@ the count that is done, so you maintain no list by hand:
 
 A child in another tracker carries its alias: `children: [a:x9k2,
 b:m4p1]`. The alias must be declared in `stores.yml`. An entry whose
-text before the first colon is not a declared alias stays local, so an
+text before the first colon is not a declared alias stays local. An
 entry such as `x: y` keeps the meaning it always had.
 
 `tisket check` reports a child that names no issue, and a cycle in the
@@ -425,7 +425,7 @@ runs the session steps. A typical pickup runs these steps:
 6. Commit the status change on the main branch.
 7. Create a git worktree for the issue.
 
-A pickup accepts only an issue with a pickable status, so it rejects an
+A pickup accepts only an issue with a pickable status. It rejects an
 issue in `discovery` or `in_progress`, and an issue with an open
 dependency. The harness enforces those rules. Tisket accepts any valid
 status on `issue edit`, and it refuses only an edit to a closed issue.
