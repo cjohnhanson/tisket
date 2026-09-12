@@ -1,0 +1,17 @@
+Review round for the 0.2.1 patch release. Five independent agents read
+6d78fef, one for each declared review. Each received its criteria, the
+diff and the repository path, and nothing from the driver's thread. All
+five verdicts are PASS.
+
+Every reviewer recorded the same window: three of the four install
+commands in the README do not resolve until the tag publishes them.
+That ordering is forced. The README is the registry description, so it
+has to read correctly inside the tagged tree, and the tag cannot exist
+before the commit that carries it. A source-build command sits in the
+same section as recovery.
+
+signoff[review-tests] PASS 6d78fef replaced the flake's derived version with a literal and all 75 tests stayed green, `nix eval .#default.version` returns 0.2.1, and a manifest stripped of its version key evaluates to crane's 0.0.1 placeholder with only a warning; minor: none of the three changed behaviors maps to a named test
+signoff[review-docs] PASS 6d78fef swept 17 prose surfaces including help text, error text and code comments; built the commit from a clean git archive extract and walked the getting-started tutorial end to end against the binary, matching every documented output; checked all four install commands against crates.io, PyPI, npm and the tap; minor: the tutorial's own install section still says build from source
+signoff[review-code] PASS 6d78fef extracted the commit to a private scratch tree, confirmed the 469 extracted files match `git ls-tree`, built it and ran the suite green, evaluated `flake.nix` under nix on two systems to confirm `crateNameFromCargoToml` yields 0.2.1, and queried the three registries; minor: `docs/getting-started.md` still sends a new reader to a source build.
+signoff[review-deps] PASS 6d78fef `cargo audit --deny yanked --deny warnings` over 399 locked crates returned nothing and every licence in the graph is permissive beside the project's MIT; a release build of the extracted tree produced a working `tisket 0.2.1`, a wheel that installs and reports 0.2.1, and an npm wrapper stamped 0.2.1; minor: mdstore-core enables `gix/blocking-network-client`, which the single-binary test cannot see, and three of four documented installs hold nothing until the tag's pipeline finishes.
+signoff[review-usability] PASS 6d78fef built 0.2.1 from a `git archive` extract whose file list matched `git ls-tree`, ran it cold from `--help` through eleven states including a non-git directory, an absent tracker, an empty tracker, and eight deliberate wrong turns, and evaluated `.#default.version` to confirm the flake now reads "0.2.1" from the manifest; exit codes 0/1/2 are distinct and no ANSI leaks into a pipe; minor: the README's four install commands share one fenced block with no "pick one", three of them resolve nowhere until the tag, and `tisket docs getting-started` still says the only install is a source build
