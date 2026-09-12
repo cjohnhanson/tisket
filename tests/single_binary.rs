@@ -1,7 +1,7 @@
 //! The single-binary rule: this crate spawns no external program where a
 //! library exists. No git, curl, aws, gcloud, sh, or kill. The only
-//! spawns permitted are of a command the user declared in config, and
-//! those name no program literal in source.
+//! spawn permitted is a command the user declared in config, and that
+//! names no program literal in source, which is what this test reads for.
 
 #[test]
 fn no_source_file_spawns_a_named_program() {

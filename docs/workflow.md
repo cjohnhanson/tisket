@@ -6,7 +6,8 @@ type: guide
 
 # Tisket Workflow
 
-This guide assumes that you initialized tisket. See [Getting Started](/tisket/getting-started) if you have not. The guide covers daily issue management: how to create issues, how to filter them, how to manage the status, and how to prepare an issue for agent pickup.
+This guide assumes that you initialized tisket. See [Getting
+Started](getting-started.md) if you have not.
 
 ## Projects
 
@@ -172,7 +173,7 @@ tisket issue show ab12 --field assignee
 ```
 
 Valid field names: `title`, `status`, `priority`, `assignee`, `due_date`,
-`labels`, `depends_on`, `body`, `scratch`, `id`, `project`.
+`labels`, `depends_on`, `children`, `body`, `scratch`, `id`, `project`.
 
 To get the file path of an issue:
 
@@ -221,7 +222,9 @@ tisket issue list --where label:bug --where status:todo
 tisket issue list --where project:backend
 ```
 
-Supported namespaces: `label`, `status`, `project`.
+`label`, `status`, and `project` read the fields of those names. Any
+other namespace names a tag, and the value is compared against that
+tag's value.
 
 ## Editing issues
 
@@ -315,8 +318,9 @@ tisket scratch ab12 clear
 
 ## Searching issues
 
-To search every part of an issue with a regular expression, including
-the titles, the frontmatter fields, and the body text:
+Search reads the frontmatter fields and never the body. The pattern is a
+regular expression, matched against the title, the status, the priority,
+the assignee, the due date, the labels, and the dependencies.
 
 ```
 tisket search "parser"
@@ -335,11 +339,11 @@ title, and the fields that matched.
 ## Git-aware divergence detection
 
 When tisket lists or shows an issue, it reads the issue file from every
-branch in the repository. It compares each version to the version on
-the current branch. Tisket marks the issue as divergent if any field
-differs. The compared fields are the title, the status, the priority,
-the assignee, the due date, the labels, the dependencies, the presence
-of a body, and the presence of scratch notes.
+other branch in the repository. It compares each version to the version
+on the current branch. Tisket marks the issue as divergent if any
+compared field differs. The compared fields are title, status, priority,
+assignee, due date, labels, and dependencies, plus whether a body and
+scratch notes are present.
 
 In the list output, a divergent issue shows an asterisk after the
 status:
@@ -357,12 +361,13 @@ that differ:
     origin/main
 ```
 
-A branch with no listed fields holds the same version of the file.
+A branch with no listed fields differs in none of the compared fields.
+Its body text can still differ, because the comparison reads only
+whether a body is present.
 
-This matters because you commit issue files to git. Two worktrees or
-two branches can change the same issue. Divergence then tells you that
-the view on the current branch can differ from the view on another
-branch.
+Issue files are committed to git, so two worktrees or two branches can
+change the same issue. Divergence tells you that the view on the current
+branch differs from the view on another branch.
 
 ## Epics
 
@@ -395,11 +400,12 @@ the count that is done, so you maintain no list by hand:
 
 A child in another tracker carries its alias: `children: [a:x9k2,
 b:m4p1]`. The alias must be declared in `stores.yml`. An entry whose
-text before the first colon is not a declared alias stays local, so an
+text before the first colon is not a declared alias stays local. An
 entry such as `x: y` keeps the meaning it always had.
 
-`tisket check` reports a child that names no issue, and a cycle in the
-children of an epic.
+`tisket check` reports a child in another tracker that names no issue
+there, and a cycle in the children of an epic. It does not report a
+missing child in the same tracker.
 
 Containment is not blocking. `children` says what an epic contains;
 `depends_on` says what an issue waits for. Use `depends_on` when work
@@ -408,8 +414,8 @@ cannot start until another issue is closed.
 ## Preparing an issue for agent pickup
 
 An agent harness picks up a tisket issue to start work on it. Tisket
-supplies the gate; the harness supplies the session steps. A typical
-pickup runs these steps:
+supplies the vocabulary the gate reads; the harness applies the gate and
+runs the session steps. A typical pickup runs these steps:
 
 1. Verify that the current branch is the main branch.
 2. Find the issue and check that its status is pickable (`todo`,
@@ -420,10 +426,10 @@ pickup runs these steps:
 6. Commit the status change on the main branch.
 7. Create a git worktree for the issue.
 
-Pickup accepts only an issue with a pickable status. It rejects an
-issue in `discovery` or `in_progress`. It also rejects an issue with an
-open dependency. Tisket enforces these status rules through its own
-commands, so a harness or a person applies them the same way.
+A pickup accepts only an issue with a pickable status. It rejects an
+issue in `discovery` or `in_progress`, and an issue with an open
+dependency. The harness enforces those rules. Tisket accepts any valid
+status on `issue edit`, and it refuses only an edit to a closed issue.
 
 To make an issue ready for pickup, set its status to `todo`:
 

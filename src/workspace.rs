@@ -45,9 +45,9 @@ impl DocumentSource for IssueSource {
         // Issues live under one directory for each project.
         let mut issues = Vec::new();
         for project in projects_of(content, &dir_name) {
-            // A closed issue is still an issue. An epic that contains
-            // one reported it as unknown and undercounted the done
-            // ones, because the graph held only the open directory.
+            // A closed issue is still an issue, so both directories
+            // are scanned. An epic whose child is closed must show
+            // that child's status and count it as done.
             let subdirs = [
                 (format!("{dir_name}/{project}"), false),
                 (format!("{dir_name}/{project}/.closed"), true),
@@ -149,11 +149,10 @@ fn resolve_within(input: &str, ids: &[&str]) -> Option<usize> {
 
 /// The project directories of a tracker.
 ///
-/// One implementation answers for a local directory and for a git
-/// tree. This held a second copy of that logic for the local case, and
-/// the copy skipped a link by is_dir() alone rather than by dirent
-/// type, which is how a symlinked project directory let a tracker read
-/// outside its own root.
+/// The store's own listing answers for a local directory and for a git
+/// tree alike, so there is one implementation. It skips a link by
+/// dirent type, which is what keeps a symlinked project directory from
+/// reading outside the tracker root.
 fn projects_of(content: &StoreContent, dir_name: &str) -> Vec<String> {
     content.subdirectories(dir_name)
 }
@@ -507,9 +506,9 @@ mod projects_of_tests {
     use super::*;
 
     /// projects_of answers for a local directory and for a git tree,
-    /// through the store's own listing. Replacing its body with an
-    /// empty vector broke no test and no missouri path, while a
-    /// tracker's issue count silently dropped to zero.
+    /// through the store's own listing. Nothing else covers it: an
+    /// empty return here drops a tracker's issue count to zero and
+    /// fails no other test.
     #[test]
     fn projects_of_lists_the_real_project_directories() {
         let base = std::env::temp_dir().join(format!("tisket-projectsof-{}", std::process::id()));

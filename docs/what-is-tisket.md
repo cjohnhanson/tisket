@@ -11,9 +11,9 @@ Tisket stores issues as markdown files in the git repository they describe.
 ## Why files in git
 
 Most issue trackers are web applications. The issue data is on another
-company's server. You reach it through a browser or an API. When the
-network fails, the data is unavailable. Tisket works differently: an
-issue belongs with the code it describes.
+company's server, reached through a browser or an API, and the data is
+unavailable when the network fails. Tisket puts an issue with the code
+it describes.
 
 The issues and the code are in the same tree. One branch holds both
 the fix and the issue state change. `git clone` gives you the full
@@ -29,13 +29,13 @@ and writes a file. It needs no API client and no authentication flow.
 An issue file has three sections: YAML frontmatter, a markdown body,
 and an optional scratch notes section.
 
-**Frontmatter** comes between two `---` fences. It holds the
-structured fields: `title`, `status`, `priority`, `assignee`,
-`due_date`, `labels`, `depends_on`, `children`, `created`, and
-`updated`. Tisket
-queries these fields to list, filter, and gate issues by status. The
-`labels` and `depends_on` fields are arrays. Tisket sets the `created`
-and `updated` timestamps automatically.
+**Frontmatter** comes between two `---` fences. It holds the structured
+fields: `title`, `status`, `priority`, `assignee`, `due_date`, `labels`,
+`depends_on`, `children`, `created`, and `updated`. Tisket reads these
+fields to list and filter issues. The `labels`, `depends_on`, and
+`children` fields are arrays. Tisket sets the `created` and `updated`
+timestamps itself. A `tags` mapping holds your own key and value pairs,
+and any other key you write survives an edit untouched.
 
 **Body** is free-form markdown. It comes after the closing `---` and
 before the scratch notes header, or the end of the file. Put the issue
@@ -44,21 +44,20 @@ person or an agent reads the body to learn what the work is.
 
 **Scratch notes** come below a `## Scratch Notes` header at the end of
 the file. This section has its own read, write, append, and clear
-operations. Those operations do not change the body. A later section
-explains the purpose.
+operations, and none of them changes the body.
 
 A minimal issue file looks like:
 
 ```
 ---
-title: "Fix the widget"
+title: Fix the widget
 status: todo
-priority:
-assignee:
+priority: null
+assignee: null
 labels: []
 depends_on: []
-created: "2026-03-20T14:00:00Z"
-updated: "2026-03-20T14:00:00Z"
+created: 2026-03-20T14:00:00Z
+updated: 2026-03-20T14:00:00Z
 ---
 
 The widget throws an error when given empty input.
@@ -69,8 +68,6 @@ Reproduced locally — the bounds check is missing on line 42.
 ```
 
 ## The status lifecycle
-
-Tisket has seven statuses in three categories.
 
 **Active statuses** (the issue is open):
 
@@ -92,11 +89,10 @@ Tisket has seven statuses in three categories.
 - `cancelled` — Someone abandoned the work. The work is unnecessary,
   or another issue replaced it.
 
-Three active statuses are **pickable**: `todo`, `blocked`, and
-`paused`. An agent workflow picks up only these three. It rejects an
-issue in `discovery`, because the scope is not clear. It also rejects
-an issue in `in_progress`, because someone already works on it. A later
-section describes how an agent workflow uses tisket.
+`todo`, `blocked`, and `paused` are **pickable**. An agent workflow
+picks up only those. It rejects an issue in `discovery`, because the
+scope is not clear, and an issue in `in_progress`, because someone
+already works on it.
 
 When you close an issue, the file moves from the project directory
 into a `.closed/` subdirectory. When you reopen the issue, the file
@@ -165,12 +161,11 @@ title, the priority, the body, or the scratch content can differ.
 Tisket then marks the issue as **divergent**. The detailed view names
 each branch and each field that differs.
 
-This matters because people and agents change issues on branches. An
-agent picks up an issue on main. The pickup sets the status to
-`in_progress` and creates a worktree. The work then happens on the
-branch. Meanwhile someone can edit the priority on main, or another
-branch can change the title. Divergence detection shows you the
-conflict before the merge.
+People and agents change issues on branches. An agent picks up an issue
+on main. The pickup sets the status to `in_progress` and creates a
+worktree, and the work then happens on the branch. Meanwhile someone can
+edit the priority on main, or another branch can change the title.
+Divergence detection shows you the conflict before the merge.
 
 The comparison is structural, not textual. Tisket parses the
 frontmatter from each branch version. It compares the `title`,
@@ -181,29 +176,29 @@ divergence.
 
 ## Using tisket in an agent workflow
 
-Tisket is a standalone tool. An agent harness can also use tisket as
-its issue source. Tisket gives a harness these affordances, and the
-harness supplies the session behavior on top of them.
+Tisket is a standalone tool. An agent harness can also use tisket as its
+issue source. The harness supplies the session behavior, and tisket
+supplies what that behavior reads.
 
-**Context injection.** A harness reads the tisket state at session
-start: the open issue count, and whether the current branch name
-resolves to an issue ID. If an issue matches, the harness puts the
-title, the body, and the scratch notes into the starting context. The
-agent runs no command to learn what its work is.
+At session start a harness reads the tisket state: the open issue count,
+and whether the current branch name resolves to an issue ID. If an issue
+matches, the harness puts the title, the body, and the scratch notes
+into the starting context. The agent runs no command to learn what its
+work is.
 
-**Pickup gating.** The pickable statuses and `depends_on` give a
-harness a gate. A harness picks up only a `todo`, `blocked`, or
-`paused` issue whose every dependency is closed, sets the status to
-`in_progress`, and starts the work. Tisket enforces the status
-transitions; the harness decides when to apply them.
+The pickable statuses and `depends_on` give the harness a gate. It picks
+up only a `todo`, `blocked`, or `paused` issue whose every dependency is
+closed, sets the status to `in_progress`, and starts the work. Tisket
+does not enforce that rule. It stores the status and the dependency
+list, and the harness decides what they allow.
 
-**Branch naming.** The short ID is a stable key. A harness names the
-worktree and its branch after the issue ID, and tisket's branch-name to
-issue-ID resolution then finds the active issue for the session.
+The short ID is a stable key. A harness names the worktree and its
+branch after the issue ID. It then passes the branch name back to
+`tisket issue show`. That command resolves a full ID, a 4-character
+prefix, or a slug, and so finds the active issue for the session.
 
-For CLI usage details, see the [CLI reference](/tisket/cli-reference). For
-day-to-day issue management, see the [workflow guide](/tisket/workflow).
-
+For CLI usage details, see the [CLI reference](cli-reference.md). For
+day-to-day issue management, see the [workflow guide](workflow.md).
 
 ## Composed trackers
 
@@ -235,6 +230,6 @@ who clone the project. A dependency tracker is read-only, so an edit
 runs from the tracker that owns the issue.
 
 `tisket store list` shows the trackers. `tisket store sync` fetches the
-remote ones. `tisket check` reports a reference that names no issue, an
-unreachable tracker, a cycle in the children of an epic, and a
-declaration that other clones could not follow.
+remote ones. `tisket check` reports a reference that names no issue and
+an unreachable tracker. It also reports a cycle in the children of an
+epic, and a declaration that other clones cannot follow.

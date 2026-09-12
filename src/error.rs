@@ -15,6 +15,11 @@ pub enum Error {
     #[error("issue '{0}' not found")]
     IssueNotFound(String),
 
+    /// `issue close --project` names a project that does not hold the
+    /// issue. The issue exists, so "not found" would be false.
+    #[error("issue '{0}' is in project '{1}', not '{2}'")]
+    IssueInAnotherProject(String, String, String),
+
     #[error("ambiguous prefix '{0}': more than one issue matches")]
     AmbiguousPrefix(String),
 
@@ -35,11 +40,11 @@ pub enum Error {
     #[error("invalid selector '{0}'; a selector is namespace:value")]
     InvalidSelector(String),
 
-    #[error("store '{0}' is not declared in stores.yml")]
+    #[error("alias '{0}' is not declared in stores.yml")]
     UndeclaredStore(String),
 
     #[error(
-        "'{0}' is in store '{1}'; dependency stores are read-only — run the command from that store to edit it"
+        "'{0}' is in tracker '{1}'. A declared tracker is read-only. Run the command from the tracker that owns the issue."
     )]
     ForeignWrite(String, String),
 
@@ -63,6 +68,9 @@ pub enum Error {
 
     #[error("{0}")]
     Yaml(#[from] yaml_serde::Error),
+
+    #[error("{0}")]
+    Docs(String),
 
     #[error("git: {0}")]
     Git(String),

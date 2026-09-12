@@ -8,9 +8,36 @@ operations instead of calls to a hosted API.
 
 ## Install
 
+Not released yet. Until the first tag, build from source:
+
 ```sh
-cargo install --git https://github.com/cjohnhanson/tisket
+cargo install --locked --git https://github.com/cjohnhanson/tisket
 ```
+
+Requires Rust 1.88 and a C compiler. macOS and Linux, x86-64 and arm64.
+
+From the first release onward:
+
+```sh
+cargo install --locked tisket
+brew install cjohnhanson/tap/tisket
+uv tool install tisket
+npm install -g tisket
+```
+
+Or run it without installing:
+
+```sh
+uvx tisket issue list
+npx tisket issue list
+```
+
+A release also carries prebuilt archives and a `.deb`, on the [releases
+page](https://github.com/cjohnhanson/tisket/releases). Each archive
+holds the binary and the man page. Install a `.deb` with `dpkg -i`: it
+is a file, not a repository, so `apt-get install` does not reach it.
+
+Check the install with `tisket --version`.
 
 ## Usage
 
@@ -89,7 +116,10 @@ proxy that authenticates in front of it.
 
 - [What is Tisket?](docs/what-is-tisket.md) — design, file format, status lifecycle
 - [Getting Started](docs/getting-started.md) — first issue walkthrough
+- [Workflow](docs/workflow.md) — daily issue management past the basics
 - [CLI Reference](docs/cli-reference.md) — complete command documentation
+
+`tisket docs` prints the same pages from the installed binary.
 
 ## Related
 

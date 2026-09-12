@@ -8,7 +8,6 @@ pub const TOOL: mdstore::ToolName<'static> = match mdstore::ToolName::new("tiske
 
 pub mod cli;
 pub mod config;
-pub mod docs;
 pub mod error;
 pub mod git;
 pub mod issue;
