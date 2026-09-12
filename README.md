@@ -8,21 +8,21 @@ operations instead of calls to a hosted API.
 
 ## Install
 
-Not released yet. Until the first tag, build from source:
-
-```sh
-cargo install --locked --git https://github.com/cjohnhanson/tisket
-```
-
-Requires Rust 1.88 and a C compiler. macOS and Linux, x86-64 and arm64.
-
-From the first release onward:
-
 ```sh
 cargo install --locked tisket
 brew install cjohnhanson/tap/tisket
 uv tool install tisket
 npm install -g tisket
+```
+
+`cargo install` builds from source. It needs Rust 1.88 and a C
+compiler. The other three carry a prebuilt binary for macOS and Linux,
+x86-64 and arm64, published by a tagged release.
+
+To build the unreleased `main` branch:
+
+```sh
+cargo install --locked --git https://github.com/cjohnhanson/tisket
 ```
 
 Or run it without installing:
