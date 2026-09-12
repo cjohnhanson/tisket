@@ -8,36 +8,50 @@ operations instead of calls to a hosted API.
 
 ## Install
 
-```sh
-cargo install --locked tisket
-brew install cjohnhanson/tap/tisket
-uv tool install tisket
-npm install -g tisket
+The command is `tisket`, whichever package you install.
+
+**[Archives of precompiled binaries are available for macOS and
+Linux.](https://github.com/cjohnhanson/tisket/releases)** The Linux
+binaries are static executables. Each archive holds the binary, its man
+pages, the README and the licence. There is no Windows build.
+
+| Package manager | Package | Command |
+| --- | --- | --- |
+| [Homebrew](https://brew.sh) | [cjohnhanson/tap/tisket](https://github.com/cjohnhanson/homebrew-tap) | `brew install cjohnhanson/tap/tisket` |
+| [Cargo](https://doc.rust-lang.org/cargo/) | [tisket](https://crates.io/crates/tisket) | `cargo install --locked tisket` |
+| [uv](https://docs.astral.sh/uv/) | [tisket](https://pypi.org/project/tisket/) | `uv tool install tisket` |
+| [npm](https://www.npmjs.com) | [tisket](https://www.npmjs.com/package/tisket) | `npm install -g tisket` |
+
+On Debian or Ubuntu, download the `.deb` from the [releases
+page](https://github.com/cjohnhanson/tisket/releases) and install it:
+
+```
+wget https://github.com/cjohnhanson/tisket/releases/download/v0.2.4/tisket_0.2.4-1_amd64.deb
+sudo dpkg -i tisket_0.2.4-1_amd64.deb
 ```
 
-`cargo install` builds from source. It needs Rust 1.88 and a C
-compiler. The other three carry a prebuilt binary for macOS and Linux,
-x86-64 and arm64, published by a tagged release.
+To run it once without installing anything:
 
-To build the unreleased `main` branch:
-
-```sh
-cargo install --locked --git https://github.com/cjohnhanson/tisket
 ```
-
-Or run it without installing:
-
-```sh
 uvx tisket issue list
 npx tisket issue list
 ```
 
-A release also carries prebuilt archives and a `.deb`, on the [releases
-page](https://github.com/cjohnhanson/tisket/releases). Each archive
-holds the binary and the man page. Install a `.deb` with `dpkg -i`: it
-is a file, not a repository, so `apt-get install` does not reach it.
+### Building
 
-Check the install with `tisket --version`.
+tisket is written in Rust, so you need a [Rust
+installation](https://www.rust-lang.org/) to compile it. tisket compiles
+with Rust 1.88 or newer. A C compiler is needed as well, which
+`aws-lc-sys` uses for its cryptography.
+
+To build tisket:
+
+```
+git clone https://github.com/cjohnhanson/tisket
+cd tisket
+cargo build --release
+./target/release/tisket --version
+```
 
 ## Usage
 
