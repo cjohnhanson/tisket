@@ -34,11 +34,10 @@ The command creates two files:
 - `tisket.yml` — the configuration file at the repo root
 - `.tisket/default/project.yml` — a default project
 
-The configuration file is short:
+The configuration file holds one key:
 
 ```yaml
 tisket_dir: .tisket
-additional_instructions: ""
 ```
 
 `tisket_dir` sets the directory for the issues. The default `.tisket`
@@ -114,15 +113,17 @@ The command writes a file like this:
 
 ```markdown
 ---
-title: "Upgrade TLS certificates"
+title: Upgrade TLS certificates
 status: todo
-priority: 1
+priority: '1'
 assignee: ops-team
-due_date: "2026-04-15"
-labels: [security, infrastructure]
+due_date: 2026-04-15
+labels:
+- security
+- infrastructure
 depends_on: []
-created: "2026-03-21T14:30:00Z"
-updated: "2026-03-21T14:30:00Z"
+created: 2026-03-21T14:30:00Z
+updated: 2026-03-21T14:30:00Z
 ---
 
 Current certs expire May 1. Need to rotate before then.
@@ -197,7 +198,7 @@ The 4-character prefix identifies an issue, unless more than one issue
 matches. A full ID and a slug also work.
 
 ```
-ef56 (backend)
+ef56-upgrade-tls-certificates (backend)
 
   Title:    Upgrade TLS certificates
   Status:   todo
@@ -259,8 +260,9 @@ tisket issue edit ef56 --append "Update: vendor confirmed timeline."
 
 ## Search
 
-Search the titles, the metadata, and the body text with a regular
-expression:
+Search the frontmatter fields with a regular expression. The search
+covers the title, the status, the priority, the assignee, the due date,
+the labels, and the dependencies. It does not read the body.
 
 ```
 tisket search "TLS|certificates"
@@ -373,7 +375,7 @@ tisket issue show ef56
 ```
 
 ```
-ef56 (backend)
+ef56-upgrade-tls-certificates (backend)
 
   Title:    Upgrade TLS certificates
   Status:   in_progress
@@ -403,7 +405,8 @@ If you run tisket outside the repo root, pass `--root`:
 tisket --root /path/to/repo issue list
 ```
 
-The `--root` flag is global. It works with every subcommand.
+The `--root` flag is global. It works with every subcommand except
+`tisket store root`, which names the root tracker itself.
 
 ## Statuses
 
@@ -430,6 +433,6 @@ the issues with the code. There is no external state to sync.
 
 ## Next
 
-- [What is Tisket?](/tisket/what-is-tisket) — file format, status lifecycle, scratch notes, divergence detection
-- [Workflow Guide](/tisket/workflow) — daily issue management past the basics
-- [CLI Reference](/tisket/cli-reference) — full command and flag documentation
+- [What is Tisket?](what-is-tisket.md): file format, status lifecycle, scratch notes, divergence detection
+- [Workflow Guide](workflow.md): daily issue management past the basics
+- [CLI Reference](cli-reference.md): full command and flag documentation

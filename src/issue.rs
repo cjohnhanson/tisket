@@ -6,8 +6,8 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 use crate::error::{Error, Result};
 
-/// The fixed workflow statuses. These control pickup gating, phase
-/// transitions, and display.
+/// The fixed workflow statuses. An issue carries exactly one, and it
+/// decides whether the issue is open, closed, or ready for pickup.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Status {
     Discovery,
@@ -168,12 +168,12 @@ fn split_body_scratch(content: &str) -> (String, String) {
 
 /// Serialize an issue to frontmattered markdown.
 ///
-/// yaml_serde does the YAML, so a title, label, dependency, or tag value
-/// with a comma, a quote, a colon, or a backslash is escaped correctly.
-/// The old hand-rolled writer produced a file that no longer parsed,
-/// and one bad file broke every repo-wide command. The scratch notes
-/// stay a `## Scratch Notes` section after the body, so the parser
-/// still splits them out.
+/// yaml_serde writes the YAML, so a title, label, dependency, or tag
+/// value that holds a comma, a quote, a colon, or a backslash is
+/// escaped correctly. A file this function cannot parse back breaks
+/// every repo-wide command, so nothing here writes YAML by hand. The
+/// scratch notes stay a `## Scratch Notes` section after the body, so
+/// the parser still splits them out.
 pub fn serialize_issue(fm: &IssueFrontmatter, body: &str, scratch: &str) -> String {
     let now = Utc::now().format("%Y-%m-%dT%H:%M:%SZ").to_string();
     let filled = IssueFrontmatter {
@@ -294,8 +294,9 @@ mod serialize_tests {
 
     #[test]
     fn metacharacters_in_fields_round_trip() {
-        // Commas, brackets, quotes, colons, and a backslash used to break
-        // the hand-rolled writer and produce an unparseable file.
+        // Commas, brackets, quotes, colons, and a backslash are what a
+        // hand-rolled writer gets wrong. Each must survive a round
+        // trip through serialize and parse.
         let mut tags = std::collections::BTreeMap::new();
         tags.insert(
             "note".to_string(),

@@ -2,7 +2,7 @@ use std::io::IsTerminal;
 
 use camino::{Utf8Path, Utf8PathBuf};
 use clap::Parser;
-use colored::Colorize;
+use owo_colors::OwoColorize;
 
 use crate::{CreateIssueOptions, EditIssueOptions, Issue, Repo, SearchResult, Selector, git};
 
@@ -15,7 +15,7 @@ pub const ABOUT: &str = "Plaintext issue tracker for humans and coding agents";
 pub struct Args {
     /// Tracker directory. Literal: the directory must hold tisket.yml;
     /// no walk, no fallback. Without it, the nearest tisket.yml at or
-    /// above the cwd is used; with none, reads use the configured root
+    /// above the cwd is used. With none, reads use the configured root
     /// tracker and a write needs --home.
     #[arg(long, global = true)]
     pub root: Option<Utf8PathBuf>,
@@ -141,14 +141,13 @@ pub enum Command {
     Docs(DocsArgs),
 }
 
-#[derive(clap::Args)]
-pub struct DocsArgs {
-    /// Topic slug to show, or "search" to search the docs
-    pub topic: Option<String>,
+pub use diataxis::DocsArgs;
 
-    /// Search query (when topic is "search")
-    pub query: Option<String>,
-}
+/// This tool's own documentation, compiled in.
+///
+/// The build script embedded every page in `docs/`, so nothing here
+/// lists them and `tisket docs` works from any directory.
+static DOCS: &[(&str, &str)] = diataxis::embedded_docs!();
 
 #[derive(Parser)]
 pub enum HooksCommand {
@@ -375,12 +374,41 @@ pub struct IssueEditArgs {
     pub append: Option<String>,
 
     /// Set a tag in key=value form. Repeatable
-    #[arg(long = "tag", value_name = "KEY=VALUE")]
-    pub tags: Vec<String>,
+    #[arg(long = "tag", value_name = "KEY=VALUE", value_parser = parse_tag)]
+    pub tags: Vec<(String, String)>,
 
     /// Remove a tag by key. Repeatable
     #[arg(long = "untag", value_name = "KEY")]
     pub untags: Vec<String>,
+}
+
+/// Split `KEY=VALUE`. A value without `=` is refused at parse time; a
+/// silent drop looked like a set that took.
+fn parse_tag(s: &str) -> Result<(String, String), String> {
+    match s.split_once('=') {
+        Some((k, v)) if !k.is_empty() => Ok((k.to_string(), v.to_string())),
+        _ => Err(format!("`{s}` is not KEY=VALUE")),
+    }
+}
+
+#[cfg(test)]
+mod tag_tests {
+    use super::parse_tag;
+
+    #[test]
+    fn a_tag_without_a_value_is_refused() {
+        assert!(parse_tag("owner").is_err());
+        assert!(parse_tag("=x").is_err());
+    }
+
+    #[test]
+    fn a_tag_splits_on_the_first_equals() {
+        assert_eq!(
+            parse_tag("q=a=b").unwrap(),
+            ("q".to_string(), "a=b".to_string())
+        );
+        assert_eq!(parse_tag("k=").unwrap(), ("k".to_string(), String::new()));
+    }
 }
 
 #[derive(Parser)]
@@ -398,7 +426,8 @@ pub struct IssueCloseArgs {
     /// Issue ID (filename without .md)
     pub id: String,
 
-    /// Project containing the issue
+    /// The project that holds the issue. Refused when the issue is in
+    /// another project.
     #[arg(short, long)]
     pub project: Option<String>,
 
@@ -489,7 +518,6 @@ pub struct ScratchTextArgs {
     pub text: String,
 }
 
-/// Run tisket with the given arguments.
 /// The prime: what tisket is, for an agent's context.
 ///
 /// A pure function of the binary. It states the issue and tracker
@@ -520,6 +548,7 @@ pub fn prime() -> String {
     )
 }
 
+/// Run tisket with the given arguments.
 pub fn run(args: Args) -> crate::Result<()> {
     // Rootless commands never resolve a store, so `tisket prime` and
     // `tisket store root` work from any cwd with no config at all.
@@ -923,14 +952,6 @@ pub fn run_command(root: &camino::Utf8Path, command: Command) -> crate::Result<(
                     Ok(())
                 }
                 IssueCommand::Edit(a) => {
-                    let parsed_tags: Vec<(String, String)> = a
-                        .tags
-                        .iter()
-                        .filter_map(|t| {
-                            let (k, v) = t.split_once('=')?;
-                            Some((k.to_string(), v.to_string()))
-                        })
-                        .collect();
                     repo.edit_issue(
                         &a.id,
                         EditIssueOptions {
@@ -946,13 +967,30 @@ pub fn run_command(root: &camino::Utf8Path, command: Command) -> crate::Result<(
                             children: a.children.as_deref(),
                             body: a.body.as_deref(),
                             append: a.append.as_deref(),
-                            tags: &parsed_tags,
+                            tags: &a.tags,
                             untags: &a.untags,
                         },
                     )?;
                     Ok(())
                 }
                 IssueCommand::Close(a) => {
+                    // The flag once did nothing while its help text
+                    // said it scoped the close. A named project that
+                    // does not hold the issue is a refusal.
+                    if let Some(project) = &a.project {
+                        let issue = repo.find_issue(&a.id)?;
+                        if &issue.project != project {
+                            // The id the user typed, not the resolved
+                            // one: a resolved id carries a random
+                            // prefix, and the message echoes what they
+                            // wrote.
+                            return Err(crate::Error::IssueInAnotherProject(
+                                a.id.clone(),
+                                issue.project.clone(),
+                                project.clone(),
+                            ));
+                        }
+                    }
                     repo.close_issue(&a.id, a.status.as_deref())?;
                     Ok(())
                 }
@@ -984,36 +1022,28 @@ pub fn run_command(root: &camino::Utf8Path, command: Command) -> crate::Result<(
             }
         }
 
-        Command::Docs(args) => match args.topic.as_deref() {
-            None | Some("list") => {
-                crate::docs::list();
-                Ok(())
-            }
-            Some("search") => {
-                let query = args.query.as_deref().unwrap_or("");
-                if query.is_empty() {
-                    eprintln!("usage: tisket docs search <query>");
-                    std::process::exit(1);
-                }
-                crate::docs::search(query);
-                Ok(())
-            }
-            Some(identifier) => {
-                if crate::docs::show(identifier) {
+        Command::Docs(args) => {
+            let set = diataxis::DocSet::from_embedded(DOCS)
+                .map_err(|e| crate::Error::Docs(e.to_string()))?;
+            match args.request().and_then(|request| set.render(request)) {
+                Ok(text) => {
+                    print!("{text}");
                     Ok(())
-                } else {
-                    eprintln!("unknown doc: {identifier}");
+                }
+                Err(e) => {
+                    eprintln!("{e}");
                     eprintln!();
-                    crate::docs::list();
+                    print!("{}", set.listing());
                     std::process::exit(1);
                 }
             }
-        },
+        }
     }
 }
 
 fn colorize_status(status: &str) -> String {
-    if !std::io::stdout().is_terminal() {
+    // A pipe gets plain text, and so does a reader who set NO_COLOR.
+    if !std::io::stdout().is_terminal() || std::env::var_os("NO_COLOR").is_some() {
         return status.to_string();
     }
     let (base, suffix) = if let Some(s) = status.strip_suffix('*') {
@@ -1231,7 +1261,7 @@ fn print_rollup(root: &camino::Utf8Path, id: &str) {
     }
     println!("    {}/{} done", rollup.done, rollup.rows.len());
     for m in &rollup.unreachable {
-        eprintln!("partial — unreachable tracker: {m}");
+        eprintln!("partial count. This tracker could not be read: {m}");
     }
 }
 

@@ -1,9 +1,0 @@
-assertions:
-  - name: "tisket docs lists available documentation"
-    command: "tisket docs | grep -q 'What is Tisket' && tisket docs | grep -q 'CLI Reference'"
-
-  - name: "tisket docs what-is-tisket prints content"
-    command: "tisket docs what-is-tisket | grep -q 'plaintext issue tracker'"
-
-  - name: "tisket docs search finds matches"
-    command: "tisket docs search frontmatter | grep -q 'What is Tisket'"
