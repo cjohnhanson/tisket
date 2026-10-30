@@ -10,8 +10,21 @@ use crate::{CreateIssueOptions, EditIssueOptions, Issue, Repo, SearchResult, Sel
 /// this one place, so the two cannot drift.
 pub const ABOUT: &str = "Plaintext issue tracker for humans and coding agents";
 
+/// The long description, which `--help` and the generated reference
+/// print. It carries the facts clap's built-in flags cannot.
+const LONG_ABOUT: &str = "Plaintext issue tracker for humans and coding agents
+
+Every command takes `-h` or `--help`. `-V` and `--version` work at the
+top level only, as `tisket --version`; a subcommand refuses them.";
+
 #[derive(Parser)]
-#[command(name = "tisket", version, about = ABOUT, max_term_width = 98)]
+#[command(
+    name = "tisket",
+    version,
+    about = ABOUT,
+    long_about = LONG_ABOUT,
+    max_term_width = 98
+)]
 pub struct Args {
     /// Tracker directory. Literal: the directory must hold tisket.yml;
     /// no walk, no fallback. Without it, the nearest tisket.yml at or

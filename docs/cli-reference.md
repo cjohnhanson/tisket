@@ -10,6 +10,9 @@ type: reference
 
 Plaintext issue tracker for humans and coding agents
 
+Every command takes `-h` or `--help`. `-V` and `--version` work at the
+top level only, as `tisket --version`; a subcommand refuses them.
+
 
 - **Usage:** `tisket [--root <ROOT>] [--home] <SUBCOMMAND>`
 
