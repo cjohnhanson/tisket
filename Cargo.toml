@@ -81,6 +81,15 @@ diataxis = { version = "0.1", default-features = false, features = ["cli"] }
 [build-dependencies]
 diataxis = { version = "0.1", default-features = false, features = ["build"] }
 
+[dev-dependencies]
+# Renders docs/cli-reference.md from the clap definition, in a test that
+# fails when the committed page differs. A test-only dependency: the
+# shipped crate and its consumers never compile it.
+usage-lib = { version = "7", default-features = false, features = ["clap", "markdown"] }
+
+[[test]]
+name = "cli_reference"
+
 # `cargo deb` reads this. It produces target/debian/*.deb, which the
 # release attaches to the GitHub release. Installing that file is
 # `dpkg -i`, and it is not an apt repository: `apt-get install tisket`
