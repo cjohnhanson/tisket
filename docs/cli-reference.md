@@ -6,7 +6,7 @@ type: reference
 
 # tisket CLI reference
 
-- **Version:** 0.2.4
+- **Version:** 0.2.5
 
 Plaintext issue tracker for humans and coding agents
 
