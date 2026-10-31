@@ -92,7 +92,8 @@ fn intent(command: &Command) -> Option<mdstore::resolve::Intent> {
 pub enum Command {
     /// Initialize tisket in the current directory
     ///
-    /// The command creates `tisket.yml` in the current directory, which
+    /// The command creates `tisket.yml` in the current directory, or in
+    /// the directory `--root` names, which
     /// becomes the tracker directory. It also creates a
     /// `default` project under `.tisket/default/` with a `project.yml`
     /// file.

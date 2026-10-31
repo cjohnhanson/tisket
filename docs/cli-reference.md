@@ -41,7 +41,7 @@ Print version
 
 Initialize tisket in the current directory
 
-The command creates `tisket.yml` in the current directory, which becomes the tracker directory. It also creates a `default` project under `.tisket/default/` with a `project.yml` file.
+The command creates `tisket.yml` in the current directory, or in the directory `--root` names, which becomes the tracker directory. It also creates a `default` project under `.tisket/default/` with a `project.yml` file.
 
 The command fails if `tisket.yml` already exists.
 

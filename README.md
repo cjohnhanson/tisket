@@ -26,8 +26,8 @@ On Debian or Ubuntu, download the `.deb` from the [releases
 page](https://github.com/cjohnhanson/tisket/releases) and install it:
 
 ```
-wget https://github.com/cjohnhanson/tisket/releases/download/v0.2.4/tisket_0.2.4-1_amd64.deb
-sudo dpkg -i tisket_0.2.4-1_amd64.deb
+wget https://github.com/cjohnhanson/tisket/releases/download/v0.2.5/tisket_0.2.5-1_amd64.deb
+sudo dpkg -i tisket_0.2.5-1_amd64.deb
 ```
 
 To run it once without installing anything:
