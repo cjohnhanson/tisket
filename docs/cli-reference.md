@@ -13,8 +13,7 @@ Plaintext issue tracker for humans and coding agents
 Every command takes `-h` or `--help`. `-V` and `--version` work at the
 top level only, as `tisket --version`; a subcommand refuses them.
 
-
-- **Usage:** `tisket [--root <ROOT>] [--home] <SUBCOMMAND>`
+- **Usage:** `tisket [OPTIONS] <COMMAND>`
 
 ## Global Flags
 
@@ -26,9 +25,21 @@ Tracker directory. Literal: the directory must hold tisket.yml; no walk, no fall
 
 Act on the configured root tracker (`tisket store root`), wherever the command runs
 
+**Default:** `false`
+
+## Flags
+
+### `-h --help`
+
+Print help (see a summary with '-h')
+
+### `-V --version`
+
+Print version
+
 ## `tisket init`
 
-- **Usage:** `tisket init`
+- **Usage:** `tisket init [OPTIONS]`
 
 Initialize tisket in the current repository
 
@@ -36,23 +47,73 @@ The command creates `tisket.yml` at the root. It also creates a `default` projec
 
 The command fails if `tisket.yml` already exists.
 
+### Flags
+
+#### `--root <ROOT>`
+
+Tracker directory. Literal: the directory must hold tisket.yml; no walk, no fallback. Without it, the nearest tisket.yml at or above the cwd is used. With none, reads use the configured root tracker and a write needs --home
+
+#### `--home`
+
+Act on the configured root tracker (`tisket store root`), wherever the command runs
+
+**Default:** `false`
+
+#### `-h --help`
+
+Print help (see a summary with '-h')
+
 ## `tisket prime`
 
-- **Usage:** `tisket prime`
+- **Usage:** `tisket prime [OPTIONS]`
 
 Print what tisket is and how to use it, for an agent's context
 
 The output depends only on the binary version. No argument, config, or tracker changes it, and the command runs outside a tracker. Policy about when to use tisket belongs to the caller.
 
+### Flags
+
+#### `--root <ROOT>`
+
+Tracker directory. Literal: the directory must hold tisket.yml; no walk, no fallback. Without it, the nearest tisket.yml at or above the cwd is used. With none, reads use the configured root tracker and a write needs --home
+
+#### `--home`
+
+Act on the configured root tracker (`tisket store root`), wherever the command runs
+
+**Default:** `false`
+
+#### `-h --help`
+
+Print help (see a summary with '-h')
+
 ## `tisket hooks`
 
-- **Usage:** `tisket hooks <SUBCOMMAND>`
+- **Usage:** `tisket hooks [OPTIONS] <COMMAND>`
 
 Manage agent hooks
 
+### Global Flags
+
+#### `--root <ROOT>`
+
+Tracker directory. Literal: the directory must hold tisket.yml; no walk, no fallback. Without it, the nearest tisket.yml at or above the cwd is used. With none, reads use the configured root tracker and a write needs --home
+
+#### `--home`
+
+Act on the configured root tracker (`tisket store root`), wherever the command runs
+
+**Default:** `false`
+
+### Flags
+
+#### `-h --help`
+
+Print help
+
 ## `tisket hooks setup`
 
-- **Usage:** `tisket hooks setup [-s --scope <SCOPE>] <AGENT>`
+- **Usage:** `tisket hooks setup [OPTIONS] <AGENT>`
 
 Set up hooks for a coding agent
 
@@ -80,15 +141,65 @@ Configuration scope
 
 **Default:** `local`
 
+#### `--root <ROOT>`
+
+Tracker directory. Literal: the directory must hold tisket.yml; no walk, no fallback. Without it, the nearest tisket.yml at or above the cwd is used. With none, reads use the configured root tracker and a write needs --home
+
+#### `--home`
+
+Act on the configured root tracker (`tisket store root`), wherever the command runs
+
+**Default:** `false`
+
+#### `-h --help`
+
+Print help (see a summary with '-h')
+
+## `tisket hooks help`
+
+- **Usage:** `tisket hooks help [COMMAND]`
+
+Print this message or the help of the given subcommand(s)
+
+## `tisket hooks help setup`
+
+- **Usage:** `tisket hooks help setup`
+
+Set up hooks for a coding agent
+
+## `tisket hooks help help`
+
+- **Usage:** `tisket hooks help help`
+
+Print this message or the help of the given subcommand(s)
+
 ## `tisket issue`
 
-- **Usage:** `tisket issue <SUBCOMMAND>`
+- **Usage:** `tisket issue [OPTIONS] <COMMAND>`
 
 Manage issues
 
+### Global Flags
+
+#### `--root <ROOT>`
+
+Tracker directory. Literal: the directory must hold tisket.yml; no walk, no fallback. Without it, the nearest tisket.yml at or above the cwd is used. With none, reads use the configured root tracker and a write needs --home
+
+#### `--home`
+
+Act on the configured root tracker (`tisket store root`), wherever the command runs
+
+**Default:** `false`
+
+### Flags
+
+#### `-h --help`
+
+Print help
+
 ## `tisket issue create`
 
-- **Usage:** `tisket issue create [FLAGS] <TITLE>`
+- **Usage:** `tisket issue create [OPTIONS] <TITLE>`
 
 Create a new issue
 
@@ -106,9 +217,19 @@ Issue title
 
 Project to create the issue in (default: "default")
 
+#### `--root <ROOT>`
+
+Tracker directory. Literal: the directory must hold tisket.yml; no walk, no fallback. Without it, the nearest tisket.yml at or above the cwd is used. With none, reads use the configured root tracker and a write needs --home
+
 #### `--priority <PRIORITY>`
 
 Priority (1=urgent, 2=high, 3=medium, 4=low)
+
+#### `--home`
+
+Act on the configured root tracker (`tisket store root`), wherever the command runs
+
+**Default:** `false`
 
 #### `-a --assignee <ASSIGNEE>`
 
@@ -144,9 +265,13 @@ Read the issue body from a file
 
 Do not use this with `--body`.
 
+#### `-h --help`
+
+Print help (see a summary with '-h')
+
 ## `tisket issue list`
 
-- **Usage:** `tisket issue list [FLAGS]`
+- **Usage:** `tisket issue list [OPTIONS]`
 
 List issues
 
@@ -162,9 +287,19 @@ JSON output is an array of issue objects. See the JSON output format in `tisket 
 
 Project to list issues from (default: all)
 
+#### `--root <ROOT>`
+
+Tracker directory. Literal: the directory must hold tisket.yml; no walk, no fallback. Without it, the nearest tisket.yml at or above the cwd is used. With none, reads use the configured root tracker and a write needs --home
+
 #### `-s --status <STATUS>`
 
 Filter by status
+
+#### `--home`
+
+Act on the configured root tracker (`tisket store root`), wherever the command runs
+
+**Default:** `false`
 
 #### `-a --assignee <ASSIGNEE>`
 
@@ -177,6 +312,8 @@ Filter by label
 #### `--closed`
 
 List closed issues instead of open ones
+
+**Default:** `false`
 
 #### `--where <WHERE>…`
 
@@ -195,9 +332,13 @@ Output format (text or json)
 
 **Default:** `text`
 
+#### `-h --help`
+
+Print help (see a summary with '-h')
+
 ## `tisket issue show`
 
-- **Usage:** `tisket issue show [--format <FORMAT>] [--field <FIELD>] <ID>`
+- **Usage:** `tisket issue show [OPTIONS] <ID>`
 
 Show the full details of an issue
 
@@ -222,6 +363,10 @@ Output format (text or json)
 
 **Default:** `text`
 
+#### `--root <ROOT>`
+
+Tracker directory. Literal: the directory must hold tisket.yml; no walk, no fallback. Without it, the nearest tisket.yml at or above the cwd is used. With none, reads use the configured root tracker and a write needs --home
+
 #### `--field <FIELD>`
 
 Extract a single field value
@@ -230,9 +375,19 @@ Valid fields: `title`, `status`, `priority`, `assignee`, `due_date`, `labels`, `
 
 With `--field`, the command prints only that field value. It adds no formatting and no labels. For a list field (`labels`, `depends_on`, `children`), it separates the values with commas.
 
+#### `--home`
+
+Act on the configured root tracker (`tisket store root`), wherever the command runs
+
+**Default:** `false`
+
+#### `-h --help`
+
+Print help (see a summary with '-h')
+
 ## `tisket issue path`
 
-- **Usage:** `tisket issue path <ID>`
+- **Usage:** `tisket issue path [OPTIONS] <ID>`
 
 Print the file path of an issue, relative to the repository root
 
@@ -244,9 +399,25 @@ Use this in a script.
 
 Issue ID (filename without .md)
 
+### Flags
+
+#### `--root <ROOT>`
+
+Tracker directory. Literal: the directory must hold tisket.yml; no walk, no fallback. Without it, the nearest tisket.yml at or above the cwd is used. With none, reads use the configured root tracker and a write needs --home
+
+#### `--home`
+
+Act on the configured root tracker (`tisket store root`), wherever the command runs
+
+**Default:** `false`
+
+#### `-h --help`
+
+Print help (see a summary with '-h')
+
 ## `tisket issue edit`
 
-- **Usage:** `tisket issue edit [FLAGS] <ID>`
+- **Usage:** `tisket issue edit [OPTIONS] <ID>`
 
 Edit the metadata or the body of an existing issue
 
@@ -266,9 +437,19 @@ Issue ID (filename without .md)
 
 New title
 
+#### `--root <ROOT>`
+
+Tracker directory. Literal: the directory must hold tisket.yml; no walk, no fallback. Without it, the nearest tisket.yml at or above the cwd is used. With none, reads use the configured root tracker and a write needs --home
+
 #### `-s --status <STATUS>`
 
 New status
+
+#### `--home`
+
+Act on the configured root tracker (`tisket store root`), wherever the command runs
+
+**Default:** `false`
 
 #### `--priority <PRIORITY>`
 
@@ -326,9 +507,13 @@ Sets one tag under the `tags` mapping.
 
 Remove a tag by key. Repeatable
 
+#### `-h --help`
+
+Print help (see a summary with '-h')
+
 ## `tisket issue close`
 
-- **Usage:** `tisket issue close [-p --project <PROJECT>] [-s --status <STATUS>] <ID>`
+- **Usage:** `tisket issue close [OPTIONS] <ID>`
 
 Close an issue
 
@@ -348,15 +533,29 @@ The project that holds the issue. Refused when the issue is in another project.
 
 tisket finds the issue by ID in every project, and refuses when the issue is in another project than the one named.
 
+#### `--root <ROOT>`
+
+Tracker directory. Literal: the directory must hold tisket.yml; no walk, no fallback. Without it, the nearest tisket.yml at or above the cwd is used. With none, reads use the configured root tracker and a write needs --home
+
 #### `-s --status <STATUS>`
 
 Terminal status (default: done)
 
 Usually `done` or `cancelled`.
 
+#### `--home`
+
+Act on the configured root tracker (`tisket store root`), wherever the command runs
+
+**Default:** `false`
+
+#### `-h --help`
+
+Print help (see a summary with '-h')
+
 ## `tisket issue reopen`
 
-- **Usage:** `tisket issue reopen [-s --status <STATUS>] <ID>`
+- **Usage:** `tisket issue reopen [OPTIONS] <ID>`
 
 Reopen a closed issue
 
@@ -376,9 +575,23 @@ Issue ID (filename without .md)
 
 Status to reopen as (default: todo)
 
+#### `--root <ROOT>`
+
+Tracker directory. Literal: the directory must hold tisket.yml; no walk, no fallback. Without it, the nearest tisket.yml at or above the cwd is used. With none, reads use the configured root tracker and a write needs --home
+
+#### `--home`
+
+Act on the configured root tracker (`tisket store root`), wherever the command runs
+
+**Default:** `false`
+
+#### `-h --help`
+
+Print help (see a summary with '-h')
+
 ## `tisket issue move`
 
-- **Usage:** `tisket issue move <--project <PROJECT>> <ID>`
+- **Usage:** `tisket issue move [OPTIONS] --project <PROJECT> <ID>`
 
 Move an issue to a different project
 
@@ -396,9 +609,83 @@ Issue ID (filename without .md)
 
 Target project to move the issue to
 
+#### `--root <ROOT>`
+
+Tracker directory. Literal: the directory must hold tisket.yml; no walk, no fallback. Without it, the nearest tisket.yml at or above the cwd is used. With none, reads use the configured root tracker and a write needs --home
+
+#### `--home`
+
+Act on the configured root tracker (`tisket store root`), wherever the command runs
+
+**Default:** `false`
+
+#### `-h --help`
+
+Print help (see a summary with '-h')
+
+## `tisket issue help`
+
+- **Usage:** `tisket issue help [COMMAND]`
+
+Print this message or the help of the given subcommand(s)
+
+## `tisket issue help create`
+
+- **Usage:** `tisket issue help create`
+
+Create a new issue
+
+## `tisket issue help list`
+
+- **Usage:** `tisket issue help list`
+
+List issues
+
+## `tisket issue help show`
+
+- **Usage:** `tisket issue help show`
+
+Show the full details of an issue
+
+## `tisket issue help path`
+
+- **Usage:** `tisket issue help path`
+
+Print the file path of an issue, relative to the repository root
+
+## `tisket issue help edit`
+
+- **Usage:** `tisket issue help edit`
+
+Edit the metadata or the body of an existing issue
+
+## `tisket issue help close`
+
+- **Usage:** `tisket issue help close`
+
+Close an issue
+
+## `tisket issue help reopen`
+
+- **Usage:** `tisket issue help reopen`
+
+Reopen a closed issue
+
+## `tisket issue help move`
+
+- **Usage:** `tisket issue help move`
+
+Move an issue to a different project
+
+## `tisket issue help help`
+
+- **Usage:** `tisket issue help help`
+
+Print this message or the help of the given subcommand(s)
+
 ## `tisket search`
 
-- **Usage:** `tisket search [-p --project <PROJECT>] <PATTERN>`
+- **Usage:** `tisket search [OPTIONS] <PATTERN>`
 
 Search issues with a regular expression
 
@@ -418,23 +705,71 @@ Search pattern (a regular expression)
 
 Filter to a specific project
 
+#### `--root <ROOT>`
+
+Tracker directory. Literal: the directory must hold tisket.yml; no walk, no fallback. Without it, the nearest tisket.yml at or above the cwd is used. With none, reads use the configured root tracker and a write needs --home
+
+#### `--home`
+
+Act on the configured root tracker (`tisket store root`), wherever the command runs
+
+**Default:** `false`
+
+#### `-h --help`
+
+Print help (see a summary with '-h')
+
 ## `tisket store`
 
-- **Usage:** `tisket store <SUBCOMMAND>`
+- **Usage:** `tisket store [OPTIONS] <COMMAND>`
 
 Manage the declared trackers
 
+### Global Flags
+
+#### `--root <ROOT>`
+
+Tracker directory. Literal: the directory must hold tisket.yml; no walk, no fallback. Without it, the nearest tisket.yml at or above the cwd is used. With none, reads use the configured root tracker and a write needs --home
+
+#### `--home`
+
+Act on the configured root tracker (`tisket store root`), wherever the command runs
+
+**Default:** `false`
+
+### Flags
+
+#### `-h --help`
+
+Print help
+
 ## `tisket store list`
 
-- **Usage:** `tisket store list`
+- **Usage:** `tisket store list [OPTIONS]`
 
 List the trackers this tracker reads
 
 The first row is the tracker itself. Each other row shows a declared tracker, its source, and its issue count. A remote tracker also shows the age of its cache.
 
+### Flags
+
+#### `--root <ROOT>`
+
+Tracker directory. Literal: the directory must hold tisket.yml; no walk, no fallback. Without it, the nearest tisket.yml at or above the cwd is used. With none, reads use the configured root tracker and a write needs --home
+
+#### `--home`
+
+Act on the configured root tracker (`tisket store root`), wherever the command runs
+
+**Default:** `false`
+
+#### `-h --help`
+
+Print help (see a summary with '-h')
+
 ## `tisket store sync`
 
-- **Usage:** `tisket store sync`
+- **Usage:** `tisket store sync [OPTIONS]`
 
 Fetch the declared remote trackers into the local cache
 
@@ -442,9 +777,25 @@ This is the only command that reaches the network.
 
 Each tracker syncs on its own, and one failure never stops another. The command prints a line for each, then exits non-zero if any failed. A tracker fails when its source is unreachable, and also when its declared revision is absent from what arrived. A fetch that moved bytes is not a sync: without that second check the command reports success and the revision fails later, on a read.
 
+### Flags
+
+#### `--root <ROOT>`
+
+Tracker directory. Literal: the directory must hold tisket.yml; no walk, no fallback. Without it, the nearest tisket.yml at or above the cwd is used. With none, reads use the configured root tracker and a write needs --home
+
+#### `--home`
+
+Act on the configured root tracker (`tisket store root`), wherever the command runs
+
+**Default:** `false`
+
+#### `-h --help`
+
+Print help (see a summary with '-h')
+
 ## `tisket store root`
 
-- **Usage:** `tisket store root [--force] [PATH]`
+- **Usage:** `tisket store root [OPTIONS] [PATH]`
 
 Show or set the root tracker that reads fall back to
 
@@ -462,9 +813,55 @@ The directory of the root tracker. Without it, print the current setting
 
 Replace an already-set root with a different one
 
+**Default:** `false`
+
+#### `--root <ROOT>`
+
+Tracker directory. Literal: the directory must hold tisket.yml; no walk, no fallback. Without it, the nearest tisket.yml at or above the cwd is used. With none, reads use the configured root tracker and a write needs --home
+
+#### `--home`
+
+Act on the configured root tracker (`tisket store root`), wherever the command runs
+
+**Default:** `false`
+
+#### `-h --help`
+
+Print help (see a summary with '-h')
+
+## `tisket store help`
+
+- **Usage:** `tisket store help [COMMAND]`
+
+Print this message or the help of the given subcommand(s)
+
+## `tisket store help list`
+
+- **Usage:** `tisket store help list`
+
+List the trackers this tracker reads
+
+## `tisket store help sync`
+
+- **Usage:** `tisket store help sync`
+
+Fetch the declared remote trackers into the local cache
+
+## `tisket store help root`
+
+- **Usage:** `tisket store help root`
+
+Show or set the root tracker that reads fall back to
+
+## `tisket store help help`
+
+- **Usage:** `tisket store help help`
+
+Print this message or the help of the given subcommand(s)
+
 ## `tisket check`
 
-- **Usage:** `tisket check`
+- **Usage:** `tisket check [OPTIONS]`
 
 Check the issues for broken references and store problems
 
@@ -482,9 +879,25 @@ Report the problems that the declarations create:
 
 The command exits non-zero when it finds any.
 
+### Flags
+
+#### `--root <ROOT>`
+
+Tracker directory. Literal: the directory must hold tisket.yml; no walk, no fallback. Without it, the nearest tisket.yml at or above the cwd is used. With none, reads use the configured root tracker and a write needs --home
+
+#### `--home`
+
+Act on the configured root tracker (`tisket store root`), wherever the command runs
+
+**Default:** `false`
+
+#### `-h --help`
+
+Print help (see a summary with '-h')
+
 ## `tisket serve`
 
-- **Usage:** `tisket serve [FLAGS]`
+- **Usage:** `tisket serve [OPTIONS]`
 
 Serve this tracker over the Model Context Protocol
 
@@ -508,19 +921,33 @@ The protocol cannot negotiate which of these a client understands, so the choice
 
 **Default:** `resources,tools`
 
+#### `--root <ROOT>`
+
+Tracker directory. Literal: the directory must hold tisket.yml; no walk, no fallback. Without it, the nearest tisket.yml at or above the cwd is used. With none, reads use the configured root tracker and a write needs --home
+
 #### `--access <ACCESS>`
 
 What a caller may do: read-only or read-write. A writable tracker allows appending to working notes, and nothing else
 
 **Default:** `read-only`
 
+#### `--home`
+
+Act on the configured root tracker (`tisket store root`), wherever the command runs
+
+**Default:** `false`
+
 #### `--bind <BIND>`
 
 Where to listen. Omitted, the server speaks on stdin and stdout. Given, it serves over HTTP
 
+#### `-h --help`
+
+Print help (see a summary with '-h')
+
 ## `tisket scratch`
 
-- **Usage:** `tisket scratch <ID> [SUBCOMMAND]`
+- **Usage:** `tisket scratch [OPTIONS] <ID> [COMMAND]`
 
 Read or modify scratch notes for an issue
 
@@ -534,17 +961,51 @@ The default action is `read`.
 
 Issue ID
 
+### Global Flags
+
+#### `--root <ROOT>`
+
+Tracker directory. Literal: the directory must hold tisket.yml; no walk, no fallback. Without it, the nearest tisket.yml at or above the cwd is used. With none, reads use the configured root tracker and a write needs --home
+
+#### `--home`
+
+Act on the configured root tracker (`tisket store root`), wherever the command runs
+
+**Default:** `false`
+
+### Flags
+
+#### `-h --help`
+
+Print help (see a summary with '-h')
+
 ## `tisket scratch read`
 
-- **Usage:** `tisket scratch read`
+- **Usage:** `tisket scratch <ID> read [OPTIONS]`
 
 Print the scratch notes to stdout (default)
 
 Print nothing if the notes are empty.
 
+### Flags
+
+#### `--root <ROOT>`
+
+Tracker directory. Literal: the directory must hold tisket.yml; no walk, no fallback. Without it, the nearest tisket.yml at or above the cwd is used. With none, reads use the configured root tracker and a write needs --home
+
+#### `--home`
+
+Act on the configured root tracker (`tisket store root`), wherever the command runs
+
+**Default:** `false`
+
+#### `-h --help`
+
+Print help (see a summary with '-h')
+
 ## `tisket scratch append`
 
-- **Usage:** `tisket scratch append <TEXT>`
+- **Usage:** `tisket scratch <ID> append [OPTIONS] <TEXT>`
 
 Append text to the existing scratch notes
 
@@ -554,9 +1015,25 @@ Append text to the existing scratch notes
 
 Text to write or append
 
+### Flags
+
+#### `--root <ROOT>`
+
+Tracker directory. Literal: the directory must hold tisket.yml; no walk, no fallback. Without it, the nearest tisket.yml at or above the cwd is used. With none, reads use the configured root tracker and a write needs --home
+
+#### `--home`
+
+Act on the configured root tracker (`tisket store root`), wherever the command runs
+
+**Default:** `false`
+
+#### `-h --help`
+
+Print help
+
 ## `tisket scratch write`
 
-- **Usage:** `tisket scratch write <TEXT>`
+- **Usage:** `tisket scratch <ID> write [OPTIONS] <TEXT>`
 
 Replace the scratch notes with the given text
 
@@ -566,23 +1043,109 @@ Replace the scratch notes with the given text
 
 Text to write or append
 
+### Flags
+
+#### `--root <ROOT>`
+
+Tracker directory. Literal: the directory must hold tisket.yml; no walk, no fallback. Without it, the nearest tisket.yml at or above the cwd is used. With none, reads use the configured root tracker and a write needs --home
+
+#### `--home`
+
+Act on the configured root tracker (`tisket store root`), wherever the command runs
+
+**Default:** `false`
+
+#### `-h --help`
+
+Print help
+
 ## `tisket scratch clear`
 
-- **Usage:** `tisket scratch clear`
+- **Usage:** `tisket scratch <ID> clear [OPTIONS]`
 
 Remove the scratch notes
 
 This is the same as `write ""`.
 
+### Flags
+
+#### `--root <ROOT>`
+
+Tracker directory. Literal: the directory must hold tisket.yml; no walk, no fallback. Without it, the nearest tisket.yml at or above the cwd is used. With none, reads use the configured root tracker and a write needs --home
+
+#### `--home`
+
+Act on the configured root tracker (`tisket store root`), wherever the command runs
+
+**Default:** `false`
+
+#### `-h --help`
+
+Print help (see a summary with '-h')
+
+## `tisket scratch help`
+
+- **Usage:** `tisket scratch <ID> help [COMMAND]`
+
+Print this message or the help of the given subcommand(s)
+
+## `tisket scratch help read`
+
+- **Usage:** `tisket scratch help read`
+
+Print the scratch notes to stdout (default)
+
+## `tisket scratch help append`
+
+- **Usage:** `tisket scratch help append`
+
+Append text to the existing scratch notes
+
+## `tisket scratch help write`
+
+- **Usage:** `tisket scratch help write`
+
+Replace the scratch notes with the given text
+
+## `tisket scratch help clear`
+
+- **Usage:** `tisket scratch help clear`
+
+Remove the scratch notes
+
+## `tisket scratch help help`
+
+- **Usage:** `tisket scratch help help`
+
+Print this message or the help of the given subcommand(s)
+
 ## `tisket project`
 
-- **Usage:** `tisket project <SUBCOMMAND>`
+- **Usage:** `tisket project [OPTIONS] <COMMAND>`
 
 Manage projects
 
+### Global Flags
+
+#### `--root <ROOT>`
+
+Tracker directory. Literal: the directory must hold tisket.yml; no walk, no fallback. Without it, the nearest tisket.yml at or above the cwd is used. With none, reads use the configured root tracker and a write needs --home
+
+#### `--home`
+
+Act on the configured root tracker (`tisket store root`), wherever the command runs
+
+**Default:** `false`
+
+### Flags
+
+#### `-h --help`
+
+Print help
+
 ## `tisket project create`
 
-- **Usage:** `tisket project create <NAME>`
+- **Usage:** `tisket project create [OPTIONS] <NAME>`
 
 Create a new project
 
@@ -596,17 +1159,73 @@ The command fails if the project already exists.
 
 Project name
 
+### Flags
+
+#### `--root <ROOT>`
+
+Tracker directory. Literal: the directory must hold tisket.yml; no walk, no fallback. Without it, the nearest tisket.yml at or above the cwd is used. With none, reads use the configured root tracker and a write needs --home
+
+#### `--home`
+
+Act on the configured root tracker (`tisket store root`), wherever the command runs
+
+**Default:** `false`
+
+#### `-h --help`
+
+Print help (see a summary with '-h')
+
 ## `tisket project list`
 
-- **Usage:** `tisket project list`
+- **Usage:** `tisket project list [OPTIONS]`
 
 List projects
 
 The command prints one project name per line in alphabetical order. A project is any directory under `<tisket_dir>/` that holds a `project.yml` file and has a name that does not start with `.`.
 
+### Flags
+
+#### `--root <ROOT>`
+
+Tracker directory. Literal: the directory must hold tisket.yml; no walk, no fallback. Without it, the nearest tisket.yml at or above the cwd is used. With none, reads use the configured root tracker and a write needs --home
+
+#### `--home`
+
+Act on the configured root tracker (`tisket store root`), wherever the command runs
+
+**Default:** `false`
+
+#### `-h --help`
+
+Print help (see a summary with '-h')
+
+## `tisket project help`
+
+- **Usage:** `tisket project help [COMMAND]`
+
+Print this message or the help of the given subcommand(s)
+
+## `tisket project help create`
+
+- **Usage:** `tisket project help create`
+
+Create a new project
+
+## `tisket project help list`
+
+- **Usage:** `tisket project help list`
+
+List projects
+
+## `tisket project help help`
+
+- **Usage:** `tisket project help help`
+
+Print this message or the help of the given subcommand(s)
+
 ## `tisket docs`
 
-- **Usage:** `tisket docs [-a --all] [TOPIC] [QUERY]`
+- **Usage:** `tisket docs [OPTIONS] [TOPIC] [QUERY]`
 
 Show the bundled documentation
 
@@ -629,3 +1248,205 @@ Search query (when topic is "search")
 #### `-a --all`
 
 Print every page whole, in one stream
+
+**Default:** `false`
+
+#### `--root <ROOT>`
+
+Tracker directory. Literal: the directory must hold tisket.yml; no walk, no fallback. Without it, the nearest tisket.yml at or above the cwd is used. With none, reads use the configured root tracker and a write needs --home
+
+#### `--home`
+
+Act on the configured root tracker (`tisket store root`), wherever the command runs
+
+**Default:** `false`
+
+#### `-h --help`
+
+Print help (see a summary with '-h')
+
+## `tisket help`
+
+- **Usage:** `tisket help [COMMAND]`
+
+Print this message or the help of the given subcommand(s)
+
+## `tisket help init`
+
+- **Usage:** `tisket help init`
+
+Initialize tisket in the current repository
+
+## `tisket help prime`
+
+- **Usage:** `tisket help prime`
+
+Print what tisket is and how to use it, for an agent's context
+
+## `tisket help hooks`
+
+- **Usage:** `tisket help hooks [COMMAND]`
+
+Manage agent hooks
+
+## `tisket help hooks setup`
+
+- **Usage:** `tisket help hooks setup`
+
+Set up hooks for a coding agent
+
+## `tisket help issue`
+
+- **Usage:** `tisket help issue [COMMAND]`
+
+Manage issues
+
+## `tisket help issue create`
+
+- **Usage:** `tisket help issue create`
+
+Create a new issue
+
+## `tisket help issue list`
+
+- **Usage:** `tisket help issue list`
+
+List issues
+
+## `tisket help issue show`
+
+- **Usage:** `tisket help issue show`
+
+Show the full details of an issue
+
+## `tisket help issue path`
+
+- **Usage:** `tisket help issue path`
+
+Print the file path of an issue, relative to the repository root
+
+## `tisket help issue edit`
+
+- **Usage:** `tisket help issue edit`
+
+Edit the metadata or the body of an existing issue
+
+## `tisket help issue close`
+
+- **Usage:** `tisket help issue close`
+
+Close an issue
+
+## `tisket help issue reopen`
+
+- **Usage:** `tisket help issue reopen`
+
+Reopen a closed issue
+
+## `tisket help issue move`
+
+- **Usage:** `tisket help issue move`
+
+Move an issue to a different project
+
+## `tisket help search`
+
+- **Usage:** `tisket help search`
+
+Search issues with a regular expression
+
+## `tisket help store`
+
+- **Usage:** `tisket help store [COMMAND]`
+
+Manage the declared trackers
+
+## `tisket help store list`
+
+- **Usage:** `tisket help store list`
+
+List the trackers this tracker reads
+
+## `tisket help store sync`
+
+- **Usage:** `tisket help store sync`
+
+Fetch the declared remote trackers into the local cache
+
+## `tisket help store root`
+
+- **Usage:** `tisket help store root`
+
+Show or set the root tracker that reads fall back to
+
+## `tisket help check`
+
+- **Usage:** `tisket help check`
+
+Check the issues for broken references and store problems
+
+## `tisket help serve`
+
+- **Usage:** `tisket help serve`
+
+Serve this tracker over the Model Context Protocol
+
+## `tisket help scratch`
+
+- **Usage:** `tisket help scratch [COMMAND]`
+
+Read or modify scratch notes for an issue
+
+## `tisket help scratch read`
+
+- **Usage:** `tisket help scratch read`
+
+Print the scratch notes to stdout (default)
+
+## `tisket help scratch append`
+
+- **Usage:** `tisket help scratch append`
+
+Append text to the existing scratch notes
+
+## `tisket help scratch write`
+
+- **Usage:** `tisket help scratch write`
+
+Replace the scratch notes with the given text
+
+## `tisket help scratch clear`
+
+- **Usage:** `tisket help scratch clear`
+
+Remove the scratch notes
+
+## `tisket help project`
+
+- **Usage:** `tisket help project [COMMAND]`
+
+Manage projects
+
+## `tisket help project create`
+
+- **Usage:** `tisket help project create`
+
+Create a new project
+
+## `tisket help project list`
+
+- **Usage:** `tisket help project list`
+
+List projects
+
+## `tisket help docs`
+
+- **Usage:** `tisket help docs`
+
+Show the bundled documentation
+
+## `tisket help help`
+
+- **Usage:** `tisket help help`
+
+Print this message or the help of the given subcommand(s)
