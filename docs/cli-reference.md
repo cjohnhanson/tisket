@@ -1,480 +1,796 @@
 <!-- metadata
-title: "tisket CLI Reference"
-description: "Complete command reference for the tisket issue tracker"
+title: tisket CLI reference
+description: Every command, argument, and flag of the tisket binary, generated from its definition
 type: reference
 -->
 
-# tisket CLI Reference
+# tisket CLI reference
 
-tisket is a plaintext issue tracker for humans and coding agents. Each issue is a markdown file with YAML frontmatter. The files live in git next to the code they describe.
+Plaintext issue tracker for humans and coding agents
 
-## Global options
+Every command takes `-h` or `--help`. `-V` and `--version` work at the
+top level only, as `tisket --version`; a subcommand refuses them.
 
-| Option | Description |
-|--------|-------------|
-| `--root <dir>` | Tracker directory, literal: the directory must hold `tisket.yml`; no walk, no fallback |
-| `--home` | Act on the configured root tracker, wherever the command runs |
+- **Usage:** `tisket [OPTIONS] <COMMAND>`
 
-## Root resolution
+## Global Flags
 
-Without `--root`, a command finds its tracker by one rule, identical in
-zettel and almanac: the nearest `tisket.yml` at or above the working
-directory wins. The walk requires a regular file. It stops at the first
-directory the invoking user does not own, so a marker planted in a
-shared ancestor captures nothing. With no tracker found, a read falls
-back to the root tracker set in `~/.config/tisket/config.yml` and says
-so on stderr. A write never falls back. It fails and names `--home`.
-No environment variable participates: an env var is the one input an
-agent cannot see in a transcript, and a repository can set one through
-direnv or mise. The config path itself is fixed, and the home directory
-comes from the passwd database, not `$HOME`, for the same reason.
+### `--root <ROOT>`
 
-A write prints its resolved target on stderr unless the target is the
-working directory's own tracker or `--root` named it. A read resolved by
-walking or by fallback prints its source.
+Tracker directory. Literal: the directory must hold tisket.yml; no walk, no fallback. Without it, the nearest tisket.yml at or above the cwd is used. With none, reads use the configured root tracker and a write needs --home
 
-## Commands
+### `--home`
 
-### `tisket init`
+Act on the configured root tracker (`tisket store root`), wherever the command runs
 
-Initialize tisket in the current repository. The command creates `tisket.yml` at the root. It also creates a `default` project under `.tisket/default/` with a `project.yml` file.
+**Default:** `false`
+
+## Flags
+
+### `-h --help`
+
+Print help (see a summary with '-h')
+
+### `-V --version`
+
+Print version
+
+## `tisket init`
+
+- **Usage:** `tisket init [OPTIONS]`
+
+Initialize tisket in the current directory
+
+The command creates `tisket.yml` in the current directory, or in the directory `--root` names, which becomes the tracker directory. It also creates a `default` project under `.tisket/default/` with a `project.yml` file.
 
 The command fails if `tisket.yml` already exists.
 
-### `tisket prime`
+### Flags
 
-Print what tisket is and how to use it, for an agent's context. The output depends only on the binary version. No argument, config, or tracker changes it, and the command runs outside a tracker. Policy about when to use tisket belongs to the caller.
+#### `-h --help`
 
-### `tisket hooks setup <agent>`
+Print help (see a summary with '-h')
 
-Set up hooks for a coding agent.
+## `tisket prime`
+
+- **Usage:** `tisket prime [OPTIONS]`
+
+Print what tisket is and how to use it, for an agent's context
+
+The output depends only on the binary version. No argument, config, or tracker changes it, and the command runs outside a tracker. Policy about when to use tisket belongs to the caller.
+
+### Flags
+
+#### `-h --help`
+
+Print help (see a summary with '-h')
+
+## `tisket hooks`
+
+- **Usage:** `tisket hooks [OPTIONS] <COMMAND>`
+
+Manage agent hooks
+
+### Flags
+
+#### `-h --help`
+
+Print help
+
+## `tisket hooks setup`
+
+- **Usage:** `tisket hooks setup [OPTIONS] <AGENT>`
+
+Set up hooks for a coding agent
 
 **Not yet implemented.** The command fails at runtime.
 
-| Option | Short | Default | Description |
-|--------|-------|---------|-------------|
-| `--scope <scope>` | `-s` | `local` | Configuration scope: `local` (.claude/settings.local.json, gitignored), `project` (.claude/settings.json, version controlled), or `user` (~/.claude/settings.json, global) |
+### Arguments
 
-### `tisket search <pattern>`
+#### `<AGENT>`
 
-Search issues with a regular expression. The command matches against the frontmatter field values: `title`, `status`, `priority`, `assignee`, `due_date`, `labels`, and `depends_on`. It searches the open issues and the closed issues in every project.
+Agent to configure (e.g. "claude")
 
-| Option | Short | Description |
-|--------|-------|-------------|
-| `--project <name>` | `-p` | Search one project only |
+### Flags
 
-Output columns: `ID`, `STATUS`, `PROJECT`, `TITLE`, `MATCH`. The `MATCH` column is a comma-separated list of the fields that matched.
+#### `-s --scope <SCOPE>`
 
-### `tisket scratch <id> [action]`
+Configuration scope
 
-Read or modify the scratch notes for an issue. The scratch section is a `## Scratch Notes` block at the end of the issue file, below the body.
+`local` (.claude/settings.local.json, gitignored), `project` (.claude/settings.json, version controlled), or `user` (~/.claude/settings.json, global).
 
-The default action is `read`.
+**Choices:**
 
-**Actions:**
+- `local`
+- `project`
+- `user`
 
-- `read` — Print the scratch notes to stdout. Print nothing if the notes are empty.
-- `append <text>` — Append text to the existing scratch notes.
-- `write <text>` — Replace the scratch notes with the given text.
-- `clear` — Remove the scratch notes. This is the same as `write ""`.
+**Default:** `local`
 
----
+#### `-h --help`
 
-## `tisket issue` subcommands
+Print help (see a summary with '-h')
 
-### `tisket issue create <title>`
+## `tisket issue`
 
-Create a new issue. Tisket makes the filename from a slug of the title. For example, "Fix the widget" becomes `ab12-fix-the-widget.md`. The `ab12` part is a random 4-character `[a-z0-9]` prefix. Tisket rejects a duplicate slug, even with a different prefix.
+- **Usage:** `tisket issue [OPTIONS] <COMMAND>`
 
-| Option | Short | Default | Description |
-|--------|-------|---------|-------------|
-| `--project <name>` | `-p` | `default` | Project to create the issue in |
-| `--priority <n>` | | | Priority: 1=urgent, 2=high, 3=medium, 4=low |
-| `--assignee <name>` | `-a` | | Assignee |
-| `--labels <csv>` | `-l` | | Comma-separated labels |
-| `--depends-on <csv>` | `-d` | | Comma-separated issue IDs this issue depends on |
-| `--children <csv>` | | | Comma-separated child issue IDs. An entry may name another tracker, as `alias:id` |
-| `--due <date>` | | | Due date in YYYY-MM-DD format |
-| `--status <status>` | `-s` | `todo` | Initial status |
-| `--body <text>` | `-b` | | Issue body text, inline |
-| `--body-file <path>` | | | Read the issue body from a file. Do not use this with `--body` |
+Manage issues
 
-### `tisket issue list`
+### Flags
 
-List issues. By default the command lists the open issues in every project.
+#### `-h --help`
 
-| Option | Short | Default | Description |
-|--------|-------|---------|-------------|
-| `--project <name>` | `-p` | all | Filter to one project |
-| `--status <status>` | `-s` | | Filter by status |
-| `--assignee <name>` | `-a` | | Filter by assignee |
-| `--label <label>` | | | Filter by label |
-| `--where <selector>` | | | Filter by a selector in `namespace:value` form. `label`, `status`, and `project` read those fields; any other namespace names a tag. Repeatable. An issue must match every selector |
-| `--closed` | | `false` | List the closed issues instead of the open ones |
-| `--format <fmt>` | | `text` | Output format: `text` or `json` |
+Print help
+
+## `tisket issue create`
+
+- **Usage:** `tisket issue create [OPTIONS] <TITLE>`
+
+Create a new issue
+
+Tisket makes the filename from a slug of the title. For example, "Fix the widget" becomes `ab12-fix-the-widget.md`. The `ab12` part is a random 4-character `[a-z0-9]` prefix. Tisket rejects a duplicate slug, even with a different prefix.
+
+### Arguments
+
+#### `<TITLE>`
+
+Issue title
+
+### Flags
+
+#### `-p --project <PROJECT>`
+
+Project to create the issue in (default: "default")
+
+#### `--priority <PRIORITY>`
+
+Priority (1=urgent, 2=high, 3=medium, 4=low)
+
+#### `-a --assignee <ASSIGNEE>`
+
+Assignee
+
+#### `-l --labels <LABELS>`
+
+Comma-separated labels
+
+#### `-d --depends-on <DEPENDS_ON>`
+
+Comma-separated issue IDs this depends on
+
+#### `--children <CHILDREN>`
+
+The child issue IDs; separate them with commas. An entry can name another tracker: alias:id
+
+#### `--due <DUE>`
+
+Due date (YYYY-MM-DD)
+
+#### `-s --status <STATUS>`
+
+Initial status (default: todo)
+
+#### `-b --body <BODY>`
+
+Issue body text (inline)
+
+#### `--body-file <BODY_FILE>`
+
+Read the issue body from a file
+
+Do not use this with `--body`.
+
+#### `-h --help`
+
+Print help (see a summary with '-h')
+
+## `tisket issue list`
+
+- **Usage:** `tisket issue list [OPTIONS]`
+
+List issues
+
+By default the command lists the open issues in every project.
 
 Text output columns: `ID`, `STATUS`, `TITLE`. A `*` after the status means that the issue diverges from another git branch.
 
-JSON output is an array of issue objects. See the JSON output format below.
+JSON output is an array of issue objects. See the JSON output format in `tisket docs file-format`.
 
-### `tisket issue show <id>`
+### Flags
 
-Show the full details of an issue.
+#### `-p --project <PROJECT>`
 
-| Option | Short | Default | Description |
-|--------|-------|---------|-------------|
-| `--format <fmt>` | | `text` | Output format: `text` or `json` |
-| `--field <name>` | | | Extract one field value. Valid fields: `title`, `status`, `priority`, `assignee`, `due_date`, `labels`, `depends_on`, `children`, `body`, `scratch`, `id`, `project` |
+Project to list issues from (default: all)
+
+#### `-s --status <STATUS>`
+
+Filter by status
+
+#### `-a --assignee <ASSIGNEE>`
+
+Filter by assignee
+
+#### `--label <LABEL>`
+
+Filter by label
+
+#### `--closed`
+
+List closed issues instead of open ones
+
+**Default:** `false`
+
+#### `--where <WHERE>…`
+
+Filter by a selector in namespace:value form. Repeatable. All selectors must match
+
+`label`, `status`, and `project` read those fields; any other namespace names a tag.
+
+#### `--format <FORMAT>`
+
+Output format (text or json)
+
+**Choices:**
+
+- `text`
+- `json`
+
+**Default:** `text`
+
+#### `-h --help`
+
+Print help (see a summary with '-h')
+
+## `tisket issue show`
+
+- **Usage:** `tisket issue show [OPTIONS] <ID>`
+
+Show the full details of an issue
 
 Text output shows every frontmatter field, the body, and the branch divergence. JSON output holds every field in one object.
 
+### Arguments
+
+#### `<ID>`
+
+Issue ID: the file name without .md, its 4-character prefix, or its slug
+
+### Flags
+
+#### `--format <FORMAT>`
+
+Output format (text or json)
+
+**Choices:**
+
+- `text`
+- `json`
+
+**Default:** `text`
+
+#### `--field <FIELD>`
+
+Extract a single field value
+
+Valid fields: `title`, `status`, `priority`, `assignee`, `due_date`, `labels`, `depends_on`, `children`, `body`, `scratch`, `id`, `project`.
+
 With `--field`, the command prints only that field value. It adds no formatting and no labels. For a list field (`labels`, `depends_on`, `children`), it separates the values with commas.
 
-### `tisket issue path <id>`
+#### `-h --help`
 
-Print the file path of an issue, relative to the repository root. Use this in a script.
+Print help (see a summary with '-h')
 
-### `tisket issue edit <id>`
+## `tisket issue path`
 
-Edit the metadata or the body of an existing issue. The command changes only the options you give and keeps everything else. It does not edit a closed issue.
+- **Usage:** `tisket issue path [OPTIONS] <ID>`
 
-| Option | Short | Description |
-|--------|-------|-------------|
-| `--title <text>` | | Replace the title |
-| `--status <status>` | `-s` | Set status |
-| `--priority <n>` | | Set priority (integer) |
-| `--assignee <name>` | `-a` | Set assignee |
-| `--labels <csv>` | `-l` | Replace every label (comma-separated) |
-| `--add-label <label>` | | Add one label and keep the existing labels |
-| `--remove-label <label>` | | Remove one label and keep the other labels |
-| `--depends-on <csv>` | `-d` | Replace every dependency (comma-separated) |
-| `--children <csv>` | | Replace every child (comma-separated). An entry may name another tracker, as `alias:id` |
-| `--due <date>` | | Set the due date (YYYY-MM-DD) |
-| `--body <text>` | | Replace the entire body below the frontmatter |
-| `--append <text>` | | Append text to the body. Adds a blank line first if the body is not empty |
-| `--tag <KEY=VALUE>` | | Set one tag under the `tags` mapping. Repeatable |
-| `--untag <KEY>` | | Remove one tag by key. Repeatable |
+Print the file path of an issue, relative to the tracker directory (the one holding tisket.yml)
+
+Use this in a script.
+
+### Arguments
+
+#### `<ID>`
+
+Issue ID: the file name without .md, its 4-character prefix, or its slug
+
+### Flags
+
+#### `-h --help`
+
+Print help (see a summary with '-h')
+
+## `tisket issue edit`
+
+- **Usage:** `tisket issue edit [OPTIONS] <ID>`
+
+Edit the metadata or the body of an existing issue
+
+The command changes only the options you give and keeps everything else. It does not edit a closed issue.
 
 The command updates the `updated` timestamp automatically.
 
-### `tisket issue close <id>`
+### Arguments
 
-Close an issue. The command moves the file from `<project>/` to `<project>/.closed/` and sets the status.
+#### `<ID>`
 
-| Option | Short | Default | Description |
-|--------|-------|---------|-------------|
-| `--project <name>` | `-p` | | The project that holds the issue. tisket finds the issue by ID in every project, and refuses when the issue is in another project than the one named |
-| `--status <status>` | `-s` | `done` | Terminal status to set, usually `done` or `cancelled` |
+Issue ID: the file name without .md, its 4-character prefix, or its slug
 
-### `tisket issue reopen <id>`
+### Flags
 
-Reopen a closed issue. The command moves the file from `<project>/.closed/` back to `<project>/` and sets the status.
+#### `--title <TITLE>`
 
-| Option | Short | Default | Description |
-|--------|-------|---------|-------------|
-| `--status <status>` | `-s` | `todo` | Status to set on reopen |
+New title
+
+#### `-s --status <STATUS>`
+
+New status
+
+#### `--priority <PRIORITY>`
+
+New priority: 1 urgent, 2 high, 3 medium, 4 low
+
+#### `-a --assignee <ASSIGNEE>`
+
+New assignee
+
+#### `-l --labels <LABELS>`
+
+New labels (replaces all existing labels)
+
+Comma-separated.
+
+#### `--add-label <ADD_LABEL>`
+
+Add one label and keep the existing labels
+
+#### `--remove-label <REMOVE_LABEL>`
+
+Remove one label and keep the other labels
+
+#### `-d --depends-on <DEPENDS_ON>`
+
+New dependencies (replaces all existing dependencies)
+
+Comma-separated.
+
+#### `--children <CHILDREN>`
+
+The child issue IDs; separate them with commas. An entry can name another tracker: alias:id
+
+#### `--due <DUE>`
+
+Due date (YYYY-MM-DD)
+
+#### `--body <BODY>`
+
+Replace the entire body below the frontmatter
+
+#### `--append <APPEND>`
+
+Append text to the body
+
+Adds a blank line first if the body is not empty.
+
+#### `--tag <KEY=VALUE>…`
+
+Set a tag in key=value form. Repeatable
+
+Sets one tag under the `tags` mapping.
+
+#### `--untag <KEY>…`
+
+Remove a tag by key. Repeatable
+
+#### `-h --help`
+
+Print help (see a summary with '-h')
+
+## `tisket issue close`
+
+- **Usage:** `tisket issue close [OPTIONS] <ID>`
+
+Close an issue
+
+The command moves the file from `<project>/` to `<project>/.closed/` and sets the status.
+
+### Arguments
+
+#### `<ID>`
+
+Issue ID: the file name without .md, its 4-character prefix, or its slug
+
+### Flags
+
+#### `-p --project <PROJECT>`
+
+The project that holds the issue
+
+tisket finds the issue by ID in every project, and refuses when the issue is in a different project.
+
+#### `-s --status <STATUS>`
+
+Terminal status (default: done)
+
+Usually `done` or `cancelled`.
+
+#### `-h --help`
+
+Print help (see a summary with '-h')
+
+## `tisket issue reopen`
+
+- **Usage:** `tisket issue reopen [OPTIONS] <ID>`
+
+Reopen a closed issue
+
+The command moves the file from `<project>/.closed/` back to `<project>/` and sets the status.
 
 The command removes the `.closed/` directory if the directory becomes empty.
 
-### `tisket issue move <id>`
+### Arguments
 
-Move an issue to a different project.
+#### `<ID>`
 
-| Option | Short | Description |
-|--------|-------|-------------|
-| `--project <name>` | | **Required.** Target project for the issue |
+Issue ID: the file name without .md, its 4-character prefix, or its slug
+
+### Flags
+
+#### `-s --status <STATUS>`
+
+Status to reopen as (default: todo)
+
+#### `-h --help`
+
+Print help (see a summary with '-h')
+
+## `tisket issue move`
+
+- **Usage:** `tisket issue move [OPTIONS] --project <PROJECT> <ID>`
+
+Move an issue to a different project
 
 The command handles an open issue and a closed issue. It changes nothing if the issue is already in the target project.
 
----
+### Arguments
 
-## `tisket project` subcommands
+#### `<ID>`
 
-### `tisket project create <name>`
+Issue ID: the file name without .md, its 4-character prefix, or its slug
 
-Create a new project. The command creates `<tisket_dir>/<name>/` with a `project.yml` file.
+### Flags
 
-The command fails if the project already exists.
+#### `--project <PROJECT>`
 
-### `tisket project list`
+Target project to move the issue to
 
-List every project. The command prints one project name per line in alphabetical order. A project is any directory under `<tisket_dir>/` that holds a `project.yml` file and has a name that does not start with `.`.
+#### `-h --help`
 
----
+Print help (see a summary with '-h')
 
-## ID resolution
+## `tisket search`
 
-Tisket resolves an issue ID from several forms. Each form works wherever the reference shows `<id>`:
+- **Usage:** `tisket search [OPTIONS] <PATTERN>`
 
-- **Full ID** — `ab12-fix-the-widget` (an exact match of the filename stem)
-- **Short prefix** — `ab12` (a 4-character `[a-z0-9]` prefix; only one issue may match)
-- **Slug** — `fix-the-widget` (the part after the prefix; only one issue may match)
-- **Legacy ID with no prefix** — for an issue created before tisket added prefixes
+Search issues with a regular expression
 
-Tisket returns an error if more than one issue matches the prefix.
+The command matches against the frontmatter field values: `title`, `status`, `priority`, `assignee`, `due_date`, `labels`, and `depends_on`. It searches the open issues and the closed issues in every project.
 
----
+Output columns: `ID`, `STATUS`, `PROJECT`, `TITLE`, `MATCH`. The `MATCH` column is a comma-separated list of the fields that matched.
 
-## Statuses
+### Arguments
 
-tisket uses a fixed set of workflow statuses:
+#### `<PATTERN>`
 
-| Status | Wire value | Category |
-|--------|-----------|----------|
-| Discovery | `discovery` | Active |
-| Todo | `todo` | Active, pickable |
-| In Progress | `in_progress` | Active |
-| Blocked | `blocked` | Active, pickable |
-| Paused | `paused` | Active, pickable |
-| Done | `done` | Terminal |
-| Cancelled | `cancelled` | Terminal |
+Search pattern (a regular expression)
 
-"Active" means that the issue is open. "Pickable" means that an agent can pick up the issue for work. "Terminal" means that the issue is closed.
+### Flags
 
-Tisket parses the legacy value `backlog` as `todo`.
+#### `-p --project <PROJECT>`
 
----
+Filter to a specific project
 
-## File format
+#### `-h --help`
 
-### Repository configuration: `tisket.yml`
+Print help (see a summary with '-h')
 
-This file is at the repository root.
+## `tisket store`
 
-```yaml
-tisket_dir: .tisket
-```
+- **Usage:** `tisket store [OPTIONS] <COMMAND>`
 
-| Field | Type | Default | Description |
-|-------|------|---------|-------------|
-| `tisket_dir` | string | `.tisket` | Directory that holds the projects and the issues |
-| `additional_instructions` | string | `""` | Unread. `prime` once appended it. The key still parses; `tisket check` reports it when set |
+Manage the declared trackers
 
-### Project configuration: `<tisket_dir>/<project>/project.yml`
+### Flags
 
-```yaml
-name: default
-```
+#### `-h --help`
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `name` | string | Project name |
-
-### Issue files
-
-An open issue is a markdown file at `<tisket_dir>/<project>/<id>.md`. A closed issue is a markdown file at `<tisket_dir>/<project>/.closed/<id>.md`.
-
-The filename stem is the issue ID. It has a 4-character random prefix, a hyphen, and a slug of the title, such as `ab12-fix-the-widget.md`.
-
-#### Structure
-
-```
----
-<YAML frontmatter>
----
-
-<body — free-form markdown>
-
-## Scratch Notes
-
-<scratch content>
-```
-
-One file holds all three sections: the frontmatter, the body, and the scratch notes. The body and the scratch notes are optional.
-
-#### Frontmatter schema
-
-```yaml
-title: Issue title
-status: todo
-priority: null
-assignee: null
-due_date: 2025-06-15
-labels: []
-depends_on: []
-children: []
-created: 2025-01-15T10:30:00Z
-updated: 2025-01-15T10:30:00Z
-tags:
-  sprint: 12
-```
-
-| Field | Type | Required | Default | Description |
-|-------|------|----------|---------|-------------|
-| `title` | string | yes | | Issue title. Tisket writes it unquoted unless YAML needs the quotes |
-| `status` | string | yes | `todo` | One of the fixed statuses. See Statuses above |
-| `priority` | string or null | no | null | Priority level. The convention is `1`=urgent, `2`=high, `3`=medium, `4`=low |
-| `assignee` | string or null | no | null | The person responsible for the issue |
-| `due_date` | string or null | no | null | Due date, usually YYYY-MM-DD. Tisket writes it unquoted |
-| `labels` | list of strings | no | `[]` | Free-form labels |
-| `depends_on` | list of strings | no | `[]` | Issue IDs that must close first |
-| `children` | list of strings | no | `[]` | The issues this epic contains. An entry may name another tracker, as `alias:id`. Containment does not block pickup |
-| `created` | string or null | no | auto | ISO 8601 timestamp. Tisket sets it at creation |
-| `updated` | string or null | no | auto | ISO 8601 timestamp. Tisket updates it on every edit |
-| `tags` | mapping | no | `{}` | Your own keys and values. `--where <key>:<value>` filters on them, and `issue edit --tag`/`--untag` maintains them |
-
-Tisket writes a null field as `null`, so an unset priority reads `priority: null`. A modelled string that YAML would read as a number is quoted, so a priority set to `1` reads `priority: '1'`. A list is written one item per line.
-
-`tags` is the exception, because its values are not modelled as strings. A tag value that looks like a number is written as one, so `--tag sprint=12` reads `sprint: 12` and `--format json` reports `"sprint": 12`. A caller that reads `tags` accepts a string or a number.
-
-A key this table does not name survives an edit. Tisket keeps every frontmatter key it does not model, so another tool can add one and tisket will not drop it.
-
-#### Body
-
-The body is everything between the closing `---` of the frontmatter and the `## Scratch Notes` header. It is free-form markdown. A blank line separates it from the frontmatter.
-
-#### Scratch Notes
-
-The `## Scratch Notes` section is optional and comes at the end of the file. Use it for agent working notes, short-lived context, and observations during the work. Manage it with the `tisket scratch` commands, or edit the file directly.
-
----
-
-## JSON output format
-
-With `--format json`, each issue looks like this:
-
-```json
-{
-  "id": "ab12-fix-the-widget",
-  "project": "default",
-  "title": "Fix the widget",
-  "status": "todo",
-  "priority": "3",
-  "assignee": "alice",
-  "due_date": "2025-06-15",
-  "labels": ["bug", "frontend"],
-  "depends_on": ["cd34-other-issue"],
-  "children": ["ef56-a-child-issue"],
-  "tags": { "sprint": 12 },
-  "body": "Full body text here.",
-  "scratch": "Agent notes here.",
-  "closed": false
-}
-```
-
-Tisket writes a null field as JSON `null`. `tisket issue list --format json` returns an array of these objects.
-
----
-
-## Directory layout
-
-```
-repo/
-  tisket.yml
-  .tisket/
-    default/
-      project.yml
-      ab12-fix-the-widget.md
-      cd34-add-tests.md
-      .closed/
-        ef56-old-bug.md
-    backend/
-      project.yml
-      gh78-api-endpoint.md
-```
-
----
-
-## Git integration
-
-tisket is git-aware. In a git repository, `issue list` and `issue show` compare the version of each issue file on the current branch against the version on every other branch. Tisket marks the issue as divergent if the frontmatter differs, or if the presence of a body or of scratch notes differs:
-
-- In the `issue list` text output, tisket adds a `*` to the status, such as `todo*`.
-- In the `issue show` text output, an "Other branches" section lists the branches with fields that differ.
-
-This comparison only reads and never blocks. Tisket ignores a git failure without a message.
-
-
-## `tisket docs`
-
-Print the bundled documentation. The pages are compiled into the
-binary, so the command works from any directory.
-
-```
-tisket docs                     List the pages
-tisket docs <slug>              Print one page
-tisket docs search <query>      List the pages that carry the query
-tisket docs --all               Print every page, in one stream
-```
+Print help
 
 ## `tisket store list`
 
-List the trackers that this tracker reads. The first row is the tracker
-itself. Each other row shows a declared tracker, its source, and its
-issue count. A remote tracker also shows the age of its cache.
+- **Usage:** `tisket store list [OPTIONS]`
 
-## `tisket store root`
+List the trackers this tracker reads
 
-Show or set the root tracker that reads fall back to. `tisket store
-root` prints the current setting; `tisket store root <path>` writes it
-to `~/.config/tisket/config.yml` (the path must hold `tisket.yml`;
-changing an existing setting needs `--force`). This setting names the
-root store for tisket alone, because each tool reads its own config
-file. One directory can serve as the root store for all of them. If that
-directory holds no `zettel.yml` or no `almanac.yml`, the command says so
-on stderr and still writes the setting.
+The first row is the tracker itself. Each other row shows a declared tracker, its source, and its issue count. A remote tracker also shows the age of its cache.
+
+### Flags
+
+#### `-h --help`
+
+Print help (see a summary with '-h')
 
 ## `tisket store sync`
 
-Fetch each declared remote tracker into the local cache. This is the
-only command that reaches the network.
+- **Usage:** `tisket store sync [OPTIONS]`
 
-Each tracker syncs on its own, and one failure never stops another.
-The command prints a line for each, then exits non-zero if any failed.
-A tracker fails when its source is unreachable, and also when its
-declared revision is absent from what arrived. A fetch that moved
-bytes is not a sync: without that second check the command reports
-success and the revision fails later, on a read.
+Fetch the declared remote trackers into the local cache
+
+This is the only command that reaches the network.
+
+Each tracker syncs on its own, and one failure never stops another. The command prints a line for each, then exits non-zero if any failed. A tracker fails when its source is unreachable, and also when its declared revision is absent from what arrived. A fetch that moved bytes is not a sync: without that second check the command reports success and the revision fails later, on a read.
+
+### Flags
+
+#### `-h --help`
+
+Print help (see a summary with '-h')
+
+## `tisket store root`
+
+- **Usage:** `tisket store root [OPTIONS] [PATH]`
+
+Show or set the root tracker that reads fall back to
+
+`tisket store root` prints the current setting; `tisket store root <path>` writes it to `~/.config/tisket/config.yml` (the path must hold `tisket.yml`; changing an existing setting needs `--force`). This setting names the root store for tisket alone, because each tool reads its own config file. One directory can serve as the root store for all of them. If that directory holds no `zettel.yml` or no `almanac.yml`, the command says so on stderr and still writes the setting.
+
+### Arguments
+
+#### `[PATH]`
+
+The directory of the root tracker. Without it, print the current setting
+
+### Flags
+
+#### `--force`
+
+Replace an already-set root with a different one
+
+**Default:** `false`
+
+#### `-h --help`
+
+Print help (see a summary with '-h')
 
 ## `tisket check`
 
+- **Usage:** `tisket check [OPTIONS]`
+
+Check the issues for broken references and store problems
+
 Report the problems that the declarations create:
 
-- A `depends_on` or `children` entry names another tracker and no issue
-  there. An entry that names a missing issue in the same tracker is not
-  reported.
+- A `depends_on` or `children` entry names another tracker and no issue there. An entry that names a missing issue in the same tracker is not reported.
+
 - A declared tracker is not available.
+
 - The children of an epic form a cycle.
+
 - A file could not be read.
+
 - In a `shared: true` tracker, a clone cannot reach a dependency.
 
 The command exits non-zero when it finds any.
 
+### Flags
+
+#### `-h --help`
+
+Print help (see a summary with '-h')
 
 ## `tisket serve`
 
-Serve this tracker over the Model Context Protocol.
+- **Usage:** `tisket serve [OPTIONS]`
 
-```
-tisket serve                        Speak MCP on stdin and stdout
-tisket serve --root <DIR>           Serve the tracker at DIR (default: the nearest tisket.yml at or above the working directory)
-tisket serve --bind <ADDR>          Serve over HTTP at ADDR instead
-tisket serve --surfaces <LIST>      Offer these surfaces (default: resources,tools)
-tisket serve --access <MODE>        read-only (default) or read-write
-```
+Serve this tracker over the Model Context Protocol
 
-Omit `--bind`, and the server speaks on stdin and stdout, for a client
-that starts the process. Give `--bind`, and it serves over HTTP at
-`/mcp` on that address, for a client that connects to it.
+Omit `--bind`, and the server speaks on stdin and stdout, for a client that starts the process. Give `--bind`, and it serves over HTTP at `/mcp` on that address, for a client that connects to it.
 
-`--surfaces` takes `resources`, `tools`, or both, separated by commas.
-The protocol cannot negotiate which of these a client understands, so
-the choice is configuration. Tools are the surface every client can
-call, so the default keeps them on.
+A read-only server offers `tisket_list_issues`, `tisket_read_issue`, `tisket_rollup`, and `tisket_check`. `--access read-write` adds `tisket_append_scratch`, and nothing else. A caller cannot create an issue, change a status, or edit a body through the server.
 
-A read-only server offers `tisket_list_issues`, `tisket_read_issue`,
-`tisket_rollup`, and `tisket_check`. `--access read-write` adds
-`tisket_append_scratch`, and nothing else. A caller cannot create an
-issue, change a status, or edit a body through the server.
+A served tracker has no authentication. The server answers whoever opens the connection.
 
-### Authentication
+Authentication belongs in front of the server, in a program built for it. A reverse proxy terminates TLS and checks a token or an identity provider.
 
-A served tracker has none. The server answers whoever opens the
-connection.
+Bind to `127.0.0.1` for a client on this machine. To serve anybody else, put the server behind a proxy that authenticates.
 
-Authentication belongs in front of the server, in a program built for
-it. A reverse proxy terminates TLS and checks
-a token or an identity provider.
+### Flags
 
-Bind to `127.0.0.1` for a client on this machine. To serve anybody
-else, put the server behind a proxy that authenticates.
+#### `--surfaces <SURFACES>`
+
+The surfaces to offer, separated by commas: resources, tools.
+
+The protocol cannot negotiate which of these a client understands, so the choice is configuration. Tools are the surface every client can call, so the default keeps them on.
+
+**Default:** `resources,tools`
+
+#### `--access <ACCESS>`
+
+What a caller may do: read-only or read-write. A writable tracker allows appending to working notes, and nothing else
+
+**Default:** `read-only`
+
+#### `--bind <BIND>`
+
+Where to listen. Omitted, the server speaks on stdin and stdout. Given, it serves over HTTP
+
+#### `-h --help`
+
+Print help (see a summary with '-h')
+
+## `tisket scratch`
+
+- **Usage:** `tisket scratch [OPTIONS] <ID> [COMMAND]`
+
+Read or modify scratch notes for an issue
+
+The scratch section is a `## Scratch Notes` block at the end of the issue file, below the body.
+
+The default action is `read`.
+
+### Arguments
+
+#### `<ID>`
+
+Issue ID
+
+### Flags
+
+#### `-h --help`
+
+Print help (see a summary with '-h')
+
+## `tisket scratch read`
+
+- **Usage:** `tisket scratch <ID> read [OPTIONS]`
+
+Print the scratch notes to stdout (default)
+
+Print nothing if the notes are empty.
+
+### Flags
+
+#### `-h --help`
+
+Print help (see a summary with '-h')
+
+## `tisket scratch append`
+
+- **Usage:** `tisket scratch <ID> append [OPTIONS] <TEXT>`
+
+Append text to the existing scratch notes
+
+### Arguments
+
+#### `<TEXT>`
+
+Text to write or append
+
+### Flags
+
+#### `-h --help`
+
+Print help
+
+## `tisket scratch write`
+
+- **Usage:** `tisket scratch <ID> write [OPTIONS] <TEXT>`
+
+Replace the scratch notes with the given text
+
+### Arguments
+
+#### `<TEXT>`
+
+Text to write or append
+
+### Flags
+
+#### `-h --help`
+
+Print help
+
+## `tisket scratch clear`
+
+- **Usage:** `tisket scratch <ID> clear [OPTIONS]`
+
+Remove the scratch notes
+
+This is the same as `write ""`.
+
+### Flags
+
+#### `-h --help`
+
+Print help (see a summary with '-h')
+
+## `tisket project`
+
+- **Usage:** `tisket project [OPTIONS] <COMMAND>`
+
+Manage projects
+
+### Flags
+
+#### `-h --help`
+
+Print help
+
+## `tisket project create`
+
+- **Usage:** `tisket project create [OPTIONS] <NAME>`
+
+Create a new project
+
+The command creates `<tisket_dir>/<name>/` with a `project.yml` file.
+
+The command fails if the project already exists.
+
+### Arguments
+
+#### `<NAME>`
+
+Project name
+
+### Flags
+
+#### `-h --help`
+
+Print help (see a summary with '-h')
+
+## `tisket project list`
+
+- **Usage:** `tisket project list [OPTIONS]`
+
+List projects
+
+The command prints one project name per line in alphabetical order. A project is any directory under `<tisket_dir>/` that holds a `project.yml` file and has a name that does not start with `.`.
+
+### Flags
+
+#### `-h --help`
+
+Print help (see a summary with '-h')
+
+## `tisket docs`
+
+- **Usage:** `tisket docs [OPTIONS] [TOPIC] [QUERY]`
+
+Show the bundled documentation
+
+The pages are compiled into the binary, so the command works from any directory.
+
+`tisket docs` lists the pages. `tisket docs <slug>` prints one page. `tisket docs search <query>` lists the pages that carry the query. `tisket docs --all` prints every page, in one stream.
+
+### Arguments
+
+#### `[TOPIC]`
+
+Topic slug to show, or "search" to search the docs
+
+#### `[QUERY]`
+
+Search query (when topic is "search")
+
+### Flags
+
+#### `-a --all`
+
+Print every page whole, in one stream
+
+**Default:** `false`
+
+#### `-h --help`
+
+Print help (see a summary with '-h')

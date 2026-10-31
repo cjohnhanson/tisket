@@ -10,8 +10,21 @@ use crate::{CreateIssueOptions, EditIssueOptions, Issue, Repo, SearchResult, Sel
 /// this one place, so the two cannot drift.
 pub const ABOUT: &str = "Plaintext issue tracker for humans and coding agents";
 
+/// The long description, which `--help` and the generated reference
+/// print. It carries the facts clap's built-in flags cannot.
+const LONG_ABOUT: &str = "Plaintext issue tracker for humans and coding agents
+
+Every command takes `-h` or `--help`. `-V` and `--version` work at the
+top level only, as `tisket --version`; a subcommand refuses them.";
+
 #[derive(Parser)]
-#[command(name = "tisket", version, about = ABOUT, max_term_width = 98)]
+#[command(
+    name = "tisket",
+    version,
+    about = ABOUT,
+    long_about = LONG_ABOUT,
+    max_term_width = 98
+)]
 pub struct Args {
     /// Tracker directory. Literal: the directory must hold tisket.yml;
     /// no walk, no fallback. Without it, the nearest tisket.yml at or
@@ -77,7 +90,15 @@ fn intent(command: &Command) -> Option<mdstore::resolve::Intent> {
 
 #[derive(Parser)]
 pub enum Command {
-    /// Initialize tisket in the current repository
+    /// Initialize tisket in the current directory
+    ///
+    /// The command creates `tisket.yml` in the current directory, or in
+    /// the directory `--root` names, which
+    /// becomes the tracker directory. It also creates a
+    /// `default` project under `.tisket/default/` with a `project.yml`
+    /// file.
+    ///
+    /// The command fails if `tisket.yml` already exists.
     Init,
 
     /// Write the man pages into a directory (the package build uses this)
@@ -95,6 +116,10 @@ pub enum Command {
     },
 
     /// Print what tisket is and how to use it, for an agent's context
+    ///
+    /// The output depends only on the binary version. No argument,
+    /// config, or tracker changes it, and the command runs outside a
+    /// tracker. Policy about when to use tisket belongs to the caller.
     Prime,
 
     /// Manage agent hooks
@@ -105,7 +130,16 @@ pub enum Command {
     #[command(subcommand)]
     Issue(Box<IssueCommand>),
 
-    /// Search issues
+    /// Search issues with a regular expression
+    ///
+    /// The command matches against the frontmatter field values: `title`,
+    /// `status`, `priority`, `assignee`, `due_date`, `labels`, and
+    /// `depends_on`. It searches the open issues and the closed issues in
+    /// every project.
+    ///
+    /// Output columns: `ID`, `STATUS`, `PROJECT`, `TITLE`, `MATCH`. The
+    /// `MATCH` column is a comma-separated list of the fields that
+    /// matched.
     Search(SearchArgs),
 
     /// Manage the declared trackers
@@ -113,11 +147,51 @@ pub enum Command {
     Store(StoreCommand),
 
     /// Check the issues for broken references and store problems
+    ///
+    /// Report the problems that the declarations create:
+    ///
+    /// - A `depends_on` or `children` entry names another tracker and no
+    ///   issue there. An entry that names a missing issue in the same
+    ///   tracker is not reported.
+    ///
+    /// - A declared tracker is not available.
+    ///
+    /// - The children of an epic form a cycle.
+    ///
+    /// - A file could not be read.
+    ///
+    /// - In a `shared: true` tracker, a clone cannot reach a dependency.
+    ///
+    /// The command exits non-zero when it finds any.
     Check,
 
-    /// Serve this tracker over MCP
+    /// Serve this tracker over the Model Context Protocol
+    ///
+    /// Omit `--bind`, and the server speaks on stdin and stdout, for a
+    /// client that starts the process. Give `--bind`, and it serves over
+    /// HTTP at `/mcp` on that address, for a client that connects to it.
+    ///
+    /// A read-only server offers `tisket_list_issues`,
+    /// `tisket_read_issue`, `tisket_rollup`, and `tisket_check`.
+    /// `--access read-write` adds `tisket_append_scratch`, and nothing
+    /// else. A caller cannot create an issue, change a status, or edit a
+    /// body through the server.
+    ///
+    /// A served tracker has no authentication. The server answers
+    /// whoever opens the connection.
+    ///
+    /// Authentication belongs in front of the server, in a program built
+    /// for it. A reverse proxy terminates TLS and checks a token or an
+    /// identity provider.
+    ///
+    /// Bind to `127.0.0.1` for a client on this machine. To serve anybody
+    /// else, put the server behind a proxy that authenticates.
     Serve {
         /// The surfaces to offer, separated by commas: resources, tools.
+        ///
+        /// The protocol cannot negotiate which of these a client
+        /// understands, so the choice is configuration. Tools are the
+        /// surface every client can call, so the default keeps them on.
         #[arg(long, default_value = "resources,tools")]
         surfaces: String,
         /// What a caller may do: read-only or read-write. A writable
@@ -131,6 +205,11 @@ pub enum Command {
     },
 
     /// Read or modify scratch notes for an issue
+    ///
+    /// The scratch section is a `## Scratch Notes` block at the end of
+    /// the issue file, below the body.
+    ///
+    /// The default action is `read`.
     Scratch(ScratchArgs),
 
     /// Manage projects
@@ -138,6 +217,13 @@ pub enum Command {
     Project(ProjectCommand),
 
     /// Show the bundled documentation
+    ///
+    /// The pages are compiled into the binary, so the command works from
+    /// any directory.
+    ///
+    /// `tisket docs` lists the pages. `tisket docs <slug>` prints one
+    /// page. `tisket docs search <query>` lists the pages that carry the
+    /// query. `tisket docs --all` prints every page, in one stream.
     Docs(DocsArgs),
 }
 
@@ -152,6 +238,8 @@ static DOCS: &[(&str, &str)] = diataxis::embedded_docs!();
 #[derive(Parser)]
 pub enum HooksCommand {
     /// Set up hooks for a coding agent
+    ///
+    /// **Not yet implemented.** The command fails at runtime.
     Setup(HooksSetupArgs),
 }
 
@@ -161,6 +249,10 @@ pub struct HooksSetupArgs {
     pub agent: String,
 
     /// Configuration scope
+    ///
+    /// `local` (.claude/settings.local.json, gitignored), `project`
+    /// (.claude/settings.json, version controlled), or `user`
+    /// (~/.claude/settings.json, global).
     #[arg(short, long, default_value = "local")]
     pub scope: ConfigScope,
 }
@@ -178,27 +270,62 @@ pub enum ConfigScope {
 #[derive(Parser)]
 pub enum IssueCommand {
     /// Create a new issue
+    ///
+    /// Tisket makes the filename from a slug of the title. For example,
+    /// "Fix the widget" becomes `ab12-fix-the-widget.md`. The `ab12` part
+    /// is a random 4-character `[a-z0-9]` prefix. Tisket rejects a
+    /// duplicate slug, even with a different prefix.
     Create(IssueCreateArgs),
 
     /// List issues
+    ///
+    /// By default the command lists the open issues in every project.
+    ///
+    /// Text output columns: `ID`, `STATUS`, `TITLE`. A `*` after the
+    /// status means that the issue diverges from another git branch.
+    ///
+    /// JSON output is an array of issue objects. See the JSON output
+    /// format in `tisket docs file-format`.
     List(IssueListArgs),
 
-    /// Show an issue
+    /// Show the full details of an issue
+    ///
+    /// Text output shows every frontmatter field, the body, and the
+    /// branch divergence. JSON output holds every field in one object.
     Show(IssueShowArgs),
 
-    /// Print the file path of an issue
+    /// Print the file path of an issue, relative to the tracker directory (the one holding tisket.yml)
+    ///
+    /// Use this in a script.
     Path(IssuePathArgs),
 
-    /// Edit an issue
+    /// Edit the metadata or the body of an existing issue
+    ///
+    /// The command changes only the options you give and keeps everything
+    /// else. It does not edit a closed issue.
+    ///
+    /// The command updates the `updated` timestamp automatically.
     Edit(IssueEditArgs),
 
     /// Close an issue
+    ///
+    /// The command moves the file from `<project>/` to
+    /// `<project>/.closed/` and sets the status.
     Close(IssueCloseArgs),
 
     /// Reopen a closed issue
+    ///
+    /// The command moves the file from `<project>/.closed/` back to
+    /// `<project>/` and sets the status.
+    ///
+    /// The command removes the `.closed/` directory if the directory
+    /// becomes empty.
     Reopen(IssueReopenArgs),
 
     /// Move an issue to a different project
+    ///
+    /// The command handles an open issue and a closed issue. It changes
+    /// nothing if the issue is already in the target project.
     Move(IssueMoveArgs),
 }
 
@@ -258,6 +385,8 @@ pub struct IssueCreateArgs {
     pub body: Option<String>,
 
     /// Read the issue body from a file
+    ///
+    /// Do not use this with `--body`.
     #[arg(long)]
     pub body_file: Option<Utf8PathBuf>,
 }
@@ -285,6 +414,9 @@ pub struct IssueListArgs {
     pub closed: bool,
 
     /// Filter by a selector in namespace:value form. Repeatable. All selectors must match
+    ///
+    /// `label`, `status`, and `project` read those fields; any other
+    /// namespace names a tag.
     #[arg(long = "where")]
     pub r#where: Vec<String>,
 
@@ -295,7 +427,7 @@ pub struct IssueListArgs {
 
 #[derive(Parser)]
 pub struct IssueShowArgs {
-    /// Issue ID (filename without .md)
+    /// Issue ID: the file name without .md, its 4-character prefix, or its slug
     pub id: String,
 
     /// Output format (text or json)
@@ -303,6 +435,14 @@ pub struct IssueShowArgs {
     pub format: OutputFormat,
 
     /// Extract a single field value
+    ///
+    /// Valid fields: `title`, `status`, `priority`, `assignee`,
+    /// `due_date`, `labels`, `depends_on`, `children`, `body`, `scratch`,
+    /// `id`, `project`.
+    ///
+    /// With `--field`, the command prints only that field value. It adds
+    /// no formatting and no labels. For a list field (`labels`,
+    /// `depends_on`, `children`), it separates the values with commas.
     #[arg(long)]
     pub field: Option<String>,
 }
@@ -315,13 +455,13 @@ pub enum OutputFormat {
 
 #[derive(Parser)]
 pub struct IssuePathArgs {
-    /// Issue ID (filename without .md)
+    /// Issue ID: the file name without .md, its 4-character prefix, or its slug
     pub id: String,
 }
 
 #[derive(Parser)]
 pub struct IssueEditArgs {
-    /// Issue ID (filename without .md)
+    /// Issue ID: the file name without .md, its 4-character prefix, or its slug
     pub id: String,
 
     /// New title
@@ -332,7 +472,7 @@ pub struct IssueEditArgs {
     #[arg(short, long)]
     pub status: Option<String>,
 
-    /// New priority
+    /// New priority: 1 urgent, 2 high, 3 medium, 4 low
     #[arg(long)]
     pub priority: Option<u8>,
 
@@ -341,6 +481,8 @@ pub struct IssueEditArgs {
     pub assignee: Option<String>,
 
     /// New labels (replaces all existing labels)
+    ///
+    /// Comma-separated.
     #[arg(short, long)]
     pub labels: Option<String>,
 
@@ -353,6 +495,8 @@ pub struct IssueEditArgs {
     pub remove_label: Option<String>,
 
     /// New dependencies (replaces all existing dependencies)
+    ///
+    /// Comma-separated.
     #[arg(short, long)]
     pub depends_on: Option<String>,
 
@@ -370,10 +514,14 @@ pub struct IssueEditArgs {
     pub body: Option<String>,
 
     /// Append text to the body
+    ///
+    /// Adds a blank line first if the body is not empty.
     #[arg(long)]
     pub append: Option<String>,
 
     /// Set a tag in key=value form. Repeatable
+    ///
+    /// Sets one tag under the `tags` mapping.
     #[arg(long = "tag", value_name = "KEY=VALUE", value_parser = parse_tag)]
     pub tags: Vec<(String, String)>,
 
@@ -413,7 +561,7 @@ mod tag_tests {
 
 #[derive(Parser)]
 pub struct IssueMoveArgs {
-    /// Issue ID (filename without .md)
+    /// Issue ID: the file name without .md, its 4-character prefix, or its slug
     pub id: String,
 
     /// Target project to move the issue to
@@ -423,22 +571,26 @@ pub struct IssueMoveArgs {
 
 #[derive(Parser)]
 pub struct IssueCloseArgs {
-    /// Issue ID (filename without .md)
+    /// Issue ID: the file name without .md, its 4-character prefix, or its slug
     pub id: String,
 
-    /// The project that holds the issue. Refused when the issue is in
-    /// another project.
+    /// The project that holds the issue
+    ///
+    /// tisket finds the issue by ID in every project, and refuses when
+    /// the issue is in a different project.
     #[arg(short, long)]
     pub project: Option<String>,
 
     /// Terminal status (default: done)
+    ///
+    /// Usually `done` or `cancelled`.
     #[arg(short, long)]
     pub status: Option<String>,
 }
 
 #[derive(Parser)]
 pub struct IssueReopenArgs {
-    /// Issue ID (filename without .md)
+    /// Issue ID: the file name without .md, its 4-character prefix, or its slug
     pub id: String,
 
     /// Status to reopen as (default: todo)
@@ -449,9 +601,18 @@ pub struct IssueReopenArgs {
 #[derive(Parser)]
 pub enum ProjectCommand {
     /// Create a new project
+    ///
+    /// The command creates `<tisket_dir>/<name>/` with a `project.yml`
+    /// file.
+    ///
+    /// The command fails if the project already exists.
     Create(ProjectCreateArgs),
 
     /// List projects
+    ///
+    /// The command prints one project name per line in alphabetical
+    /// order. A project is any directory under `<tisket_dir>/` that holds
+    /// a `project.yml` file and has a name that does not start with `.`.
     List,
 }
 
@@ -464,10 +625,33 @@ pub struct ProjectCreateArgs {
 #[derive(Parser)]
 pub enum StoreCommand {
     /// List the trackers this tracker reads
+    ///
+    /// The first row is the tracker itself. Each other row shows a
+    /// declared tracker, its source, and its issue count. A remote
+    /// tracker also shows the age of its cache.
     List,
     /// Fetch the declared remote trackers into the local cache
+    ///
+    /// This is the only command that reaches the network.
+    ///
+    /// Each tracker syncs on its own, and one failure never stops
+    /// another. The command prints a line for each, then exits non-zero
+    /// if any failed. A tracker fails when its source is unreachable, and
+    /// also when its declared revision is absent from what arrived. A
+    /// fetch that moved bytes is not a sync: without that second check
+    /// the command reports success and the revision fails later, on a
+    /// read.
     Sync,
     /// Show or set the root tracker that reads fall back to
+    ///
+    /// `tisket store root` prints the current setting; `tisket store root
+    /// <path>` writes it to `~/.config/tisket/config.yml` (the path must
+    /// hold `tisket.yml`; changing an existing setting needs `--force`).
+    /// This setting names the root store for tisket alone, because each
+    /// tool reads its own config file. One directory can serve as the
+    /// root store for all of them. If that directory holds no
+    /// `zettel.yml` or no `almanac.yml`, the command says so on stderr
+    /// and still writes the setting.
     Root(StoreRootArgs),
 }
 
@@ -502,13 +686,17 @@ pub struct ScratchArgs {
 
 #[derive(Parser)]
 pub enum ScratchAction {
-    /// Print the scratch notes (default)
+    /// Print the scratch notes to stdout (default)
+    ///
+    /// Print nothing if the notes are empty.
     Read,
-    /// Append text to the scratch notes
+    /// Append text to the existing scratch notes
     Append(ScratchTextArgs),
     /// Replace the scratch notes with the given text
     Write(ScratchTextArgs),
-    /// Clear the scratch notes
+    /// Remove the scratch notes
+    ///
+    /// This is the same as `write ""`.
     Clear,
 }
 

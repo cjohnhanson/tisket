@@ -198,7 +198,8 @@ branch after the issue ID. It then passes the branch name back to
 prefix, or a slug, and so finds the active issue for the session.
 
 For CLI usage details, see the [CLI reference](cli-reference.md). For
-day-to-day issue management, see the [workflow guide](workflow.md).
+the issue file format, see the [file format reference](file-format.md).
+For day-to-day issue management, see the [workflow guide](workflow.md).
 
 ## Composed trackers
 
@@ -233,3 +234,21 @@ runs from the tracker that owns the issue.
 remote ones. `tisket check` reports a reference that names no issue and
 an unreachable tracker. It also reports a cycle in the children of an
 epic, and a declaration that other clones cannot follow.
+
+## Root resolution
+
+Without `--root`, a command finds its tracker by one rule, identical in
+zettel and almanac: the nearest `tisket.yml` at or above the working
+directory wins. The walk requires a regular file. It stops at the first
+directory the invoking user does not own, so a marker planted in a
+shared ancestor captures nothing. With no tracker found, a read falls
+back to the root tracker set in `~/.config/tisket/config.yml` and says
+so on stderr. A write never falls back. It fails and names `--home`.
+No environment variable participates: an env var is the one input an
+agent cannot see in a transcript, and a repository can set one through
+direnv or mise. The config path itself is fixed, and the home directory
+comes from the passwd database, not `$HOME`, for the same reason.
+
+A write prints its resolved target on stderr unless the target is the
+working directory's own tracker or `--root` named it. A read resolved by
+walking or by fallback prints its source.

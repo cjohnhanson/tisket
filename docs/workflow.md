@@ -1,10 +1,10 @@
 <!-- metadata
-title: "Tisket Workflow"
-description: "How to create, organize, and manage issues with tisket"
-type: guide
+title: "How to manage issues day to day"
+description: "Create, organize, and manage issues with tisket"
+type: how-to
 -->
 
-# Tisket Workflow
+# How to manage issues day to day
 
 This guide assumes that you initialized tisket. See [Getting
 Started](getting-started.md) if you have not.
