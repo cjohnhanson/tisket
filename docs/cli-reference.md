@@ -41,9 +41,9 @@ Print version
 
 - **Usage:** `tisket init [OPTIONS]`
 
-Initialize tisket in the current repository
+Initialize tisket in the current directory
 
-The command creates `tisket.yml` at the root. It also creates a `default` project under `.tisket/default/` with a `project.yml` file.
+The command creates `tisket.yml` in the current directory, which becomes the tracker directory. It also creates a `default` project under `.tisket/default/` with a `project.yml` file.
 
 The command fails if `tisket.yml` already exists.
 
@@ -256,7 +256,7 @@ Text output shows every frontmatter field, the body, and the branch divergence. 
 
 #### `<ID>`
 
-Issue ID (filename without .md)
+Issue ID: the file name without .md, its 4-character prefix, or its slug
 
 ### Flags
 
@@ -287,7 +287,7 @@ Print help (see a summary with '-h')
 
 - **Usage:** `tisket issue path [OPTIONS] <ID>`
 
-Print the file path of an issue, relative to the repository root
+Print the file path of an issue, relative to the tracker directory (the one holding tisket.yml)
 
 Use this in a script.
 
@@ -295,7 +295,7 @@ Use this in a script.
 
 #### `<ID>`
 
-Issue ID (filename without .md)
+Issue ID: the file name without .md, its 4-character prefix, or its slug
 
 ### Flags
 
@@ -317,7 +317,7 @@ The command updates the `updated` timestamp automatically.
 
 #### `<ID>`
 
-Issue ID (filename without .md)
+Issue ID: the file name without .md, its 4-character prefix, or its slug
 
 ### Flags
 
@@ -331,7 +331,7 @@ New status
 
 #### `--priority <PRIORITY>`
 
-New priority
+New priority: 1 urgent, 2 high, 3 medium, 4 low
 
 #### `-a --assignee <ASSIGNEE>`
 
@@ -401,15 +401,15 @@ The command moves the file from `<project>/` to `<project>/.closed/` and sets th
 
 #### `<ID>`
 
-Issue ID (filename without .md)
+Issue ID: the file name without .md, its 4-character prefix, or its slug
 
 ### Flags
 
 #### `-p --project <PROJECT>`
 
-The project that holds the issue. Refused when the issue is in another project.
+The project that holds the issue
 
-tisket finds the issue by ID in every project, and refuses when the issue is in another project than the one named.
+tisket finds the issue by ID in every project, and refuses when the issue is in a different project.
 
 #### `-s --status <STATUS>`
 
@@ -435,7 +435,7 @@ The command removes the `.closed/` directory if the directory becomes empty.
 
 #### `<ID>`
 
-Issue ID (filename without .md)
+Issue ID: the file name without .md, its 4-character prefix, or its slug
 
 ### Flags
 
@@ -459,7 +459,7 @@ The command handles an open issue and a closed issue. It changes nothing if the 
 
 #### `<ID>`
 
-Issue ID (filename without .md)
+Issue ID: the file name without .md, its 4-character prefix, or its slug
 
 ### Flags
 

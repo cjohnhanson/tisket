@@ -90,9 +90,10 @@ fn intent(command: &Command) -> Option<mdstore::resolve::Intent> {
 
 #[derive(Parser)]
 pub enum Command {
-    /// Initialize tisket in the current repository
+    /// Initialize tisket in the current directory
     ///
-    /// The command creates `tisket.yml` at the root. It also creates a
+    /// The command creates `tisket.yml` in the current directory, which
+    /// becomes the tracker directory. It also creates a
     /// `default` project under `.tisket/default/` with a `project.yml`
     /// file.
     ///
@@ -292,7 +293,7 @@ pub enum IssueCommand {
     /// branch divergence. JSON output holds every field in one object.
     Show(IssueShowArgs),
 
-    /// Print the file path of an issue, relative to the repository root
+    /// Print the file path of an issue, relative to the tracker directory (the one holding tisket.yml)
     ///
     /// Use this in a script.
     Path(IssuePathArgs),
@@ -425,7 +426,7 @@ pub struct IssueListArgs {
 
 #[derive(Parser)]
 pub struct IssueShowArgs {
-    /// Issue ID (filename without .md)
+    /// Issue ID: the file name without .md, its 4-character prefix, or its slug
     pub id: String,
 
     /// Output format (text or json)
@@ -453,13 +454,13 @@ pub enum OutputFormat {
 
 #[derive(Parser)]
 pub struct IssuePathArgs {
-    /// Issue ID (filename without .md)
+    /// Issue ID: the file name without .md, its 4-character prefix, or its slug
     pub id: String,
 }
 
 #[derive(Parser)]
 pub struct IssueEditArgs {
-    /// Issue ID (filename without .md)
+    /// Issue ID: the file name without .md, its 4-character prefix, or its slug
     pub id: String,
 
     /// New title
@@ -470,7 +471,7 @@ pub struct IssueEditArgs {
     #[arg(short, long)]
     pub status: Option<String>,
 
-    /// New priority
+    /// New priority: 1 urgent, 2 high, 3 medium, 4 low
     #[arg(long)]
     pub priority: Option<u8>,
 
@@ -559,7 +560,7 @@ mod tag_tests {
 
 #[derive(Parser)]
 pub struct IssueMoveArgs {
-    /// Issue ID (filename without .md)
+    /// Issue ID: the file name without .md, its 4-character prefix, or its slug
     pub id: String,
 
     /// Target project to move the issue to
@@ -569,14 +570,13 @@ pub struct IssueMoveArgs {
 
 #[derive(Parser)]
 pub struct IssueCloseArgs {
-    /// Issue ID (filename without .md)
+    /// Issue ID: the file name without .md, its 4-character prefix, or its slug
     pub id: String,
 
-    /// The project that holds the issue. Refused when the issue is in
-    /// another project.
+    /// The project that holds the issue
     ///
     /// tisket finds the issue by ID in every project, and refuses when
-    /// the issue is in another project than the one named.
+    /// the issue is in a different project.
     #[arg(short, long)]
     pub project: Option<String>,
 
@@ -589,7 +589,7 @@ pub struct IssueCloseArgs {
 
 #[derive(Parser)]
 pub struct IssueReopenArgs {
-    /// Issue ID (filename without .md)
+    /// Issue ID: the file name without .md, its 4-character prefix, or its slug
     pub id: String,
 
     /// Status to reopen as (default: todo)
