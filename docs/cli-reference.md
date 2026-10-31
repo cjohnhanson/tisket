@@ -6,8 +6,6 @@ type: reference
 
 # tisket CLI reference
 
-- **Version:** 0.2.5
-
 Plaintext issue tracker for humans and coding agents
 
 Every command takes `-h` or `--help`. `-V` and `--version` work at the
