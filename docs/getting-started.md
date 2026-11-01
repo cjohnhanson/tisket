@@ -72,7 +72,7 @@ Record that distinction in the issue:
 tisket scratch "$issue_id" write 'Branch: main. README.md states the repository purpose. Checked its content with cat. Remaining acceptance criterion: add the command tisket issue list. Next action: append a fenced shell example, then verify both criteria.'
 tisket issue edit "$issue_id" -s paused
 tisket scratch "$issue_id" read
-git add README.md tisket.yml .tisket/default/project.yml ".tisket/default/$issue_id.md"
+git add README.md tisket.yml .tisket/default/project.yml ".tisket/default/$issue_id.md" &&
 git commit -m "Save the overview task and checkpoint"
 ```
 
@@ -119,25 +119,22 @@ DOC
 
 ## Verify the result before closing
 
-Run checks for the two acceptance criteria:
+Run both acceptance checks before recording success and closing the issue:
 
 ```sh
-grep -F 'This repository keeps issues beside code.' README.md
-grep -F 'tisket issue list' README.md
-tisket issue list
-```
-
-The first commands print the purpose sentence and the example command.
-The list shows the issue as `in_progress`. Record the evidence and
-close it:
-
-```sh
-tisket scratch "$issue_id" append 'Verified: grep found the purpose sentence and the listing command in README.md. Ran tisket issue list successfully. Both acceptance criteria are met.'
-tisket issue close "$issue_id"
-tisket issue show "$issue_id" --field status
-tisket issue list --closed
+grep -F 'This repository keeps issues beside code.' README.md &&
+grep -F 'tisket issue list' README.md &&
+tisket issue list &&
+tisket scratch "$issue_id" append 'Verified: grep found the purpose sentence and the listing command in README.md. Ran tisket issue list successfully. Both acceptance criteria are met.' &&
+tisket issue close "$issue_id" &&
+tisket issue show "$issue_id" --field status &&
+tisket issue list --closed &&
 tisket check
 ```
+
+The `&&` operators stop the sequence if a command fails. If a check
+fails, repair the file and run the block again. The issue stays open
+when either acceptance check fails.
 
 The status is `done`. Closing moved the issue into
 `.tisket/default/.closed/`; its body and scratch notes remain readable.
@@ -147,8 +144,10 @@ whether your acceptance criteria are met.
 Commit the completed file and the issue move:
 
 ```sh
-git add README.md ".tisket/default/$issue_id.md" ".tisket/default/.closed/$issue_id.md"
-git commit -m "Finish the repository overview"
+test "$(tisket issue show "$issue_id" --field status)" = done &&
+tisket check &&
+git add README.md ".tisket/default/$issue_id.md" ".tisket/default/.closed/$issue_id.md" &&
+git commit -m "Finish the repository overview" &&
 git status --short
 ```
 
