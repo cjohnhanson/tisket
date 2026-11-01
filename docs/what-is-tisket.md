@@ -89,10 +89,11 @@ Reproduced locally — the bounds check is missing on line 42.
 - `cancelled` — Someone abandoned the work. The work is unnecessary,
   or another issue replaced it.
 
-`todo`, `blocked`, and `paused` are **pickable**. An agent workflow
-picks up only those. It rejects an issue in `discovery`, because the
-scope is not clear, and an issue in `in_progress`, because someone
-already works on it.
+A harness can treat `todo`, `blocked`, and `paused` as candidates for
+pickup, after checking that the work can proceed. It can reject an
+issue in `discovery` until its scope is clear, or an issue in
+`in_progress` while someone else owns it. This is workflow policy;
+tisket does not enforce readiness or exclusive ownership.
 
 When you close an issue, the file moves from the project directory
 into a `.closed/` subdirectory. When you reopen the issue, the file
@@ -156,23 +157,23 @@ This includes local branches and remote branches, but not the current
 HEAD. Tisket then parses each version and compares the content field
 by field.
 
-A branch can hold a different version of the issue. The status, the
-title, the priority, the body, or the scratch content can differ.
-Tisket then marks the issue as **divergent**. The detailed view names
-each branch and each field that differs.
+A branch can hold a different version of the issue. Tisket marks the
+issue as **divergent** when one of its compared fields differs. The
+detailed view names those fields for each branch.
 
-People and agents change issues on branches. An agent picks up an issue
-on main. The pickup sets the status to `in_progress` and creates a
-worktree, and the work then happens on the branch. Meanwhile someone can
-edit the priority on main, or another branch can change the title.
-Divergence detection shows you the conflict before the merge.
+People and agents change issues on branches. A workflow can set an
+issue to `in_progress`, commit it, then create a worktree for the work.
+Meanwhile someone can edit the priority on main. Divergence detection
+shows that the records differ; Git determines whether a merge conflicts.
 
 The comparison is structural, not textual. Tisket parses the
 frontmatter from each branch version. It compares the `title`,
 `status`, `priority`, `assignee`, `due_date`, `labels`, and
 `depends_on` fields. It also compares whether the body and the scratch
-content exist. A whitespace change therefore does not produce a false
-divergence.
+content exist. It does not compare their text, nor does it read another
+worktree's uncommitted files. Use a Git diff to inspect those changes.
+[How to reconcile issue state across worktrees](how-to-reconcile-worktree-state.md)
+shows how to preserve and combine progress.
 
 ## Using tisket in an agent workflow
 
@@ -180,19 +181,17 @@ Tisket is a standalone tool. An agent harness can also use tisket as its
 issue source. The harness supplies the session behavior, and tisket
 supplies what that behavior reads.
 
-At session start a harness reads the tisket state: the open issue count,
-and whether the current branch name resolves to an issue ID. If an issue
-matches, the harness puts the title, the body, and the scratch notes
-into the starting context. The agent runs no command to learn what its
-work is.
+At session start, a harness can read the active issue's title, body,
+and scratch notes into context. Without that integration, a person or
+agent reads them with `tisket issue show` and `tisket scratch`. Installing
+tisket does not configure a host to resume work automatically.
 
-The pickable statuses and `depends_on` give the harness a gate. It picks
-up only a `todo`, `blocked`, or `paused` issue whose every dependency is
-closed, sets the status to `in_progress`, and starts the work. Tisket
-does not enforce that rule. It stores the status and the dependency
-list, and the harness decides what they allow.
+The status and `depends_on` give the harness information for a pickup
+gate. It must inspect dependencies, verify that their required results
+exist, and check ownership before starting work. A closed dependency
+can be cancelled, so closure alone does not establish readiness.
 
-The short ID is a stable key. A harness names the worktree and its
+The short ID is a stable key. A harness can name the worktree and its
 branch after the issue ID. It then passes the branch name back to
 `tisket issue show`. That command resolves a full ID, a 4-character
 prefix, or a slug, and so finds the active issue for the session.
@@ -231,9 +230,13 @@ who clone the project. A dependency tracker is read-only, so an edit
 runs from the tracker that owns the issue.
 
 `tisket store list` shows the trackers. `tisket store sync` fetches the
-remote ones. `tisket check` reports a reference that names no issue and
-an unreachable tracker. It also reports a cycle in the children of an
-epic, and a declaration that other clones cannot follow.
+remote ones. `tisket check` reports an unresolved cross-tracker
+reference or an unreachable tracker. It does not report a missing
+same-tracker issue ID. It also reports cycles in an epic's children
+and declarations that other clones cannot follow.
+
+[How to organize dependencies and epics](how-to-organize-dependencies-and-epics.md)
+shows how to keep containment, work order, and completion distinct.
 
 ## Root resolution
 

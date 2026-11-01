@@ -9,6 +9,11 @@ type: how-to
 This guide assumes that you initialized tisket. See [Getting
 Started](getting-started.md) if you have not.
 
+For a task that crosses branches, use
+[How to reconcile issue state across worktrees](how-to-reconcile-worktree-state.md).
+For work order and parent tasks, use
+[How to organize dependencies and epics](how-to-organize-dependencies-and-epics.md).
+
 ## Projects
 
 A project is a subdirectory under the tisket directory. Each project
@@ -420,14 +425,15 @@ runs the session steps. A typical pickup runs these steps:
 1. Verify that the current branch is the main branch.
 2. Find the issue and check that its status is pickable (`todo`,
    `blocked`, or `paused`).
-3. Check that every `depends_on` issue is closed.
+3. Check that every `depends_on` issue is closed and its required
+   result exists. A cancelled issue may need a replacement dependency.
 4. Set the issue status to `in_progress`.
 5. Add a `## Scratch Notes` section to the issue file if it has none.
 6. Commit the status change on the main branch.
 7. Create a git worktree for the issue.
 
-A pickup accepts only an issue with a pickable status. It rejects an
-issue in `discovery` or `in_progress`, and an issue with an open
+In this example, pickup accepts only an issue with a pickable status.
+It rejects an issue in `discovery` or `in_progress`, and an issue with an open
 dependency. The harness enforces those rules. Tisket accepts any valid
 status on `issue edit`, and it refuses only an edit to a closed issue.
 
@@ -437,7 +443,7 @@ To make an issue ready for pickup, set its status to `todo`:
 tisket issue edit ab12 -s todo
 ```
 
-To block pickup until another issue is closed, add a dependency:
+To record a prerequisite for the harness to check, add a dependency:
 
 ```
 tisket issue edit ab12 -d "x9f2"

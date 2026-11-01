@@ -55,6 +55,9 @@ cargo build --release
 
 ## Usage
 
+Follow [Getting started with tisket](docs/getting-started.md) to define
+a task, save a checkpoint, and finish from another terminal.
+
 ```sh
 tisket init                           # set up .tisket/ in a git repo
 tisket issue create "Fix the thing"   # create an issue
