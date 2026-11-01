@@ -12,7 +12,8 @@ these relationships; your workflow decides when work may start and
 when a parent may close.
 
 Run the examples in an initialized tracker. They create a small docs
-project. Choose different titles if these issues already exist.
+project. Choose different titles if these issues already exist, and
+change the corresponding slug in each `issue show` lookup.
 
 ## Record the order of work
 
