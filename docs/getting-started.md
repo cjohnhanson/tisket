@@ -154,6 +154,10 @@ git status --short
 The working tree is clean. Another person or agent can now read the
 result and its verification evidence from the repository.
 
+To use these records with your coding agent in an existing repository,
+follow [Adopt agent work in a project](https://eng.rip/how-to-adopt-agent-work-in-a-project/).
+It connects project instructions, task pickup, and session handoffs.
+
 For larger tasks, follow
 [How to organize dependencies and epics](how-to-organize-dependencies-and-epics.md).
 If branches disagree about progress, use

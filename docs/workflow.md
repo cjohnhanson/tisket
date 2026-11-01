@@ -9,6 +9,10 @@ type: how-to
 This guide assumes that you initialized tisket. See [Getting
 Started](getting-started.md) if you have not.
 
+To make task records part of your coding agent's regular work, follow
+[Adopt agent work in a project](https://eng.rip/how-to-adopt-agent-work-in-a-project/).
+This page covers the individual issue operations.
+
 For a task that crosses branches, use
 [How to reconcile issue state across worktrees](how-to-reconcile-worktree-state.md).
 For work order and parent tasks, use
@@ -420,7 +424,8 @@ cannot start until another issue is closed.
 
 An agent harness picks up a tisket issue to start work on it. Tisket
 supplies the vocabulary the gate reads; the harness applies the gate and
-runs the session steps. A typical pickup runs these steps:
+runs the session steps. A workflow that creates a worktree for each issue
+can use these steps:
 
 1. Verify that the current branch is the main branch.
 2. Find the issue and check that its status is pickable (`todo`,
