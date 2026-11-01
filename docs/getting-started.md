@@ -14,7 +14,7 @@ You need tisket 0.2.5, Git with your author identity configured, and a
 bash or zsh terminal. Install that release with
 `cargo install --locked tisket --version 0.2.5`, or use the
 [release archives](https://github.com/cjohnhanson/tisket/releases/tag/v0.2.5).
-The [installation instructions](../README.md#install) list other package
+The [installation instructions](https://github.com/cjohnhanson/tisket/blob/v0.2.5/README.md#install) list other package
 managers. Check the binary before starting:
 
 ```sh
