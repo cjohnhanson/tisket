@@ -242,7 +242,7 @@ and declarations that other clones cannot follow.
 [How to organize dependencies and epics](how-to-organize-dependencies-and-epics.md)
 shows how to keep containment, work order, and completion distinct.
 Follow [Work across repositories](https://eng.rip/docs/work-across-repositories/)
-to set up tasks, notes, and skills across several repositories.
+to set up issues, notes, and skills across several repositories.
 
 ## Root resolution
 

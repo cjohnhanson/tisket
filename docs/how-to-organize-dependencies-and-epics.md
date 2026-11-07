@@ -1,13 +1,13 @@
 <!-- metadata
 title: "How to organize dependencies and epics"
-description: "Represent work order and a parent task without confusing containment with readiness"
+description: "Represent work order and a parent issue without confusing containment with readiness"
 type: how-to
 -->
 
 # How to organize dependencies and epics
 
-Use `depends_on` when one task needs another task's result. Use
-`children` when a parent issue groups smaller tasks. Tisket records
+Use `depends_on` when one issue needs another issue's result. Use
+`children` when a parent issue groups smaller issues. Tisket records
 these relationships; your workflow decides when work may start and
 when a parent may close.
 
@@ -17,7 +17,7 @@ change the corresponding slug in each `issue show` lookup.
 
 ## Record the order of work
 
-Create a prerequisite, capture its generated ID, then create the task
+Create a dependency, capture its generated ID, then create the issue
 that depends on it:
 
 ```sh
@@ -29,7 +29,7 @@ tisket issue show "$guide_id"
 ```
 
 The second issue lists the first under dependencies. An open
-prerequisite does not prevent `issue edit -s in_progress`. A person or
+dependency does not prevent `issue edit -s in_progress`. A person or
 agent must inspect the dependency before starting:
 
 ```sh
@@ -37,25 +37,25 @@ tisket issue show "$setup_id" --field status
 tisket issue show "$setup_id"
 ```
 
-If the required result is absent, keep the dependent task waiting:
+If the required result is absent, keep the dependent issue waiting:
 
 ```sh
 tisket issue edit "$guide_id" -s blocked
 tisket scratch "$guide_id" append 'Waiting for the setup command and its expected result before writing the instructions.'
 ```
 
-After you finish and verify the prerequisite, record its evidence and
-close it. Then read the result before starting the dependent task.
-A `cancelled` prerequisite is closed, but it does not prove the required
+After you finish and verify the dependency, record its evidence and
+close it. Then read the result before starting the dependent issue.
+A `cancelled` dependency is closed, but it does not prove the required
 result exists. Decide whether to replace the dependency or change the
 scope before proceeding.
 
 `issue edit -d` replaces the complete dependency list. To retain
 existing dependencies, include them in the new comma-separated value.
 
-## Group the tasks under an epic
+## Group the issues under an epic
 
-Create a parent issue that contains both tasks:
+Create a parent issue that contains both issues:
 
 ```sh
 tisket issue create "Publish the setup guide" --children "$setup_id,$guide_id" -b 'Deliver verified setup instructions. Review both child results before closing this issue.'

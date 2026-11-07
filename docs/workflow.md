@@ -11,11 +11,11 @@ Started](getting-started.md) if you have not.
 
 This page covers operations on individual issues. Follow
 [Run it on your project](https://eng.rip/docs/run-it-on-your-project/)
-to make task records part of the coding agent's regular work.
+to make issue records part of the coding agent's regular work.
 
-For a task that crosses branches, use
+For an issue that crosses branches, use
 [How to reconcile issue state across worktrees](how-to-reconcile-worktree-state.md).
-For work order and parent tasks, use
+For work order and parent issues, use
 [How to organize dependencies and epics](how-to-organize-dependencies-and-epics.md).
 
 ## Projects
@@ -352,7 +352,8 @@ other branch in the repository. It compares each version to the version
 on the current branch. Tisket marks the issue as divergent if any
 compared field differs. The compared fields are title, status, priority,
 assignee, due date, labels, and dependencies, plus whether a body and
-scratch notes are present.
+scratch notes are present. The `*` marker does not flag an issue that is
+open on one branch and closed on another.
 
 In the list output, a divergent issue shows an asterisk after the
 status:
@@ -448,7 +449,7 @@ To make an issue ready for pickup, set its status to `todo`:
 tisket issue edit ab12 -s todo
 ```
 
-To record a prerequisite for the harness to check, add a dependency:
+To record a dependency for the harness to check, add it:
 
 ```
 tisket issue edit ab12 -d "x9f2"

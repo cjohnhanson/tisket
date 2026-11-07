@@ -108,8 +108,8 @@ tisket scratch ab12 read
 When you list or show an issue, tisket also reads that issue file from
 every other branch. It compares the files field by field. If another
 branch has a different status, assignee, or priority, tisket marks the
-issue with a `*`. It also names each branch that differs. You see the
-conflict before a merge overwrites one version.
+issue with a `*`. It also names each branch that differs. tisket does
+not compare an open issue with its closed copy on another branch.
 
 ## Serving over MCP
 
@@ -134,6 +134,9 @@ proxy that authenticates in front of it.
 - [What is Tisket?](docs/what-is-tisket.md) — design, file format, status lifecycle
 - [Getting Started](docs/getting-started.md) — first issue walkthrough
 - [Workflow](docs/workflow.md) — daily issue management past the basics
+- [How to organize dependencies and epics](docs/how-to-organize-dependencies-and-epics.md)
+- [How to reconcile issue state across worktrees](docs/how-to-reconcile-worktree-state.md)
+- [File format](docs/file-format.md) — every field of an issue file
 - [CLI Reference](docs/cli-reference.md) — complete command documentation
 
 `tisket docs` prints the same pages from the installed binary.

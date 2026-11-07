@@ -1,13 +1,13 @@
 <!-- metadata
 title: "Getting started with tisket"
-description: "Define a task, save its progress, and finish it from another terminal"
+description: "Define an issue, save its progress, and finish it from another terminal"
 type: tutorial
 -->
 
 # Getting started with tisket
 
 Write a repository overview, pause with a partial result, then finish
-from another terminal. Tisket will keep the task and working notes in
+from another terminal. Tisket keeps the issue and scratch notes in
 Git so the next session can recover the work without its chat history.
 
 You need tisket 0.2.6, Git with your author identity configured, and a
@@ -73,7 +73,7 @@ tisket scratch "$issue_id" write 'Branch: main. README.md states the repository 
 tisket issue edit "$issue_id" -s paused
 tisket scratch "$issue_id" read
 git add README.md tisket.yml .tisket/default/project.yml ".tisket/default/$issue_id.md" &&
-git commit -m "Save the overview task and checkpoint"
+git commit -m "Save the overview issue and checkpoint"
 ```
 
 The scratch output contains the checkpoint. The commit preserves both
@@ -106,7 +106,7 @@ after that observation.
 Resume and add the missing example:
 
 ````sh
-tisket issue edit "$issue_id" -s in_progress
+tisket issue edit "$issue_id" -s in_progress &&
 cat >> README.md <<'DOC'
 
 List the open issues:
@@ -132,8 +132,8 @@ tisket issue list --closed &&
 tisket check
 ```
 
-The `&&` operators stop the sequence if a command fails. If a check
-fails, repair the file and run the block again. The issue stays open
+The `&&` operators stop the sequence if a command fails. If a `grep`
+check fails, repair the file and run the block again. The issue stays open
 when either acceptance check fails.
 
 The status is `done`. Closing moved the issue into
@@ -156,9 +156,9 @@ result and its verification evidence from the repository.
 
 Follow [Run it on your project](https://eng.rip/docs/run-it-on-your-project/)
 to use these records with a coding agent in an existing repository. It
-sets up project instructions, tasks, notes, and skills.
+sets up project instructions, issues, notes, and skills.
 
-For larger tasks, follow
+For larger work, follow
 [How to organize dependencies and epics](how-to-organize-dependencies-and-epics.md).
 If branches disagree about progress, use
 [How to reconcile issue state across worktrees](how-to-reconcile-worktree-state.md).

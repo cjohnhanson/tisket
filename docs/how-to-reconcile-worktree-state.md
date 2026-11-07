@@ -6,7 +6,7 @@ type: how-to
 
 # How to reconcile issue state across worktrees
 
-Use this guide when an issue has different statuses or working notes
+Use this guide when an issue has different statuses or scratch notes
 on two branches, or a resumed session cannot find its progress. Each
 worktree has its own checkout of the issue files. Tisket reads that
 checkout; it does not maintain a shared live status across branches.
@@ -54,8 +54,10 @@ branch's status.
 Tisket's `*` marker identifies differences in selected frontmatter
 fields or the presence of body and scratch text. It does not compare
 the full body or scratch text. Another worktree's uncommitted files are
-also absent from the branch snapshot. A missing marker cannot prove
-that two records agree.
+also absent from the branch snapshot. The `*` marker does not flag an
+issue that is open on one branch and closed on another. Use
+`git diff <branch-a> <branch-b> -- .tisket` to compare the branches. A
+missing marker cannot prove that two records agree.
 
 After preserving each worktree's changes, compare the committed
 records with Git:
@@ -91,18 +93,21 @@ git diff --name-only --diff-filter=U
 
 Resolve the code and issue files together in your editor. Keep one
 issue file for the ID: the project directory for an active issue, or
-its `.closed/` directory for a terminal issue. A close on one branch
-and an edit on another can leave a modify/delete conflict. Preserve
-the final text in the intended location and remove the obsolete copy.
+its `.closed/` directory for a terminal issue. Closing an issue on one
+branch and editing it on another can merge cleanly, cause a content
+conflict in `.closed/`, or cause a modify/delete conflict. Keep one file
+for the ID in the intended location, and remove the obsolete copy.
 
 Remove conflict markers, stage each resolved file by its exact path,
-then check the merged record before continuing:
+then check the merged record before continuing. The `&&` chain continues
+the merge only when every check passes. In a session with no terminal,
+set `GIT_EDITOR=true` to skip the editor.
 
 ```sh
-tisket issue show "$issue_id"
-tisket scratch "$issue_id" read
-tisket check
-git diff --cached --check
+tisket issue show "$issue_id" &&
+tisket scratch "$issue_id" read &&
+tisket check &&
+git diff --cached --check &&
 git merge --continue
 ```
 
@@ -110,11 +115,11 @@ Run `merge --continue` only after a conflicted merge; a clean merge has
 already completed. If the merge is not ready to resolve, preserve any
 new manual edits elsewhere before using `git merge --abort`.
 
-## Verify the resumed task
+## Verify the resumed issue
 
-Run the task's acceptance checks against the merged code. If the task
+Run the issue's acceptance checks against the merged code. If the issue
 is still open, update its status and scratch notes to state the actual
-remaining work. If a closed task needs more work, use
+remaining work. If a closed issue needs more work, use
 `tisket issue reopen "$issue_id" -s in_progress` before editing it.
 Record verification evidence before closing it again.
 
