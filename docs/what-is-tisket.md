@@ -196,6 +196,10 @@ branch after the issue ID. It then passes the branch name back to
 `tisket issue show`. That command resolves a full ID, a 4-character
 prefix, or a slug, and so finds the active issue for the session.
 
+`tisket serve` gives a Model Context Protocol client read access to the
+tracker. Follow [Connect through MCP](https://eng.rip/docs/connect-through-mcp/)
+to set up the host.
+
 For CLI usage details, see the [CLI reference](cli-reference.md). For
 the issue file format, see the [file format reference](file-format.md).
 For day-to-day issue management, see the [workflow guide](workflow.md).
@@ -237,6 +241,8 @@ and declarations that other clones cannot follow.
 
 [How to organize dependencies and epics](how-to-organize-dependencies-and-epics.md)
 shows how to keep containment, work order, and completion distinct.
+Follow [Work across repositories](https://eng.rip/docs/work-across-repositories/)
+to set up tasks, notes, and skills across several repositories.
 
 ## Root resolution
 

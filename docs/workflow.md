@@ -9,9 +9,9 @@ type: how-to
 This guide assumes that you initialized tisket. See [Getting
 Started](getting-started.md) if you have not.
 
-To make task records part of your coding agent's regular work, follow
-[Adopt agent work in a project](https://eng.rip/how-to-adopt-agent-work-in-a-project/).
-This page covers the individual issue operations.
+This page covers operations on individual issues. Follow
+[Run it on your project](https://eng.rip/docs/run-it-on-your-project/)
+to make task records part of the coding agent's regular work.
 
 For a task that crosses branches, use
 [How to reconcile issue state across worktrees](how-to-reconcile-worktree-state.md).

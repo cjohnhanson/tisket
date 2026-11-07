@@ -26,8 +26,8 @@ On Debian or Ubuntu, download the `.deb` from the [releases
 page](https://github.com/cjohnhanson/tisket/releases) and install it:
 
 ```
-wget https://github.com/cjohnhanson/tisket/releases/download/v0.2.5/tisket_0.2.5-1_amd64.deb
-sudo dpkg -i tisket_0.2.5-1_amd64.deb
+wget https://github.com/cjohnhanson/tisket/releases/download/v0.2.6/tisket_0.2.6-1_amd64.deb
+sudo dpkg -i tisket_0.2.6-1_amd64.deb
 ```
 
 To run it once without installing anything:
@@ -59,7 +59,7 @@ Follow [Getting started with tisket](docs/getting-started.md) to define
 a task, save a checkpoint, and finish from another terminal.
 
 ```sh
-tisket init                           # set up .tisket/ in a git repo
+tisket init                           # create tracker and project configuration
 tisket issue create "Fix the thing"   # create an issue
 tisket issue list                     # list open issues
 tisket issue list -s todo             # filter by status

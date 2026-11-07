@@ -113,3 +113,7 @@ an epic's children. It does not validate missing same-tracker child
 IDs, so also inspect each child with `issue show`. See
 [Composed trackers](what-is-tisket.md#composed-trackers) for declaration
 scope and sharing rules.
+
+When notes and skills also span repositories, follow
+[Work across repositories](https://eng.rip/docs/work-across-repositories/)
+to set up the tracker references.

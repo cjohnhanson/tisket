@@ -10,11 +10,11 @@ Write a repository overview, pause with a partial result, then finish
 from another terminal. Tisket will keep the task and working notes in
 Git so the next session can recover the work without its chat history.
 
-You need tisket 0.2.5, Git with your author identity configured, and a
+You need tisket 0.2.6, Git with your author identity configured, and a
 bash or zsh terminal. Install that release with
-`cargo install --locked tisket --version 0.2.5`, or use the
-[release archives](https://github.com/cjohnhanson/tisket/releases/tag/v0.2.5).
-The [installation instructions](https://github.com/cjohnhanson/tisket/blob/v0.2.5/README.md#install) list other package
+`cargo install --locked tisket --version 0.2.6`, or use the
+[release archives](https://github.com/cjohnhanson/tisket/releases/tag/v0.2.6).
+The [installation instructions](https://github.com/cjohnhanson/tisket/blob/v0.2.6/README.md#install) list other package
 managers. Check the binary before starting:
 
 ```sh
@@ -154,9 +154,9 @@ git status --short
 The working tree is clean. Another person or agent can now read the
 result and its verification evidence from the repository.
 
-To use these records with your coding agent in an existing repository,
-follow [Adopt agent work in a project](https://eng.rip/how-to-adopt-agent-work-in-a-project/).
-It connects project instructions, task pickup, and session handoffs.
+Follow [Run it on your project](https://eng.rip/docs/run-it-on-your-project/)
+to use these records with a coding agent in an existing repository. It
+sets up project instructions, tasks, notes, and skills.
 
 For larger tasks, follow
 [How to organize dependencies and epics](how-to-organize-dependencies-and-epics.md).
