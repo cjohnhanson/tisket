@@ -1,0 +1,12 @@
+Review record for the docs/onboarding change and release 0.2.6.
+
+Round one on 2b9d4be: review-docs and review-usability failed. Fixed in
+1026ebb: one term for an issue, the merge check chained with &&, and the
+divergence limit for a closed issue stated. Round two re-ran all five
+reviews on 1026ebb.
+
+signoff[review-tests] PASS 1026ebb3f34070fc8ec16b0c4b1233d8e9acef27 ran cargo test and the missouri suite (30/30 green), confirmed docs_pages covers the two new pages, and ran the tutorial, epics and reconcile commands against the 0.2.6 debug binary; minor: no test runs the docs or pins the documented divergence and check limits
+signoff[review-docs] PASS 1026ebb3f34070fc8ec16b0c4b1233d8e9acef27 ran every command in all three guides in scratch trackers with target/debug/tisket and matched each claimed output, including conflict, cross-tracker, and close-versus-edit cases; minor: two instructions over 20 words
+signoff[review-code] PASS 1026ebb3f34070fc8ec16b0c4b1233d8e9acef27 not applicable beyond the version bump: no source change, every version consumer reads Cargo.toml, and cargo metadata --locked confirms the lockfile matches
+signoff[review-deps] PASS 1026ebb3f34070fc8ec16b0c4b1233d8e9acef27 not applicable: the diff adds no dependency, the Cargo change is only the 0.2.6 bump, src has no Command::new, and the tutorial prerequisites are stated
+signoff[review-usability] PASS 1026ebb3f34070fc8ec16b0c4b1233d8e9acef27 rebuilt the binary, ran the tutorial across two clean shells, the epics guide in full, and the reconcile guide against a real worktree and merge conflict; minor: README says task where the tutorial says issue
