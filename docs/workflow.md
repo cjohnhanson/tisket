@@ -9,6 +9,15 @@ type: how-to
 This guide assumes that you initialized tisket. See [Getting
 Started](getting-started.md) if you have not.
 
+This page covers operations on individual issues. Follow
+[Run it on your project](https://eng.rip/docs/run-it-on-your-project/)
+to make issue records part of the coding agent's regular work.
+
+For an issue that crosses branches, use
+[How to reconcile issue state across worktrees](how-to-reconcile-worktree-state.md).
+For work order and parent issues, use
+[How to organize dependencies and epics](how-to-organize-dependencies-and-epics.md).
+
 ## Projects
 
 A project is a subdirectory under the tisket directory. Each project
@@ -343,7 +352,8 @@ other branch in the repository. It compares each version to the version
 on the current branch. Tisket marks the issue as divergent if any
 compared field differs. The compared fields are title, status, priority,
 assignee, due date, labels, and dependencies, plus whether a body and
-scratch notes are present.
+scratch notes are present. The `*` marker does not flag an issue that is
+open on one branch and closed on another.
 
 In the list output, a divergent issue shows an asterisk after the
 status:
@@ -415,19 +425,21 @@ cannot start until another issue is closed.
 
 An agent harness picks up a tisket issue to start work on it. Tisket
 supplies the vocabulary the gate reads; the harness applies the gate and
-runs the session steps. A typical pickup runs these steps:
+runs the session steps. A workflow that creates a worktree for each issue
+can use these steps:
 
 1. Verify that the current branch is the main branch.
 2. Find the issue and check that its status is pickable (`todo`,
    `blocked`, or `paused`).
-3. Check that every `depends_on` issue is closed.
+3. Check that every `depends_on` issue is closed and its required
+   result exists. A cancelled issue may need a replacement dependency.
 4. Set the issue status to `in_progress`.
 5. Add a `## Scratch Notes` section to the issue file if it has none.
 6. Commit the status change on the main branch.
 7. Create a git worktree for the issue.
 
-A pickup accepts only an issue with a pickable status. It rejects an
-issue in `discovery` or `in_progress`, and an issue with an open
+In this example, pickup accepts only an issue with a pickable status.
+It rejects an issue in `discovery` or `in_progress`, and an issue with an open
 dependency. The harness enforces those rules. Tisket accepts any valid
 status on `issue edit`, and it refuses only an edit to a closed issue.
 
@@ -437,7 +449,7 @@ To make an issue ready for pickup, set its status to `todo`:
 tisket issue edit ab12 -s todo
 ```
 
-To block pickup until another issue is closed, add a dependency:
+To record a dependency for the harness to check, add it:
 
 ```
 tisket issue edit ab12 -d "x9f2"

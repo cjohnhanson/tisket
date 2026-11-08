@@ -33,7 +33,10 @@ tisket uses a fixed set of workflow statuses:
 | Done | `done` | Terminal |
 | Cancelled | `cancelled` | Terminal |
 
-"Active" means that the issue is open. "Pickable" means that an agent can pick up the issue for work. "Terminal" means that the issue is closed.
+"Active" means that the issue is open. "Pickable" identifies a candidate
+for an agent workflow to inspect. The workflow must check dependencies,
+ownership, and whether a block or pause has cleared before starting.
+Tisket does not enforce that policy. "Terminal" means that the issue is closed.
 
 Tisket parses the legacy value `backlog` as `todo`.
 
@@ -171,7 +174,12 @@ repo/
 
 ## Git integration
 
-tisket is git-aware. In a git repository, `issue list` and `issue show` compare the version of each issue file on the current branch against the version on every other branch. Tisket marks the issue as divergent if the frontmatter differs, or if the presence of a body or of scratch notes differs:
+tisket is git-aware. In a git repository, `issue list` and `issue show`
+compare the current issue file with committed versions on other branches.
+They compare title, status, priority, assignee, due date, labels, and
+dependencies, plus the presence of body and scratch text. They do not
+compare the full text or another worktree's uncommitted files.
+Differences appear as follows:
 
 - In the `issue list` text output, tisket adds a `*` to the status, such as `todo*`.
 - In the `issue show` text output, an "Other branches" section lists the branches with fields that differ.
