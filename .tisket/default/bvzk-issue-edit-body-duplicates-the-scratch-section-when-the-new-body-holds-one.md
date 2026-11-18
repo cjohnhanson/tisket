@@ -23,7 +23,7 @@ updated: 2026-11-18T17:35:48Z
 
 ```sh
 T=$(mktemp -d) && cd "$T" && tisket init
-tisket issue create repro --body "Original body."      # id: <id>
+tisket issue create repro --body "Original body."      # tisket issue list shows <id>
 tisket scratch <id> append "note one"
 tisket issue edit <id> --body "$(printf 'New body B.\n\n## Scratch Notes\n\nnote one\n')"
 grep -c '^## Scratch Notes' .tisket/default/<id>.md     # expected 1, actual 2
@@ -38,5 +38,5 @@ An edit with a body that holds no scratch header writes one section, as expected
 
 - A failing test first: `issue edit --body` with a body that holds a `## Scratch Notes` header leaves one scratch section, and a read-back returns the body and scratch the edit intended.
 - The fix picks one documented behavior: refuse such a body with an error that names `tisket scratch write`, or split the given text and use its scratch section in place of the stored one. Silent duplication is not an option.
-- The same rule covers `issue edit --append` and `issue create --body`/`--body-file`.
+- The same rule covers `issue edit --append`, which has the same gap. `issue create --body`/`--body-file` splits such a body correctly today and must match the chosen behavior.
 - `--help` and docs/cli-reference.md say that `--body` replaces the text above the scratch section and that `tisket scratch` manages the scratch section.
