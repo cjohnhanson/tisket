@@ -769,6 +769,7 @@ fn a_body_changed_on_disk_during_the_edit_is_not_overwritten() {
     assert!(text.contains("changed on disk while you edited"), "{text}");
     let kept = text.rsplit("your text is in ").next().unwrap();
     assert_eq!(std::fs::read_to_string(kept).unwrap(), "My edit.");
+    std::fs::remove_file(kept).unwrap();
 }
 
 #[test]
@@ -788,6 +789,7 @@ fn a_body_whose_save_is_refused_is_kept() {
     assert!(text.contains("nothing written"), "{text}");
     let kept = text.rsplit("your text is in ").next().unwrap();
     assert_eq!(std::fs::read_to_string(kept).unwrap(), "My edit.");
+    std::fs::remove_file(kept).unwrap();
 }
 
 #[test]
