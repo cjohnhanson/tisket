@@ -138,10 +138,11 @@ Confirmed: the certificates expire on 2026-12-01
 
 ### Git-aware divergence detection
 
-When you list or show an issue, tisket also reads that issue file from
-every other branch. It compares the files field by field. If another
-branch has a different status, assignee, or priority, tisket marks the
-issue with a `*`. It also names each branch that differs. tisket does
+When you list or show an issue, tisket reads the same file path from
+other branches' committed trees. It compares selected fields. If a
+compared field, such as status, assignee, or priority, differs,
+`issue list` adds a `*` to the status. `issue show` lists branches
+holding the file, even when their copies are identical. tisket does
 not compare an open issue with its closed copy on another branch.
 
 ## Serving over MCP

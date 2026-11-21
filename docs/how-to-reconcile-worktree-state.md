@@ -239,9 +239,9 @@ Create README.md. It must say that this repository keeps issues beside code and 
 
 ```
 
-An older branch can still produce a divergence marker after the merge.
-It contains an older record until that branch advances or is removed.
-Do not change the reconciled issue merely to eliminate the marker.
+An older branch can still appear under "Other branches" after the merge.
+It stays listed while it holds the same file path at a commit other than HEAD, even if the file is identical.
+Do not change the reconciled issue merely to remove the listing.
 
 For future handoffs, include the branch, worktree path, completed
 checks, and next action in the scratch notes. The

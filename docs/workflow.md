@@ -197,8 +197,8 @@ Detailed description of the problem
 The command prints the ID, the project, the title, and the status. It
 then prints each optional field that has a value: the priority, the
 assignee, the due date, the labels, and the dependencies. It prints the
-body last. If other branches hold divergent versions of the issue, the
-command lists those branches and the fields that differ.
+body last. If other branches hold the issue's file, the command lists
+those branches and the compared fields that differ, if any.
 
 To extract one field value, which is useful in a script:
 
@@ -487,9 +487,9 @@ title, and the fields that matched.
 
 ## Git-aware divergence detection
 
-When tisket lists or shows an issue, it reads the issue file from every
-other branch in the repository. It compares each version to the version
-on the current branch. Tisket marks the issue as divergent if any
+When tisket lists or shows an issue, it reads the issue file from the
+local and remote-tracking branches, except a branch at HEAD's commit. It
+compares each version to the file on disk. Tisket marks the issue as divergent if any
 compared field differs. The compared fields are title, status, priority,
 assignee, due date, labels, and dependencies, plus whether a body and
 scratch notes are present. The `*` marker does not flag an issue that is
@@ -520,8 +520,9 @@ $ git switch -q main
 
 ```
 
-In the list output, a divergent issue shows an asterisk after the
-status. In the show output, tisket lists each divergent branch with the
+In the list output, an issue shows an asterisk after the status only
+when a compared field differs on another listed branch. The show output
+lists branches holding the same file path, followed by any compared
 fields that differ:
 
 ```console
@@ -550,8 +551,8 @@ Detailed description of the problem
 ```
 
 A branch with no listed fields differs in none of the compared fields.
-Its body text can still differ, because the comparison reads only
-whether a body is present.
+Its file can be identical. Its body text can still differ, because the
+comparison reads only whether a body is present.
 
 Issue files are committed to git, so two worktrees or two branches can
 change the same issue. Divergence tells you that the view on the current
