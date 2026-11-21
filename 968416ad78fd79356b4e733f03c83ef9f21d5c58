@@ -1,0 +1,8 @@
+signoff[review-tests] PASS 968416a a mutant of the --root guard in a scratch export fails the new assertion at the --root read with Permission denied while the branch binary passes every step; cargo test is green across 12 binaries
+signoff[review-docs] PASS 968416a checked README, CONTRIBUTING, SECURITY, docs/ including Root resolution and cli-reference, the help text, the comment and both commit messages; a sandbox-exec run denying ~/.config leaves --root list, create and search at exit 0
+signoff[review-code] PASS 968416a resolve_root returns Via::Flag before it reads config for a named root, clap blocks --home with --root, and UserConfig holds only format and root_store, so the default config drops no behavior
+signoff[review-deps] PASS 968416a cargo audit reports 0 vulnerabilities against 4 on origin/main; the 9 heapless unsound warnings sit behind cfg(not(alloc)) in faster-hex and are not compiled, chrono unmaintained is informational, and the new crate is Apache-2.0
+signoff[review-usability] PASS 968416a ran cold from --help with mode-000 and malformed configs: --root reads and writes succeed, wrong --root targets exit 1 naming the dir, and rmcp 3.11.0 serve answers over stdio and HTTP with foreign Origin refused
+
+Second round, re-run against the final commit by one fresh agent covering all five criteria, after the first round (8bfff7b, five agents, all PASS) and the rmcp bump that a missed cargo audit made necessary.
+Minor findings declined: cleanup after a mid-assertion failure (each path starts from a fresh temp state); an mdstore-side lazy config loader (needs a crates.io release, out of scope); the error text for a --root dir with no tisket.yml (predates the change).
