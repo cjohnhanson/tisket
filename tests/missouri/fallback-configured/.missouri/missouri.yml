@@ -29,6 +29,17 @@ assertions:
     command: "cd work/src && ! tisket --user-config ../../absent.yml issue list >/dev/null 2>&1 && tisket --user-config ../../absent.yml issue list 2>&1 | grep -q 'store root <path>'"
   - name: "an explicit --root never falls back"
     command: "! tisket --user-config cfg.yml --root work issue list >/dev/null 2>&1"
+  - name: "an explicit --root reads and writes with the user config unreadable"
+    # The first check proves the copy is unreadable: without --root the
+    # same command fails on it. With --root, nothing reads the config.
+    command: |
+      cp cfg.yml locked.yml && chmod 000 locked.yml &&
+      (cd work/src && ! tisket --user-config ../../locked.yml issue list >/dev/null 2>&1) &&
+      tisket --user-config locked.yml --root rootstore issue list | grep -q 'Root issue' &&
+      mkdir literal && (cd literal && tisket init >/dev/null) &&
+      tisket --user-config locked.yml --root literal issue create 'Literal root' >/dev/null &&
+      tisket --user-config locked.yml --root literal issue list | grep -q 'Literal root' &&
+      rm -rf literal && chmod 600 locked.yml && rm locked.yml
   - name: "a subdirectory of a tracker resolves it by walking"
     command: "cd rootstore && mkdir -p src/deep && cd src/deep && tisket --user-config ../../../cfg.yml issue list 2>err.txt | grep -q 'Root issue' && grep -q 'using tracker at' err.txt && rm err.txt && cd .. && rmdir deep && cd .. && rmdir src"
   - name: "--home with no config names the fix"
