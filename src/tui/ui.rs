@@ -236,7 +236,9 @@ fn section<'a>(lines: &mut Vec<Line<'a>>, title: &'a str, text: &'a str) {
 /// stay until Esc, so the footer says how to dismiss one.
 fn footer_paragraph(app: &App) -> Option<Paragraph<'static>> {
     match (&app.message, &app.mode) {
-        (Some(Message::Error(text)), Mode::Normal) => Some(
+        // Every mode but the filter, which uses the footer for its input:
+        // an error stays on screen while help, the picker, or a note is open.
+        (Some(Message::Error(text)), mode) if !matches!(mode, Mode::Filter) => Some(
             Paragraph::new(Line::from(vec![
                 Span::styled(format!(" {text}"), theme::error()),
                 Span::styled("  Esc dismisses", theme::dim()),
@@ -261,7 +263,7 @@ fn render_footer(app: &App, frame: &mut Frame, area: Rect) {
     }
     let line = match &app.message {
         Some(Message::Info(text)) => Line::raw(format!(" {text}")),
-        Some(Message::Error(_)) => unreachable!("footer_paragraph draws an error"),
+        Some(Message::Error(text)) => Line::styled(format!(" {text}"), theme::error()),
         None => {
             let filter = app.filter_text();
             let mut spans = Vec::new();

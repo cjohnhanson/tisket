@@ -304,6 +304,26 @@ fn edit_refuses_a_closed_issue() {
 }
 
 #[test]
+fn an_error_stays_drawn_while_help_the_picker_or_a_note_is_open() {
+    // The refusal says to press s; doing so opens the picker with the
+    // error still showing, and drawing must not fail.
+    let mut app = App::load(&tracker("error-modes")).unwrap();
+    press(&mut app, KeyCode::Char('a'));
+    press(&mut app, KeyCode::Char('G'));
+    press(&mut app, KeyCode::Char('e'));
+    for key in ['s', '?'] {
+        press(&mut app, KeyCode::Char(key));
+        let screen = draw(&mut app).backend().to_string();
+        assert!(screen.contains("press s to reopen it first"), "{screen}");
+        press(&mut app, KeyCode::Esc);
+    }
+    press(&mut app, KeyCode::Char('k'));
+    press(&mut app, KeyCode::Char('n'));
+    let screen = draw(&mut app).backend().to_string();
+    assert!(screen.contains("Working note"), "{screen}");
+}
+
+#[test]
 fn an_unreadable_issue_is_reported_in_the_footer() {
     let root = tracker("broken");
     std::fs::write(

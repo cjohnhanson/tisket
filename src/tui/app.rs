@@ -230,8 +230,9 @@ impl App {
     }
 
     fn normal_key(&mut self, key: KeyEvent) -> Option<Effect> {
-        // An error stays until Esc dismisses it, because some name where
-        // the user's text was kept, and a later key must not erase that.
+        // An error stays until Esc dismisses it or a later action reports
+        // its own result, because some errors name the file holding the
+        // user's text, and a move through the list must not erase that.
         if matches!(self.message, Some(Message::Error(_))) && key.code == KeyCode::Esc {
             self.message = None;
             return None;
