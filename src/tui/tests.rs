@@ -921,6 +921,47 @@ fn a_note_whose_save_is_refused_is_kept() {
 }
 
 #[test]
+fn a_closed_epic_lists_its_children_without_a_rollup() {
+    let root = tracker("closed-epic");
+    Repo::open(&root)
+        .unwrap()
+        .close_issue("ep01-ship-the-board", Some("done"))
+        .unwrap();
+    let mut app = App::load(&root).unwrap();
+    press(&mut app, KeyCode::Char('a'));
+    while selected_title(&app) != "Ship the board" {
+        let before = app.selected;
+        press(&mut app, KeyCode::Char('j'));
+        assert_ne!(app.selected, before, "the closed epic is listed");
+    }
+    assert!(app.rollup.is_none(), "a closed epic shows no N of M done");
+}
+
+#[test]
+fn the_ui_needs_a_terminal_on_both_stdin_and_stdout() {
+    use super::needs_terminal;
+    assert!(!needs_terminal(true, true));
+    assert!(needs_terminal(false, true), "stdin from a pipe");
+    assert!(needs_terminal(true, false), "stdout to a file");
+    assert!(needs_terminal(false, false));
+}
+
+#[test]
+fn an_editor_that_removes_its_file_is_named() {
+    let dir = std::env::temp_dir().join(format!("tisket-editor-removed-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&dir);
+    std::fs::create_dir_all(&dir).unwrap();
+    let err = super::edit_text("Old body.", "rm", &dir, "copy-")
+        .unwrap_err()
+        .to_string();
+    assert!(
+        err.starts_with("could not read the file the editor 'rm' was given"),
+        "{err}"
+    );
+    assert!(err.contains("the body is unchanged"), "{err}");
+}
+
+#[test]
 fn a_write_that_succeeds_replaces_an_earlier_error() {
     let root = tracker("success-replaces-error");
     let mut app = App::load(&root).unwrap();

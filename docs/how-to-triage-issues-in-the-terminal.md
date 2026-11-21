@@ -128,13 +128,22 @@ copy of its body in the program named by `$VISUAL`, or `$EDITOR` if
 Tisket splits the editor command on whitespace, for example `code -w`.
 If the program's path contains a space, use a wrapper script.
 If the program cannot run or exits with an error, tisket leaves the
-body unchanged and names the program in the footer.
-If the program exits with an error, the footer also shows its exit code.
-If the text changed before the error, tisket keeps it in a private
-temporary file and names that file in the footer.
+body unchanged. The footer names the program and reports the cause.
+For an exit error, it shows the exit code or says that a signal
+stopped the program.
+
 If the edited text is not UTF-8, tisket leaves the body unchanged.
-It keeps the edited text in a private temporary file. The footer
-reports the encoding error and names the file.
+The footer reports the encoding error.
+After a UTF-8 error, or an editor exit error once the text has
+changed, tisket keeps the temporary file and gives its path in the
+footer.
+Each kept file is in `$TMPDIR`, named `tisket-<id>-*.md`.
+Only the user can read it.
+
+If the editor removes or renames the temporary file, tisket leaves
+the body unchanged but has no copy to keep.
+The footer names the program and reports why tisket could not read
+the file.
 
 When the editor exits successfully and the text has changed, tisket
 saves it as the new body.

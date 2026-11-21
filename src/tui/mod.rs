@@ -31,7 +31,10 @@ pub fn run(root: &Utf8Path) -> Result<()> {
     // screen from /dev/tty or stdout and runs `tput`, a program this
     // crate does not spawn, only when neither is a terminal; requiring a
     // terminal on stdout keeps that fallback unreachable.
-    if !std::io::stdin().is_terminal() || !std::io::stdout().is_terminal() {
+    if needs_terminal(
+        std::io::stdin().is_terminal(),
+        std::io::stdout().is_terminal(),
+    ) {
         return Err(Error::Refused(
             "tisket tui needs an interactive terminal; use `tisket issue list` in a script".into(),
         ));
@@ -43,6 +46,12 @@ pub fn run(root: &Utf8Path) -> Result<()> {
     let outcome = event_loop(&mut terminal, &mut app);
     ratatui::restore();
     outcome
+}
+
+/// Whether the UI must refuse to start: keys come from stdin and the
+/// screen goes to stdout, so each must be a terminal.
+fn needs_terminal(stdin_tty: bool, stdout_tty: bool) -> bool {
+    !stdin_tty || !stdout_tty
 }
 
 fn event_loop(terminal: &mut DefaultTerminal, app: &mut App) -> Result<()> {
@@ -58,7 +67,18 @@ fn event_loop(terminal: &mut DefaultTerminal, app: &mut App) -> Result<()> {
                 Ok(None) => app.message = Some(Message::Info("the body is unchanged".into())),
                 Err(e) => app.message = Some(Message::Error(e.to_string())),
             }
-            *terminal = ratatui::try_init()?;
+            // A terminal that cannot be re-entered ends the UI; the footer
+            // would be lost with it, and it may name the file holding the
+            // user's text, so it goes to stderr.
+            match ratatui::try_init() {
+                Ok(t) => *terminal = t,
+                Err(e) => {
+                    if let Some(Message::Error(text) | Message::Info(text)) = &app.message {
+                        eprintln!("tisket: {text}");
+                    }
+                    return Err(e.into());
+                }
+            }
         }
     }
     Ok(())
@@ -129,7 +149,11 @@ fn edit_text(text: &str, editor: &str, dir: &Path, prefix: &str) -> Result<Optio
         .arg(copy.path())
         .status()
         .map_err(|e| Error::Refused(format!("could not run the editor '{program}': {e}")))?;
-    let bytes = std::fs::read(copy.path())?;
+    let bytes = std::fs::read(copy.path()).map_err(|e| {
+        Error::Refused(format!(
+            "could not read the file the editor '{program}' was given: {e}; the body is unchanged"
+        ))
+    })?;
     let unchanged = bytes.trim_ascii_end() == text.trim_end().as_bytes();
     let refusal = if status.success() {
         if unchanged {
