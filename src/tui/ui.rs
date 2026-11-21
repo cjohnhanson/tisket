@@ -13,9 +13,16 @@ use crate::issue::Issue;
 
 /// Draw the whole screen.
 pub fn render(app: &mut App, frame: &mut Frame) {
-    let footer_rows = footer_paragraph(app)
-        .map_or(1, |p| p.line_count(frame.area().width))
-        .clamp(1, 6) as u16;
+    // An error takes as many rows as it needs, up to six, in every mode
+    // but the filter, which uses the footer for its input.
+    let footer_rows = match (&app.message, &app.mode) {
+        (Some(Message::Error(text)), mode) if !matches!(mode, Mode::Filter) => {
+            error_paragraph(text)
+                .line_count(frame.area().width)
+                .clamp(1, 6) as u16
+        }
+        _ => 1,
+    };
     let [header, body, footer] = Layout::vertical([
         Constraint::Length(1),
         Constraint::Min(3),
@@ -234,19 +241,12 @@ fn section<'a>(lines: &mut Vec<Line<'a>>, title: &'a str, text: &'a str) {
 /// An error message, wrapped to the terminal's width so the whole of it
 /// shows, such as the path of a file holding the user's text. Errors
 /// stay until Esc, so the footer says how to dismiss one.
-fn footer_paragraph(app: &App) -> Option<Paragraph<'static>> {
-    match (&app.message, &app.mode) {
-        // Every mode but the filter, which uses the footer for its input:
-        // an error stays on screen while help, the picker, or a note is open.
-        (Some(Message::Error(text)), mode) if !matches!(mode, Mode::Filter) => Some(
-            Paragraph::new(Line::from(vec![
-                Span::styled(format!(" {text}"), theme::error()),
-                Span::styled("  Esc dismisses", theme::dim()),
-            ]))
-            .wrap(Wrap { trim: false }),
-        ),
-        _ => None,
-    }
+fn error_paragraph(text: &str) -> Paragraph<'static> {
+    Paragraph::new(Line::from(vec![
+        Span::styled(format!(" {text}"), theme::error()),
+        Span::styled("  Esc dismisses", theme::dim()),
+    ]))
+    .wrap(Wrap { trim: false })
 }
 
 fn render_footer(app: &App, frame: &mut Frame, area: Rect) {
@@ -257,13 +257,14 @@ fn render_footer(app: &App, frame: &mut Frame, area: Rect) {
         frame.render_widget(&app.filter, input);
         return;
     }
-    if let Some(error) = footer_paragraph(app) {
-        frame.render_widget(error, area);
-        return;
-    }
     let line = match &app.message {
+        // An error stays on screen while help, the picker, or a note is
+        // open, always wrapped, so a long path shows whole.
+        Some(Message::Error(text)) => {
+            frame.render_widget(error_paragraph(text), area);
+            return;
+        }
         Some(Message::Info(text)) => Line::raw(format!(" {text}")),
-        Some(Message::Error(text)) => Line::styled(format!(" {text}"), theme::error()),
         None => {
             let filter = app.filter_text();
             let mut spans = Vec::new();

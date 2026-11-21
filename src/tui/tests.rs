@@ -321,6 +321,26 @@ fn an_error_stays_drawn_while_help_the_picker_or_a_note_is_open() {
     press(&mut app, KeyCode::Char('n'));
     let screen = draw(&mut app).backend().to_string();
     assert!(screen.contains("Working note"), "{screen}");
+    assert!(screen.contains("press s to reopen it first"), "{screen}");
+}
+
+#[test]
+fn a_long_error_stays_whole_while_the_picker_and_help_are_open() {
+    let mut app = App::load(&tracker("long-error-modes")).unwrap();
+    let path = "/a/long/temporary/directory/holding/tisket-ep01-abcdef.md";
+    app.message = Some(Message::Error(format!(
+        "ep01's body changed on disk while you edited; nothing written; your text is in {path}"
+    )));
+    for key in ['s', '?'] {
+        press(&mut app, KeyCode::Char(key));
+        let screen = draw(&mut app)
+            .backend()
+            .to_string()
+            .replace(['"', '\n', ' '], "");
+        assert!(screen.contains("tisket-ep01-abcdef.md"), "{key}: {screen}");
+        assert!(screen.contains("Escdismisses"), "{key}: {screen}");
+        press(&mut app, KeyCode::Esc);
+    }
 }
 
 #[test]
