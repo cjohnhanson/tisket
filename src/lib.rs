@@ -12,10 +12,13 @@ pub mod error;
 pub mod git;
 pub mod issue;
 pub mod mangen;
+pub mod ops;
 pub mod repo;
 pub mod selector;
 pub mod serve;
 pub mod slug;
+#[cfg(feature = "tui")]
+pub mod tui;
 pub mod workspace;
 
 pub use config::{ProjectConfig, TisketConfig};

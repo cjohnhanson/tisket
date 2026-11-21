@@ -1,0 +1,28 @@
+---
+source: src/tui/tests.rs
+expression: draw(&mut app).backend()
+---
+"tisket  tracker  all projects · open and closed · 5 shown                                           "
+"┏ Issues ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓┌ Issue ──────────────────────────────────────────────┐"
+"┃  in_progress ep01  Ship the board         ┃│Old prototype                                        │"
+"┃  blocked     ch02  Read keys              ┃│done  ol01-old-prototype · default · closed          │"
+"┃  todo        ch01  Draw the list          ┃│                                                     │"
+"┃  discovery   dc01  Write the guide        ┃│Body                                                 │"
+"┃> done        ol01  Old prototype          ┃│Replaced.                                            │"
+"┃                                           ┃│                                                     │"
+"┃                                           ┃│                                                     │"
+"┃                                           ┃│                                                     │"
+"┃                                           ┃│                                                     │"
+"┃                                           ┃│                                                     │"
+"┃                                           ┃│                                                     │"
+"┃                                           ┃│                                                     │"
+"┃                                           ┃│                                                     │"
+"┃                                           ┃│                                                     │"
+"┃                                           ┃│                                                     │"
+"┃                                           ┃│                                                     │"
+"┃                                           ┃│                                                     │"
+"┃                                           ┃│                                                     │"
+"┃                                           ┃│                                                     │"
+"┃                                           ┃│                                                     │"
+"┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛└─────────────────────────────────────────────────────┘"
+" s status n note e edit / filter ? help q quit                                                      "

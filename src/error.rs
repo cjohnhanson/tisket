@@ -34,6 +34,10 @@ pub enum Error {
     #[error("'{0}' must be a string")]
     InvalidArgument(String),
 
+    /// A request refused for a reason the message states in full.
+    #[error("{0}")]
+    Refused(String),
+
     #[error("{tool} needs the '{arg}' argument")]
     MissingArgument { tool: String, arg: String },
 

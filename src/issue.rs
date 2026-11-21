@@ -86,7 +86,7 @@ impl<'de> Deserialize<'de> for Status {
     }
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct IssueFrontmatter {
     pub title: String,
     pub status: Status,
@@ -112,7 +112,7 @@ pub struct IssueFrontmatter {
     pub extra: yaml_serde::Mapping,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Clone, Serialize)]
 pub struct Issue {
     pub id: String,
     pub project: String,

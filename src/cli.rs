@@ -67,6 +67,9 @@ fn intent(command: &Command) -> Option<mdstore::resolve::Intent> {
         // A served store is a standing surface whose clients never see
         // a fallback notice, so serve never falls back.
         Command::Serve { .. } => Write,
+        // The terminal UI changes statuses and appends notes.
+        #[cfg(feature = "tui")]
+        Command::Tui => Write,
         // Sync mutates the cache.
         Command::Store(StoreCommand::Sync) => Write,
         Command::Project(ProjectCommand::List) => Read,
@@ -209,6 +212,16 @@ pub enum Command {
         #[arg(long)]
         bind: Option<String>,
     },
+
+    /// Triage issues in the terminal
+    ///
+    /// Browse issues, change their status, and add working notes. Run
+    /// inside a tracker, use --root <dir>, or use --home for the
+    /// configured root tracker. Press `e` to edit the selected open
+    /// issue's body with `$VISUAL` or, if unset, `$EDITOR`. Press `?`
+    /// for the key list.
+    #[cfg(feature = "tui")]
+    Tui,
 
     /// Read or modify scratch notes for an issue
     ///
@@ -1027,6 +1040,9 @@ pub fn run_command(root: &camino::Utf8Path, command: Command) -> crate::Result<(
             crate::serve::run(config, bind.as_deref())
         }
 
+        #[cfg(feature = "tui")]
+        Command::Tui => crate::tui::run(root),
+
         Command::Check => {
             let repo = Repo::open(root)?;
             let ws = crate::workspace::Workspace::open(root)?;
@@ -1064,7 +1080,10 @@ pub fn run_command(root: &camino::Utf8Path, command: Command) -> crate::Result<(
                     }
                     Ok(())
                 }
-                Some(ScratchAction::Append(t)) => repo.scratch_append(&a.id, &t.text),
+                Some(ScratchAction::Append(t)) => {
+                    let ws = crate::workspace::Workspace::open(root)?;
+                    crate::ops::append_scratch(&repo, &ws, &a.id, &t.text)
+                }
                 Some(ScratchAction::Write(t)) => repo.scratch_write(&a.id, &t.text),
                 Some(ScratchAction::Clear) => repo.scratch_clear(&a.id),
             }
@@ -1072,15 +1091,9 @@ pub fn run_command(root: &camino::Utf8Path, command: Command) -> crate::Result<(
 
         Command::Issue(cmd) => {
             let repo = Repo::open(root)?;
-            // A dependency tracker is another repository's working tree.
-            // A write must run from the tracker that owns the issue.
             if let Some(id) = cmd.target_id() {
                 let ws = crate::workspace::Workspace::open(root)?;
-                if !ws.is_single_store()
-                    && let Ok(view) = ws.find(id)
-                {
-                    ws.ensure_writable(&view, id)?;
-                }
+                crate::ops::ensure_writable(&ws, id)?;
             }
             match *cmd {
                 IssueCommand::Create(a) => {
@@ -1137,21 +1150,9 @@ pub fn run_command(root: &camino::Utf8Path, command: Command) -> crate::Result<(
                     Ok(())
                 }
                 IssueCommand::Show(a) => {
-                    // An ID that names another tracker goes through the
-                    // workspace. A bare ID stays on the repository,
-                    // which also holds the closed issues that the
-                    // workspace loader does not carry.
                     let ws = crate::workspace::Workspace::open(root)?;
-                    let owned;
-                    let iss = if ws.is_qualified(&a.id) {
-                        let view = ws.find(&a.id)?;
-                        owned = None;
-                        view.issue
-                    } else {
-                        owned = Some(repo.find_issue(&a.id)?);
-                        owned.as_ref().expect("just assigned")
-                    };
-                    let _ = &owned;
+                    let shown = crate::ops::show(&repo, &ws, &a.id)?;
+                    let iss = &shown.issue;
                     if let Some(field) = &a.field {
                         print_issue_field(iss, field)?;
                     } else {
@@ -1210,12 +1211,12 @@ pub fn run_command(root: &camino::Utf8Path, command: Command) -> crate::Result<(
                             ));
                         }
                     }
-                    repo.close_issue(&a.id, a.status.as_deref())?;
-                    Ok(())
+                    let ws = crate::workspace::Workspace::open(root)?;
+                    crate::ops::close(&repo, &ws, &a.id, a.status.as_deref())
                 }
                 IssueCommand::Reopen(a) => {
-                    repo.reopen_issue(&a.id, a.status.as_deref())?;
-                    Ok(())
+                    let ws = crate::workspace::Workspace::open(root)?;
+                    crate::ops::reopen(&repo, &ws, &a.id, a.status.as_deref())
                 }
                 IssueCommand::Move(a) => {
                     repo.move_issue(&a.id, &a.project)?;
@@ -1373,45 +1374,10 @@ fn print_search_results(results: &[SearchResult]) {
     print_columns(&["ID", "STATUS", "PROJECT", "TITLE", "MATCH"], &rows);
 }
 
+/// The JSON record for an issue. Converting through a `Value` keeps the
+/// key order the command has always printed.
 fn issue_to_json(iss: &Issue) -> serde_json::Value {
-    let tags: serde_json::Map<String, serde_json::Value> = iss
-        .frontmatter
-        .tags
-        .iter()
-        .map(|(k, v)| {
-            let jv = match v {
-                yaml_serde::Value::String(s) => serde_json::Value::String(s.clone()),
-                yaml_serde::Value::Number(n) => {
-                    if let Some(i) = n.as_i64() {
-                        serde_json::Value::Number(i.into())
-                    } else if let Some(f) = n.as_f64() {
-                        serde_json::json!(f)
-                    } else {
-                        serde_json::Value::String(n.to_string())
-                    }
-                }
-                yaml_serde::Value::Bool(b) => serde_json::Value::Bool(*b),
-                other => serde_json::Value::String(format!("{other:?}")),
-            };
-            (k.clone(), jv)
-        })
-        .collect();
-    serde_json::json!({
-        "id": iss.id,
-        "project": iss.project,
-        "title": iss.frontmatter.title,
-        "status": iss.frontmatter.status.to_string(),
-        "priority": iss.frontmatter.priority,
-        "assignee": iss.frontmatter.assignee,
-        "due_date": iss.frontmatter.due_date,
-        "labels": iss.frontmatter.labels,
-        "depends_on": iss.frontmatter.depends_on,
-        "children": iss.frontmatter.children,
-        "tags": tags,
-        "body": iss.body,
-        "scratch": iss.scratch,
-        "closed": iss.closed,
-    })
+    serde_json::to_value(crate::ops::IssueRecord::from(iss)).unwrap_or_default()
 }
 
 fn print_issue_json(iss: &Issue) -> crate::Result<()> {

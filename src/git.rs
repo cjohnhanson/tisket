@@ -7,7 +7,7 @@ use serde::Serialize;
 use crate::error::{Error, Result};
 use crate::issue::{self, IssueFrontmatter};
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Clone, Serialize)]
 pub struct BranchStatus {
     pub branch: String,
     pub is_remote: bool,

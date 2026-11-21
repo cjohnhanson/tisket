@@ -64,7 +64,8 @@
               || (builtins.match ".*/scripts$" path != null)
               || (builtins.match ".*/scripts/.*" path != null)
               # tests/docs.rs runs README.md and compares every --help with
-              # tests/snapshots/help/.
+              # tests/snapshots/help/. The terminal UI's insta snapshots
+              # live in src/tui/snapshots/, which the same rules keep.
               || (builtins.match ".*/README\\.md$" path != null)
               || (builtins.match ".*/snapshots$" path != null)
               || (builtins.match ".*/snapshots/.*" path != null);

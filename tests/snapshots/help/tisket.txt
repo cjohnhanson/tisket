@@ -14,6 +14,7 @@ Commands:
   store    Manage the declared trackers
   check    Check the issues for broken references and store problems
   serve    Serve this tracker over the Model Context Protocol
+  tui      Triage issues in the terminal
   scratch  Read or modify scratch notes for an issue
   project  Manage projects
   docs     Show the bundled documentation
