@@ -1,0 +1,8 @@
+signoff[review-docs] PASS 39589ea checked every changed claim against branch_statuses, the Other branches printer and the diverges logic, and ran a scratch binary through eight repository states including a fresh clone; the q7dm file passes tisket check on a scratch copy
+signoff[review-usability] PASS 39589ea ran a scratch binary in scratch repos for a branch at HEAD's commit, an identical branch, a body-only branch, a closed copy, a fresh clone and an uncommitted edit; every documented behaviour matched
+signoff[review-code] PASS 39589ea read branch_statuses, diff_fields, the Other branches printer and both diverges call sites against all six changed files; every claim and the q7dm defect description match the code
+signoff[review-tests] PASS 39589ea not applicable: no src or tests change and no console block added; checked the new prose against branch_statuses; the q7dm acceptance asks for a regression test first
+signoff[review-deps] PASS 39589ea not applicable: no manifest, lockfile, code, spawn, or install instruction changed; checked the full diff
+
+Re-ran: all five, on 39589ea (rounds on 451952b and fd94952 failed review-docs and review-usability on stale neighbouring sentences, origin/HEAD, and the * condition; each fixed).
+Declined minors: undefined "listed branch" wording, README and workflow.md omitting the HEAD skip or origin/HEAD exception, line wrap, capitalisation, q7dm's singular "sentence" and its unstated effect on the * (follow-ups); untested pre-existing branch-listing behaviour (q7dm asks for the test).
