@@ -42,8 +42,8 @@ shown.
 A key from the Key reference table clears a successful action result
 and restores the footer hints. Errors stay until a later action
 reports its own result, or until Esc on the main screen.
-Moving through the list, opening help or the status picker, or adding
-a working note does not clear errors.
+Moving through the list or opening help, the status picker, or the
+working note box does not clear errors.
 The footer wraps an error across up to six rows. A narrow terminal
 can cut off the message. Widen the terminal to read the rest.
 On the main screen, the footer adds "Esc dismisses" after the error.
