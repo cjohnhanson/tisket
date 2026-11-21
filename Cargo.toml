@@ -75,6 +75,20 @@ gix = { version = "0.87", default-features = false, features = ["basic", "sha1"]
 mdstore = { version = "0.5", package = "mdstore-core", features = ["mcp"] }
 sigpipe = "0.1.3"
 diataxis = { version = "0.1", default-features = false, features = ["cli"] }
+# The terminal UI, `tisket tui`. ratatui re-exports the crossterm it
+# was built against, so the two cannot drift apart. ratatui-textarea is
+# the ratatui organisation's maintained successor to tui-textarea, and
+# it covers both the one-line filter and the multi-line note.
+# `unstable-rendered-line-info` is Paragraph::line_count, the count of
+# wrapped lines that bounds how far the issue pane scrolls.
+ratatui = { version = "0.30", default-features = false, features = ["crossterm", "layout-cache", "unstable-rendered-line-info"], optional = true }
+ratatui-textarea = { version = "0.9", optional = true }
+
+[features]
+default = ["tui"]
+# Off with --no-default-features, for a build that only needs the CLI
+# and the MCP server.
+tui = ["dep:ratatui", "dep:ratatui-textarea"]
 
 # The docs pages are generated at build time from the same
 # documentation set the `docs` subcommand reads.
@@ -91,6 +105,8 @@ usage-lib = { version = "7", default-features = false, features = ["clap", "mark
 snapbox = "1.2"
 tempfile = "3"
 trycmd = "1.2"
+# Snapshots of the rendered terminal UI, one per screen and state.
+insta = "1.49"
 
 [[test]]
 name = "cli_reference"

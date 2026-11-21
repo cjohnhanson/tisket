@@ -635,6 +635,20 @@ Where to listen. Omitted, the server speaks on stdin and stdout. Given, it serve
 
 Print help (see a summary with '-h')
 
+## `tisket tui`
+
+- **Usage:** `tisket tui [OPTIONS]`
+
+Triage issues in the terminal
+
+Browse issues, change their status, and add working notes. Run inside a tracker, use --root &lt;dir>, or use --home for the configured root tracker. Press `e` to edit the selected open issue's body with `$VISUAL` or, if unset, `$EDITOR`. Press `?` for the key list.
+
+### Flags
+
+#### `-h --help`
+
+Print help (see a summary with '-h')
+
 ## `tisket scratch`
 
 - **Usage:** `tisket scratch [OPTIONS] <ID> [COMMAND]`

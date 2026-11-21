@@ -164,20 +164,11 @@ impl TisketServer {
             "tisket_read_issue" => {
                 let id =
                     text("id")?.ok_or_else(|| Error::IssueNotFound("id is required".into()))?;
-                // An ID that names another tracker goes through the
-                // workspace. A bare ID stays on the repository, which
-                // also holds the closed issues.
+                // The same lookup the command line makes.
                 let ws = self.workspace()?;
                 let repo = crate::Repo::open(&self.root())?;
-                let owned: Option<crate::issue::Issue>;
-                let (qualified, issue) = if ws.is_qualified(&id) {
-                    let view = ws.find(&id)?;
-                    (view.qualified.clone(), view.issue)
-                } else {
-                    owned = Some(repo.find_issue(&id)?);
-                    let issue = owned.as_ref().expect("just assigned");
-                    (issue.id.clone(), issue)
-                };
+                let shown = crate::ops::show(&repo, &ws, &id)?;
+                let (qualified, issue) = (&shown.qualified, &shown.issue);
                 Ok(pretty(&json!({
                     "id": qualified,
                     "title": issue.frontmatter.title,
@@ -213,7 +204,8 @@ impl TisketServer {
                 let body =
                     text("text")?.ok_or_else(|| Error::IssueNotFound("text is required".into()))?;
                 let repo = crate::Repo::open(&self.root())?;
-                repo.scratch_append(&id, &body)?;
+                let ws = self.workspace()?;
+                crate::ops::append_scratch(&repo, &ws, &id, &body)?;
                 Ok(format!("appended to the working notes of {id}"))
             }
             other => Err(Error::Store(format!("no tool named '{other}'"))),

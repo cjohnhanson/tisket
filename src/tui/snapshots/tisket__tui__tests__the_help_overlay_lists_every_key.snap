@@ -1,0 +1,28 @@
+---
+source: src/tui/tests.rs
+expression: draw(&mut app).backend()
+---
+"tisket  tracker  all projects · open · 4 shown                                                      "
+"┌ Issues ───────────────────────────────────┐┌ Issue ──────────────────────────────────────────────┐"
+"│in_progress ep01  Ship the board           ││Ship the board                                       │"
+"│blocked     ch02  Rea┌ Keys ────────────────────────────────────────────────┐ · default           │"
+"│todo        ch01  Dra│ j ↓        next issue, or scroll down                │                     │"
+"│discovery   dc01  Wri│ k ↑        previous issue, or scroll up              │                     │"
+"│                     │ g Home     first issue, or top                       │ Draw the list       │"
+"│                     │ G End      last issue, or bottom                     │d keys               │"
+"│                     │ PgDn ^d    a page down                               │                     │"
+"│                     │ PgUp ^u    a page up                                 │                     │"
+"│                     │ Tab Enter  move between the list and the issue       │ issue.              │"
+"│                     │ /          filter by ID, title, or label             │                     │"
+"│                     │ a          show or hide closed issues                │                     │"
+"│                     │ p          next project                              │                     │"
+"│                     │ s          change the status                         │                     │"
+"│                     │ n          add a working note                        │                     │"
+"│                     │ e          edit the body in $VISUAL or $EDITOR       │                     │"
+"│                     │ r          reload from disk                          │                     │"
+"│                     │ ?          show or hide this help                    │                     │"
+"│                     │ q ^c       quit                                      │                     │"
+"│                     └ Esc, ? or q to close ────────────────────────────────┘                     │"
+"│                                           ││                                                     │"
+"└───────────────────────────────────────────┘└─────────────────────────────────────────────────────┘"
+" s status n note e edit / filter ? help q quit                                                      "

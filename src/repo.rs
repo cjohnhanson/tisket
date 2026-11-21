@@ -76,9 +76,43 @@ pub struct Repo {
     /// is a check none of them can skip: the operating system refuses
     /// a name that leaves the directory, whoever built it.
     issues: mdstore::confined::StoreDir,
+    /// Where a skipped file's warning goes. The command line prints it
+    /// as it happens. The terminal UI holds the screen, so a line
+    /// written to stderr would land on top of it; it collects instead.
+    warnings: Warnings,
+}
+
+/// The destination of the warnings a tracker-wide read produces.
+enum Warnings {
+    Stderr,
+    Collect(std::cell::RefCell<Vec<String>>),
 }
 
 impl Repo {
+    /// Open a tracker whose warnings are collected rather than printed.
+    /// [`Repo::take_warnings`] hands them over.
+    pub fn open_quiet(root: &Utf8Path) -> Result<Self> {
+        let mut repo = Self::open(root)?;
+        repo.warnings = Warnings::Collect(std::cell::RefCell::default());
+        Ok(repo)
+    }
+
+    /// The warnings collected since the last call. Empty for a tracker
+    /// opened with [`Repo::open`], which prints them instead.
+    pub fn take_warnings(&self) -> Vec<String> {
+        match &self.warnings {
+            Warnings::Stderr => Vec::new(),
+            Warnings::Collect(cell) => cell.take(),
+        }
+    }
+
+    fn warn(&self, message: String) {
+        match &self.warnings {
+            Warnings::Stderr => eprintln!("{message}"),
+            Warnings::Collect(cell) => cell.borrow_mut().push(message),
+        }
+    }
+
     pub fn open(root: &Utf8Path) -> Result<Self> {
         let config_path = root.join("tisket.yml");
         if !config_path.exists() {
@@ -101,6 +135,7 @@ impl Repo {
             git,
             issues_dir,
             issues,
+            warnings: Warnings::Stderr,
         })
     }
 
@@ -172,7 +207,7 @@ impl Repo {
         let scan = match self.issues.scan(project) {
             Ok(scan) => scan,
             Err(e) if e.refused_by_confinement() => {
-                eprintln!("warning: skipping {project}: {e}");
+                self.warn(format!("warning: skipping {project}: {e}"));
                 return Ok(Vec::new());
             }
             Err(e) => return Err(Error::Store(e.to_string())),
@@ -563,13 +598,13 @@ impl Repo {
                 // down a tracker-wide command. Skip it by name, the
                 // way the workspace loader does.
                 let Ok(content) = self.read_issue_file(&path) else {
-                    eprintln!("warning: skipping {id}: unreadable");
+                    self.warn(format!("warning: skipping {id}: unreadable"));
                     continue;
                 };
                 let (fm, body, scratch) = match issue::parse_issue(&content) {
                     Ok(parsed) => parsed,
                     Err(e) => {
-                        eprintln!("warning: skipping {id}: {e}");
+                        self.warn(format!("warning: skipping {id}: {e}"));
                         continue;
                     }
                 };
@@ -938,6 +973,30 @@ impl Repo {
         }
 
         Ok(())
+    }
+
+    /// Give a closed issue another terminal status, in one write. The
+    /// issue stays under `.closed`.
+    pub fn set_closed_status(&self, id: &str, status: Status) -> Result<()> {
+        if !status.is_terminal() {
+            return Err(Error::InvalidStatus {
+                status: status.to_string(),
+            });
+        }
+        let iss = self.find_issue(id)?;
+        if !iss.closed {
+            return Err(Error::IssueNotClosed(id.into()));
+        }
+        let path = self
+            .tisket_dir()
+            .join(&iss.project)
+            .join(".closed")
+            .join(format!("{}.md", iss.id));
+        let content = self.read_issue_file(&path)?;
+        let (mut fm, body, scratch) = issue::parse_issue(&content)?;
+        fm.status = status;
+        issue::update_timestamp(&mut fm);
+        self.write_issue_file(&path, &issue::serialize_issue(&fm, &body, &scratch))
     }
 
     // -- Search --

@@ -1,0 +1,28 @@
+---
+source: src/tui/tests.rs
+expression: draw(&mut app).backend()
+---
+"tisket  tracker  all projects · open · 0 shown                                                      "
+"┌ Issues ───────────────────────────────────┐┌ Issue ──────────────────────────────────────────────┐"
+"│No issue matches the filter. Press / then  ││                                                     │"
+"│Esc to clear it.                           ││                                                     │"
+"│                                           ││                                                     │"
+"│                                           ││                                                     │"
+"│                                           ││                                                     │"
+"│                                           ││                                                     │"
+"│                                           ││                                                     │"
+"│                                           ││                                                     │"
+"│                                           ││                                                     │"
+"│                                           ││                                                     │"
+"│                                           ││                                                     │"
+"│                                           ││                                                     │"
+"│                                           ││                                                     │"
+"│                                           ││                                                     │"
+"│                                           ││                                                     │"
+"│                                           ││                                                     │"
+"│                                           ││                                                     │"
+"│                                           ││                                                     │"
+"│                                           ││                                                     │"
+"│                                           ││                                                     │"
+"└───────────────────────────────────────────┘└─────────────────────────────────────────────────────┘"
+" filter zzz   s status n note e edit / filter ? help q quit                                         "
