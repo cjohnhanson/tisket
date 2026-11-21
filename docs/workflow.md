@@ -197,8 +197,8 @@ Detailed description of the problem
 The command prints the ID, the project, the title, and the status. It
 then prints each optional field that has a value: the priority, the
 assignee, the due date, the labels, and the dependencies. It prints the
-body last. If other branches hold divergent versions of the issue, the
-command lists those branches and the fields that differ.
+body last. If other branches hold the issue's file, the command lists
+those branches and the compared fields that differ, if any.
 
 To extract one field value, which is useful in a script:
 
@@ -550,8 +550,8 @@ Detailed description of the problem
 ```
 
 A branch with no listed fields differs in none of the compared fields.
-Its body text can still differ, because the comparison reads only
-whether a body is present.
+Its file can be identical. Its body text can still differ, because the
+comparison reads only whether a body is present.
 
 Issue files are committed to git, so two worktrees or two branches can
 change the same issue. Divergence tells you that the view on the current
