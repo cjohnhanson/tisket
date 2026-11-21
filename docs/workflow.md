@@ -568,7 +568,8 @@ $ tisket issue create "epic: context lifecycle management" -l epic,architecture 
 
 ```
 
-Add a child later with the same field:
+To add a child later, give the whole list. `--children` replaces the
+existing list:
 
 ```console
 $ tisket issue edit gh78 --children "ef56,cd34,ab12"
@@ -612,9 +613,10 @@ cannot start until another issue is closed.
 ## Preparing an issue for agent pickup
 
 An agent harness picks up a tisket issue to start work on it. Tisket
-supplies the vocabulary the gate reads; the harness applies the gate and
-runs the session steps. A workflow that creates a worktree for each issue
-can use these steps:
+supplies the statuses and dependencies that the harness reads; the
+harness decides whether to pick up the issue and runs the session
+steps. A workflow that creates a worktree for each issue can use these
+steps:
 
 1. Verify that the current branch is the main branch.
 2. Find the issue and check that its status is pickable (`todo`,
@@ -638,9 +640,11 @@ $ tisket issue edit ab12 -s todo
 
 ```
 
-To record a dependency for the harness to check, add it:
+To set the dependencies for the harness to check, give the whole list.
+`-d` replaces the existing list, so keep the IDs that are already
+there:
 
 ```console
-$ tisket issue edit ab12 -d "cd34"
+$ tisket issue edit ab12 -d "cd34,ef56"
 
 ```

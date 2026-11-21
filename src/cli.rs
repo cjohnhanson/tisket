@@ -516,8 +516,11 @@ pub struct IssueEditArgs {
     #[arg(short, long)]
     pub depends_on: Option<String>,
 
-    /// The child issue IDs; separate them with commas. An entry can name
-    /// another tracker: alias:id
+    // Describes Repo::edit_issue in src/repo.rs, which sets fm.children
+    // to the split list and keeps none of the old entries.
+    /// The child issue IDs (replaces all existing children)
+    ///
+    /// Comma-separated. An entry can name another tracker: alias:id
     #[arg(long)]
     pub children: Option<String>,
 

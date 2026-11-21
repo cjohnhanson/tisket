@@ -359,7 +359,9 @@ Comma-separated.
 
 #### `--children <CHILDREN>`
 
-The child issue IDs; separate them with commas. An entry can name another tracker: alias:id
+The child issue IDs (replaces all existing children)
+
+Comma-separated. An entry can name another tracker: alias:id
 
 #### `--due <DUE>`
 

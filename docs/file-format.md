@@ -196,6 +196,6 @@ compare the full text or another worktree's uncommitted files.
 Differences appear as follows:
 
 - In the `issue list` text output, tisket adds a `*` to the status, such as `todo*`.
-- In the `issue show` text output, an "Other branches" section lists the branches with fields that differ.
+- In the `issue show` text output, an "Other branches" section lists the branches where the issue differs, with the compared fields that differ. A branch with no fields listed differs only in text that the comparison does not read.
 
 This comparison only reads and never blocks. Tisket ignores a git failure without a message.
