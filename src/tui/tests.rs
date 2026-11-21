@@ -725,7 +725,23 @@ mod editor {
             .to_string();
         assert!(err.contains("exited with code 1"), "{err}");
         let kept = err.rsplit("your text is in ").next().unwrap();
-        assert_eq!(std::fs::read_to_string(kept).unwrap(), "My edit.");
+        assert_eq!(std::fs::read_to_string(kept).unwrap(), "My edit.\n");
+        std::fs::remove_file(kept).unwrap();
+    }
+
+    #[test]
+    fn an_edit_that_is_not_utf8_is_kept() {
+        // An editor saving in latin1 writes a byte that is not UTF-8.
+        let dir = scratch("not-utf8");
+        let script = dir.join("editor.sh");
+        std::fs::write(&script, "printf 'caf\\351\\n' > \"$1\"\n").unwrap();
+        let editor = format!("sh {}", script.display());
+        let err = edit_text("Old body.", &editor, &dir, "copy-")
+            .unwrap_err()
+            .to_string();
+        assert!(err.contains("not UTF-8"), "{err}");
+        let kept = err.rsplit("your text is in ").next().unwrap();
+        assert_eq!(std::fs::read(kept).unwrap(), b"caf\xe9\n");
         std::fs::remove_file(kept).unwrap();
     }
 
@@ -902,6 +918,32 @@ fn a_note_whose_save_is_refused_is_kept() {
     let kept = text.rsplit("your text is in ").next().unwrap();
     assert_eq!(std::fs::read_to_string(kept).unwrap(), "important finding");
     std::fs::remove_file(kept).unwrap();
+}
+
+#[test]
+fn a_write_that_succeeds_replaces_an_earlier_error() {
+    let root = tracker("success-replaces-error");
+    let mut app = App::load(&root).unwrap();
+    app.message = Some(Message::Error("an older refusal".into()));
+    press(&mut app, KeyCode::Char('n'));
+    type_text(&mut app, "found it");
+    app.handle_key(KeyEvent::new(KeyCode::Char('s'), KeyModifiers::CONTROL));
+    assert_eq!(
+        app.message,
+        Some(Message::Info("added a note to ep01-ship-the-board".into()))
+    );
+}
+
+#[test]
+fn an_error_wraps_across_six_rows_on_a_narrow_screen() {
+    let mut app = App::load(&tracker("six-rows")).unwrap();
+    // About five rows at 40 columns: more than two, within the six.
+    let words = "word ".repeat(30);
+    app.message = Some(Message::Error(format!("{words}TAILEND")));
+    let mut terminal = Terminal::new(TestBackend::new(40, HEIGHT)).unwrap();
+    terminal.draw(|frame| ui::render(&mut app, frame)).unwrap();
+    let screen = terminal.backend().to_string();
+    assert!(screen.contains("TAILEND"), "{screen}");
 }
 
 #[test]

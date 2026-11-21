@@ -1,8 +1,8 @@
 //! `tisket tui` without a terminal refuses before it touches the screen.
 //!
-//! Without a terminal on stdout, crossterm sizes the screen by running
-//! `tput`, a program this crate does not spawn; the refusal is what keeps
-//! that fallback unreachable.
+//! crossterm sizes the screen from /dev/tty or stdout and runs `tput`, a
+//! program this crate does not spawn, only when neither is a terminal;
+//! requiring a terminal on stdout keeps that fallback unreachable.
 #![cfg(feature = "tui")]
 
 use std::process::{Command, Stdio};

@@ -1,6 +1,6 @@
 <!-- metadata
 title: "How to triage issues in the terminal"
-description: "Browse issues, change their status, and add working notes from the terminal UI"
+description: "Browse issues, change their status, add working notes, and edit issue bodies from the terminal UI"
 type: how-to
 -->
 
@@ -38,10 +38,14 @@ Press `j` or Down to select the next issue, or `k` or Up to select the
 previous one. The header shows the tracker directory name, the project
 in view or "all projects", "open" or "open and closed", and the count
 shown.
-The next key from the Key reference table replaces footer hints and successful action results.
-Errors stay until a later action reports its own result, or until Esc on the main screen.
-Moving through the list or opening help, the status picker, or a note does not clear them.
-The footer wraps an error across up to six rows, so a long path shows whole.
+
+A key from the Key reference table clears a successful action result
+and restores the footer hints. Errors stay until a later action
+reports its own result, or until Esc on the main screen.
+Moving through the list or opening help, the status picker, or the
+working note box does not clear errors.
+The footer wraps an error across up to six rows. A narrow terminal
+can cut off the message. Widen the terminal to read the rest.
 On the main screen, the footer adds "Esc dismisses" after the error.
 
 Press `/` to open the filter line in the footer. Type an ID, title, or
@@ -86,8 +90,9 @@ Select an issue and press `s` to open the status picker. Move with
 or `q` to cancel.
 
 Choosing `done` or `cancelled` closes an open issue and moves its file
-to `.closed/`, like `tisket issue close`. Choosing an active
-status on a closed issue reopens it, like `tisket issue reopen`.
+to `.closed/`, like `tisket issue close`. Every other status is active.
+Choosing an active status on a closed issue reopens it, like
+`tisket issue reopen`.
 Otherwise, on an open issue, the status changes in place, like
 `tisket issue edit -s`. On a closed issue, choosing the other terminal
 status (`done` or `cancelled`) changes it and the issue stays in
@@ -95,8 +100,9 @@ status (`done` or `cancelled`) changes it and the issue stays in
 The issue stays selected if it is still shown in the list.
 
 Choosing the issue's current status writes nothing.
-If the status changed on disk since display, tisket writes nothing,
-reports the change in the footer, and reloads.
+If the status in the issue file differs from the status shown in the
+UI, tisket writes nothing. It reports the change in the footer and
+reloads.
 After a close or reopen, the footer says "closed ... as ..." or
 "reopened ... as ...".
 
@@ -126,6 +132,9 @@ body unchanged and names the program in the footer.
 If the program exits with an error, the footer also shows its exit code.
 If the text changed before the error, tisket keeps it in a private
 temporary file and names that file in the footer.
+If the edited text is not UTF-8, tisket leaves the body unchanged.
+It keeps the edited text in a private temporary file. The footer
+reports the encoding error and names the file.
 
 When the editor exits successfully and the text has changed, tisket
 saves it as the new body.
