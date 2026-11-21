@@ -48,8 +48,10 @@ line, Esc clears the filter.
 Press `a` to show or hide closed issues. Press `p` to step through the
 projects one at a time, then back to all projects.
 
-Statuses use the terminal's own colour palette. The selected row uses
-reverse video, so it remains visible with `NO_COLOR` set.
+Statuses use the terminal's own colour palette. In the issue list and
+status picker, the selected row uses reverse video and starts with a
+`>` mark. With `NO_COLOR` set, colours are off and the `>` mark shows
+the selection.
 
 ## Read the selected issue
 
@@ -59,8 +61,9 @@ due date, labels, and dependencies appear when set. If the issue's
 file differs on another git branch, the pane shows "differs on
 another branch".
 
-For an epic, the pane lists its children with each child's status and
-an "N of M done" count. The issue body and working notes follow.
+For an open epic, the pane lists its children with each child's status
+and an "N of M done" count. A closed epic lists its children's IDs
+only. The issue body and working notes follow.
 Working notes are the issue's scratch section.
 
 Press Tab, Shift-Tab, or Enter to move keyboard control to the issue pane.
@@ -77,7 +80,10 @@ or `q` to cancel.
 Choosing `done` or `cancelled` closes an open issue and moves its file
 to `.closed/`, like `tisket issue close`. Choosing an active
 status on a closed issue reopens it, like `tisket issue reopen`.
-Otherwise, the status changes in place, like `tisket issue edit -s`.
+Otherwise, on an open issue, the status changes in place, like
+`tisket issue edit -s`. On a closed issue, choosing the other terminal
+status (`done` or `cancelled`) changes it and the issue stays in
+`.closed/`.
 The issue stays selected if it is still shown in the list.
 
 Choosing the issue's current status writes nothing.
@@ -107,6 +113,11 @@ the program and the body is unchanged.
 When the editor exits successfully and the text has changed, tisket
 saves it as the new body.
 The same rules apply as for `tisket issue edit --body`.
+If the body changed on disk while the editor was open, tisket writes
+nothing to the issue.
+For example, an agent may have appended to the body.
+Tisket keeps the edited text in a private temporary file and names
+that file in the footer.
 A closed issue's body cannot be edited.
 Reopen it with the status picker first.
 

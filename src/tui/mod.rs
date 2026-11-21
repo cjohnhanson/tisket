@@ -52,10 +52,7 @@ fn event_loop(terminal: &mut DefaultTerminal, app: &mut App) -> Result<()> {
             let edited = editor_from_env().and_then(|editor| edit_body(app, &id, &editor));
             *terminal = ratatui::try_init()?;
             match edited {
-                Ok(Some(body)) => app.write(
-                    |repo, ws, id| crate::ops::set_body(repo, ws, id, &body),
-                    |id, ()| format!("saved the body of {id}"),
-                ),
+                Ok(Some((opened, body))) => app.save_body(&opened, body),
                 Ok(None) => app.message = Some(Message::Info("the body is unchanged".into())),
                 Err(e) => app.message = Some(Message::Error(e.to_string())),
             }
@@ -91,13 +88,14 @@ fn choose_editor(visual: Option<&str>, editor: Option<&str>) -> Result<String> {
         .ok_or_else(|| Error::Refused("set $VISUAL or $EDITOR to edit a body".into()))
 }
 
-/// Open the issue's body in the editor and return the edited text, or
-/// `None` when nothing changed.
-fn edit_body(app: &App, id: &str, editor: &str) -> Result<Option<String>> {
+/// Open the issue's body in the editor. The body as opened comes back
+/// with the edited text, so the save can tell whether the file changed
+/// meanwhile; `None` when the editor changed nothing.
+fn edit_body(app: &App, id: &str, editor: &str) -> Result<Option<(String, String)>> {
     let body = Repo::open_quiet(&app.root)?.find_issue(id)?.body;
     let dir = std::env::temp_dir();
     let path = dir.join(format!("tisket-{id}-{}.md", std::process::id()));
-    edit_text(&body, editor, &path)
+    Ok(edit_text(&body, editor, &path)?.map(|edited| (body, edited)))
 }
 
 /// Run the editor on a private copy of the text and read it back.
@@ -123,8 +121,12 @@ fn edit_text(text: &str, editor: &str, path: &Path) -> Result<Option<String>> {
     let status =
         status.map_err(|e| Error::Refused(format!("could not run the editor '{program}': {e}")))?;
     if !status.success() {
+        let how = status.code().map_or_else(
+            || "was stopped by a signal".to_string(),
+            |c| format!("exited with code {c}"),
+        );
         return Err(Error::Refused(format!(
-            "the editor '{program}' exited with {status}; the body is unchanged"
+            "the editor '{program}' {how}; the body is unchanged"
         )));
     }
     let edited = edited?;
@@ -135,7 +137,7 @@ fn edit_text(text: &str, editor: &str, path: &Path) -> Result<Option<String>> {
 }
 
 /// Create a file only this user can read, failing if the name exists.
-fn write_private(path: &Path, text: &str) -> Result<()> {
+pub(super) fn write_private(path: &Path, text: &str) -> Result<()> {
     use std::io::Write as _;
     let mut options = std::fs::OpenOptions::new();
     options.write(true).create_new(true);

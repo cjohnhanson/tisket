@@ -3,7 +3,9 @@
 use ratatui::Frame;
 use ratatui::layout::{Constraint, Layout, Rect};
 use ratatui::text::{Line, Span, Text};
-use ratatui::widgets::{Block, Borders, Clear, List, ListItem, ListState, Paragraph, Wrap};
+use ratatui::widgets::{
+    Block, Borders, Clear, HighlightSpacing, List, ListItem, ListState, Paragraph, Wrap,
+};
 
 use super::app::{App, Focus, Message, Mode, STATUSES};
 use super::{keys, theme};
@@ -92,7 +94,7 @@ fn render_list(app: &mut App, frame: &mut Frame, area: Rect) {
             if app.show_closed {
                 "No issues here."
             } else {
-                "No open issues. Press a to show closed issues."
+                "No open issues. Press a to show closed issues, or add one with `tisket issue create`."
             }
         } else if matches!(app.mode, Mode::Filter) {
             "No issue matches the filter. Esc clears it."
@@ -114,7 +116,9 @@ fn render_list(app: &mut App, frame: &mut Frame, area: Rect) {
         .collect();
     let list = List::new(items)
         .block(block)
-        .highlight_style(theme::selected());
+        .highlight_style(theme::selected())
+        .highlight_symbol(theme::SELECTED_SYMBOL)
+        .highlight_spacing(HighlightSpacing::Always);
     let mut state = ListState::default().with_selected(Some(app.selected));
     frame.render_stateful_widget(list, area, &mut state);
 }
@@ -307,7 +311,9 @@ fn render_status_picker(cursor: usize, frame: &mut Frame) {
                 ]))
                 .border_style(theme::focused_border()),
         )
-        .highlight_style(theme::selected());
+        .highlight_style(theme::selected())
+        .highlight_symbol(theme::SELECTED_SYMBOL)
+        .highlight_spacing(HighlightSpacing::Always);
     let mut state = ListState::default().with_selected(Some(cursor));
     frame.render_stateful_widget(list, popup, &mut state);
 }

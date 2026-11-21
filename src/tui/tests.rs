@@ -337,7 +337,6 @@ fn an_empty_tracker_says_how_to_see_closed_issues() {
 
 #[test]
 fn the_selected_row_is_drawn_in_reverse_video() {
-    // Reverse video survives NO_COLOR, so it alone marks the selection.
     let mut app = App::load(&tracker("reverse")).unwrap();
     let terminal = draw(&mut app);
     let buffer = terminal.backend().buffer();
@@ -349,14 +348,27 @@ fn the_selected_row_is_drawn_in_reverse_video() {
 }
 
 #[test]
+fn the_selected_row_carries_a_mark_that_needs_no_style() {
+    // Under NO_COLOR crossterm's empty colour sequence resets reverse
+    // video, so the mark is what shows which issue a key acts on.
+    let mut app = App::load(&tracker("mark")).unwrap();
+    press(&mut app, KeyCode::Char('j'));
+    let terminal = draw(&mut app);
+    let buffer = terminal.backend().buffer();
+    let row = |y: u16| (1..4).map(|x| buffer[(x, y)].symbol()).collect::<String>();
+    assert_eq!(row(3), "> b", "the selected row starts with the mark");
+    assert_eq!(row(2), "  i", "an unselected row starts with spaces");
+}
+
+#[test]
 fn a_status_is_drawn_in_its_colour() {
     let mut app = App::load(&tracker("colour")).unwrap();
     press(&mut app, KeyCode::Char('j'));
     let terminal = draw(&mut app);
     let buffer = terminal.backend().buffer();
     // The second list row is the blocked issue; its status column
-    // starts inside the border.
-    let cell = &buffer[(1, 3)];
+    // starts after the border and the selection mark.
+    let cell = &buffer[(3, 3)];
     assert_eq!(cell.symbol(), "b");
     assert_eq!(cell.fg, theme::status(Status::Blocked).fg.unwrap());
 }
@@ -641,9 +653,10 @@ mod editor {
     fn a_failed_editor_changes_nothing_and_names_itself() {
         let dir = scratch("failed");
         let err = edit_text("Old body.", "false", &dir.join("copy.md")).unwrap_err();
-        let text = err.to_string();
-        assert!(text.starts_with("the editor 'false' exited with"), "{text}");
-        assert!(text.ends_with("the body is unchanged"), "{text}");
+        assert_eq!(
+            err.to_string(),
+            "the editor 'false' exited with code 1; the body is unchanged"
+        );
     }
 
     #[test]
@@ -679,6 +692,58 @@ mod editor {
             assert_eq!(mode & 0o777, 0o600);
         }
     }
+}
+
+#[test]
+fn an_edited_body_is_saved_when_the_file_is_as_opened() {
+    let root = tracker("save-body");
+    let mut app = App::load(&root).unwrap();
+    app.save_body(
+        "One screen that lists every open issue.",
+        "A new body.".into(),
+    );
+    let issue = Repo::open(&root)
+        .unwrap()
+        .find_issue("ep01-ship-the-board")
+        .unwrap();
+    assert_eq!(issue.body.trim(), "A new body.");
+    assert_eq!(
+        app.message,
+        Some(Message::Info(
+            "saved the body of ep01-ship-the-board".into()
+        ))
+    );
+}
+
+#[test]
+fn a_body_changed_on_disk_during_the_edit_is_not_overwritten() {
+    // An agent appends to the body while the editor is open.
+    let root = tracker("stale-body");
+    let mut app = App::load(&root).unwrap();
+    let opened = "One screen that lists every open issue.";
+    Repo::open(&root)
+        .unwrap()
+        .edit_issue(
+            "ep01-ship-the-board",
+            crate::repo::EditIssueOptions {
+                append: Some("Added by an agent."),
+                ..Default::default()
+            },
+        )
+        .unwrap();
+    app.save_body(opened, "My edit.".into());
+    let issue = Repo::open(&root)
+        .unwrap()
+        .find_issue("ep01-ship-the-board")
+        .unwrap();
+    assert!(issue.body.contains("Added by an agent."), "{}", issue.body);
+    assert!(!issue.body.contains("My edit."));
+    let Some(Message::Error(text)) = &app.message else {
+        panic!("expected a refusal, got {:?}", app.message);
+    };
+    assert!(text.contains("changed on disk while you edited"), "{text}");
+    let kept = text.rsplit("your text is in ").next().unwrap();
+    assert_eq!(std::fs::read_to_string(kept).unwrap(), "My edit.");
 }
 
 #[test]

@@ -2,7 +2,9 @@
 //!
 //! Colours come from the sixteen the terminal names, so the user's own
 //! terminal theme decides how they look. The selection is drawn in
-//! reverse video, which still shows when `NO_COLOR` turns colour off.
+//! reverse video and marked with [`SELECTED_SYMBOL`]. The symbol is what
+//! shows under `NO_COLOR`: crossterm still writes an empty colour
+//! sequence there, and that sequence resets reverse video.
 
 use ratatui::style::{Color, Modifier, Style};
 
@@ -12,6 +14,10 @@ use crate::issue::Status;
 pub fn selected() -> Style {
     Style::new().add_modifier(Modifier::REVERSED)
 }
+
+/// The mark in front of the selected row, which needs no colour or
+/// attribute to show.
+pub const SELECTED_SYMBOL: &str = "> ";
 
 /// A pane's border when keys move it.
 pub fn focused_border() -> Style {

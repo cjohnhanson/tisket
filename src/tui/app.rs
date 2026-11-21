@@ -410,6 +410,44 @@ impl App {
         }
     }
 
+    /// Save a body edited in the editor.
+    ///
+    /// When the body on disk is no longer the one the editor opened, an
+    /// agent or another terminal changed it meanwhile, and a save would
+    /// erase that change. Nothing is written then; the edited text is
+    /// kept in a private file the footer names.
+    pub fn save_body(&mut self, opened: &str, body: String) {
+        let Some(id) = self.selected_issue().map(|i| i.id.clone()) else {
+            return;
+        };
+        let now = Repo::open_quiet(&self.root).and_then(|repo| repo.find_issue(&id));
+        if let Ok(issue) = &now
+            && issue.body.trim_end() != opened.trim_end()
+        {
+            let kept = std::env::temp_dir().join(format!(
+                "tisket-{id}-{}-{}.md",
+                std::process::id(),
+                chrono::Utc::now().format("%Y%m%dT%H%M%S%.3f")
+            ));
+            let message = match super::write_private(&kept, &body) {
+                Ok(()) => format!(
+                    "{id}'s body changed on disk while you edited; nothing written; your text is in {}",
+                    kept.display()
+                ),
+                Err(e) => format!(
+                    "{id}'s body changed on disk while you edited; nothing written; your text could not be kept: {e}"
+                ),
+            };
+            self.reload_or_report();
+            self.message = Some(Message::Error(message));
+            return;
+        }
+        self.write(
+            |repo, ws, id| crate::ops::set_body(repo, ws, id, &body),
+            |id, ()| format!("saved the body of {id}"),
+        );
+    }
+
     /// Run a write on the selected issue through the shared operations,
     /// then reload, and report the outcome in the footer.
     pub fn write<T>(

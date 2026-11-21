@@ -4,7 +4,7 @@ expression: draw(&mut app).backend()
 ---
 "tisket  tracker  all projects · open · 1 shown                                                      "
 "┌ Issues ───────────────────────────────────┐┌ Issue ──────────────────────────────────────────────┐"
-"│discovery   dc01  Write the guide          ││Write the guide                                      │"
+"│> discovery   dc01  Write the guide        ││Write the guide                                      │"
 "│                                           ││discovery  dc01-write-the-guide · docs               │"
 "│                                           ││                                                     │"
 "│                                           ││Priority  2                                          │"
