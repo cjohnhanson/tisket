@@ -71,7 +71,7 @@ The filename stem is the issue ID. It has a 4-character random prefix, a hyphen,
 
 ### Structure
 
-```
+```text
 ---
 <YAML frontmatter>
 ---
@@ -157,7 +157,7 @@ Tisket writes a null field as JSON `null`. `tisket issue list --format json` ret
 
 ## Directory layout
 
-```
+```text
 repo/
   tisket.yml
   .tisket/

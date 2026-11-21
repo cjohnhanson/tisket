@@ -87,6 +87,32 @@ Both checks refuse a note with any of these faults:
 
 Prose around the lines is ignored, so a note can also carry a narrative.
 
+## Docs tests
+
+`tests/docs.rs` runs every `console` block in README.md and docs/*.md
+against the built binary with trycmd. Each page runs in a scratch
+directory with its own `HOME`, a cleared environment, and a fixed git
+identity. The issues a page creates take fixed ID prefixes in order:
+`ab12`, `cd34`, `ef56`, and so on. A fence such as
+`` ```markdown {filename="README.md"} `` is a file the reader writes; the
+test writes it before the commands that follow. Fixtures for a page live
+in `tests/docs/<page>/`. The test also compares every command's `--help`
+with its file in `tests/snapshots/help/`. Change help text in the doc
+comments in `src/cli.rs`, never in a snapshot. To write real output into
+the pages and snapshots, run one of these, then read the diff:
+
+```sh
+TRYCMD=overwrite cargo test --test docs
+SNAPSHOTS=overwrite cargo test --test docs
+```
+
+`UPDATE_CLI_REFERENCE=1 cargo test --test cli_reference` rewrites
+docs/cli-reference.md from the clap definition.
+
+In README.md and docs/*.md, put every tisket command in a `console`
+block, except under Install. A `sh`, `text`, or other tagged block never
+runs. Give every fence a language: trycmd runs a fence with none.
+
 ## Running the gates locally
 
 `.gaff/gaff.yml` declares the gates once. `gaff init --github` writes

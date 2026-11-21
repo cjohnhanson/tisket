@@ -1,0 +1,48 @@
+List issues
+
+By default the command lists the open issues in every project.
+
+Text output columns: `ID`, `STATUS`, `TITLE`. A `*` after the status means that the issue diverges
+from another git branch.
+
+JSON output is an array of issue objects. See the JSON output format in `tisket docs file-format`.
+
+Usage: tisket issue list [OPTIONS]
+
+Options:
+  -p, --project <PROJECT>
+          Project to list issues from (default: all)
+
+      --root <ROOT>
+          Tracker directory. Literal: the directory must hold tisket.yml; no walk, no fallback.
+          Without it, the nearest tisket.yml at or above the cwd is used. With none, reads use the
+          configured root tracker and a write needs --home
+
+      --home
+          Act on the configured root tracker (`tisket store root`), wherever the command runs
+
+  -s, --status <STATUS>
+          Filter by status
+
+  -a, --assignee <ASSIGNEE>
+          Filter by assignee
+
+      --label <LABEL>
+          Filter by label
+
+      --closed
+          List closed issues instead of open ones
+
+      --where <WHERE>
+          Filter by a selector in namespace:value form. Repeatable. All selectors must match
+          
+          `label`, `status`, and `project` read those fields; any other namespace names a tag.
+
+      --format <FORMAT>
+          Output format (text or json)
+          
+          [default: text]
+          [possible values: text, json]
+
+  -h, --help
+          Print help (see a summary with '-h')

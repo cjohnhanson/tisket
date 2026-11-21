@@ -1,0 +1,31 @@
+Search issues with a regular expression
+
+The command matches against the frontmatter field values: `title`, `status`, `priority`,
+`assignee`, `due_date`, `labels`, and `depends_on`. It searches the open issues and the closed
+issues in every project.
+
+The match is case-sensitive. Start the pattern with `(?i)` to ignore case.
+
+Output columns: `ID`, `STATUS`, `PROJECT`, `TITLE`, `MATCH`. The `MATCH` column is a
+comma-separated list of the fields that matched.
+
+Usage: tisket search [OPTIONS] <PATTERN>
+
+Arguments:
+  <PATTERN>
+          Search pattern (a regular expression)
+
+Options:
+  -p, --project <PROJECT>
+          Filter to a specific project
+
+      --root <ROOT>
+          Tracker directory. Literal: the directory must hold tisket.yml; no walk, no fallback.
+          Without it, the nearest tisket.yml at or above the cwd is used. With none, reads use the
+          configured root tracker and a write needs --home
+
+      --home
+          Act on the configured root tracker (`tisket store root`), wherever the command runs
+
+  -h, --help
+          Print help (see a summary with '-h')

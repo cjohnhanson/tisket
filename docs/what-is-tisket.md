@@ -48,12 +48,13 @@ operations, and none of them changes the body.
 
 A minimal issue file looks like:
 
-```
+```markdown
 ---
 title: Fix the widget
 status: todo
 priority: null
 assignee: null
+due_date: null
 labels: []
 depends_on: []
 created: 2026-03-20T14:00:00Z
@@ -197,7 +198,7 @@ branch after the issue ID. It then passes the branch name back to
 prefix, or a slug, and so finds the active issue for the session.
 
 `tisket serve` gives a Model Context Protocol client read access to the
-tracker. Follow [Connect through MCP](https://eng.rip/docs/connect-through-mcp/)
+tracker. Follow [How to serve issues, notes, and skills over MCP](https://eng.rip/how-to-serve-issues-notes-and-skills-over-mcp/)
 to set up the host.
 
 For CLI usage details, see the [CLI reference](cli-reference.md). For
@@ -241,7 +242,7 @@ and declarations that other clones cannot follow.
 
 [How to organize dependencies and epics](how-to-organize-dependencies-and-epics.md)
 shows how to keep containment, work order, and completion distinct.
-Follow [Work across repositories](https://eng.rip/docs/work-across-repositories/)
+Follow [How to share notes, issues, and docs across repositories](https://eng.rip/how-to-share-notes-issues-and-docs-across-repositories/)
 to set up issues, notes, and skills across several repositories.
 
 ## Root resolution

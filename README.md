@@ -25,14 +25,14 @@ pages, the README and the licence. There is no Windows build.
 On Debian or Ubuntu, download the `.deb` from the [releases
 page](https://github.com/cjohnhanson/tisket/releases) and install it:
 
-```
+```sh
 wget https://github.com/cjohnhanson/tisket/releases/download/v0.2.6/tisket_0.2.6-1_amd64.deb
 sudo dpkg -i tisket_0.2.6-1_amd64.deb
 ```
 
 To run it once without installing anything:
 
-```
+```sh
 uvx tisket issue list
 npx tisket issue list
 ```
@@ -46,7 +46,7 @@ with Rust 1.88 or newer. A C compiler is needed as well, which
 
 To build tisket:
 
-```
+```sh
 git clone https://github.com/cjohnhanson/tisket
 cd tisket
 cargo build --release
@@ -58,19 +58,49 @@ cargo build --release
 Follow [Getting started with tisket](docs/getting-started.md) to define
 a task, save a checkpoint, and finish from another terminal.
 
-```sh
-tisket init                           # create tracker and project configuration
-tisket issue create "Fix the thing"   # create an issue
-tisket issue list                     # list open issues
-tisket issue list -s todo             # filter by status
-tisket issue show ab12                # show the issue details
-tisket issue edit ab12 --add-label urgent
-tisket issue close ab12               # move the file to .closed/
-tisket search "TLS|certificates"      # search every issue with a regex
-tisket store list                     # show this tracker and the trackers it declares
-tisket serve [--bind ADDR]            # serve this tracker over MCP
-tisket docs [topic]                   # show the bundled documentation
+In a git repository, create the tracker and two issues. Then list,
+filter, label, show, search, and close them:
+
+```console
+$ tisket init
+
+$ tisket issue create "Fix the thing"
+
+$ tisket issue create "Upgrade TLS certificates" -s discovery
+
+$ tisket issue list
+ID                             STATUS     TITLE
+ab12-fix-the-thing             todo       Fix the thing
+cd34-upgrade-tls-certificates  discovery  Upgrade TLS certificates
+
+$ tisket issue list -s todo
+ID                  STATUS  TITLE
+ab12-fix-the-thing  todo    Fix the thing
+
+$ tisket issue edit ab12 --add-label urgent
+
+$ tisket issue show ab12
+ab12-fix-the-thing (default)
+
+  Title:    Fix the thing
+  Status:   todo
+  Labels:   urgent
+
+$ tisket search "TLS|certificates"
+ID                             STATUS     PROJECT  TITLE                     MATCH
+cd34-upgrade-tls-certificates  discovery  default  Upgrade TLS certificates  title
+
+$ tisket issue close ab12
+
+$ tisket issue list --closed
+ID                  STATUS  TITLE
+ab12-fix-the-thing  done    Fix the thing
+
 ```
+
+`tisket store list` shows this tracker and the trackers it declares.
+`tisket docs` lists the bundled documentation, and `tisket docs <topic>`
+prints one page.
 
 ## How it works
 
@@ -79,7 +109,7 @@ and a slug from the title. The file holds YAML frontmatter for the
 metadata and a markdown body. Tisket moves a closed issue to
 `.closed/`.
 
-```
+```text
 .tisket/
   default/                           # project directory
     ab12-fix-the-widget.md           # open issue
@@ -98,9 +128,12 @@ An agent appends its working notes there: investigation logs,
 approaches that failed, and partial findings. The problem description
 above stays unchanged.
 
-```sh
-tisket scratch ab12 append "Confirmed: bounds check missing on line 42"
-tisket scratch ab12 read
+```console
+$ tisket scratch cd34 append "Confirmed: the certificates expire on 2026-12-01"
+
+$ tisket scratch cd34 read
+Confirmed: the certificates expire on 2026-12-01
+
 ```
 
 ### Git-aware divergence detection
@@ -117,11 +150,11 @@ not compare an open issue with its closed copy on another branch.
 client. The library answers both interfaces, so the server returns what
 the CLI returns.
 
-```sh
-tisket serve                        # speak MCP on stdin and stdout
-tisket serve --bind 127.0.0.1:7432  # serve over HTTP at /mcp on that address
-tisket serve --access read-write    # also allow appending to working notes
-```
+- `tisket serve` speaks MCP on stdin and stdout.
+- `tisket serve --bind 127.0.0.1:7432` serves over HTTP at `/mcp` on
+  that address.
+- `tisket serve --access read-write` also allows appending to working
+  notes.
 
 The server is read-only by default. With `--access read-write` it adds
 one write: appending to an issue's scratch notes. A caller cannot

@@ -1,0 +1,35 @@
+Plaintext issue tracker for humans and coding agents
+
+Every command takes `-h` or `--help`. `-V` and `--version` work at the
+top level only, as `tisket --version`; a subcommand refuses them.
+
+Usage: tisket [OPTIONS] <COMMAND>
+
+Commands:
+  init     Initialize tisket in the current directory
+  prime    Print what tisket is and how to use it, for an agent's context
+  hooks    Manage agent hooks
+  issue    Manage issues
+  search   Search issues with a regular expression
+  store    Manage the declared trackers
+  check    Check the issues for broken references and store problems
+  serve    Serve this tracker over the Model Context Protocol
+  scratch  Read or modify scratch notes for an issue
+  project  Manage projects
+  docs     Show the bundled documentation
+  help     Print this message or the help of the given subcommand(s)
+
+Options:
+      --root <ROOT>
+          Tracker directory. Literal: the directory must hold tisket.yml; no walk, no fallback.
+          Without it, the nearest tisket.yml at or above the cwd is used. With none, reads use the
+          configured root tracker and a write needs --home
+
+      --home
+          Act on the configured root tracker (`tisket store root`), wherever the command runs
+
+  -h, --help
+          Print help (see a summary with '-h')
+
+  -V, --version
+          Print version

@@ -1,0 +1,50 @@
+Serve this tracker over the Model Context Protocol
+
+Omit `--bind`, and the server speaks on stdin and stdout, for a client that starts the process.
+Give `--bind`, and it serves over HTTP at `/mcp` on that address, for a client that connects to
+it.
+
+A read-only server offers `tisket_list_issues`, `tisket_read_issue`, `tisket_rollup`, and
+`tisket_check`. `--access read-write` adds `tisket_append_scratch`, and nothing else. A caller
+cannot create an issue, change a status, or edit a body through the server.
+
+A served tracker has no authentication. The server answers whoever opens the connection.
+
+Authentication belongs in front of the server, in a program built for it. A reverse proxy
+terminates TLS and checks a token or an identity provider.
+
+Bind to `127.0.0.1` for a client on this machine. To serve anybody else, put the server behind a
+proxy that authenticates.
+
+Usage: tisket serve [OPTIONS]
+
+Options:
+      --root <ROOT>
+          Tracker directory. Literal: the directory must hold tisket.yml; no walk, no fallback.
+          Without it, the nearest tisket.yml at or above the cwd is used. With none, reads use the
+          configured root tracker and a write needs --home
+
+      --surfaces <SURFACES>
+          The surfaces to offer, separated by commas: resources, tools.
+          
+          The protocol cannot negotiate which of these a client understands, so the choice is
+          configuration. Tools are the surface every client can call, so the default keeps them
+          on.
+          
+          [default: resources,tools]
+
+      --access <ACCESS>
+          What a caller may do: read-only or read-write. A writable tracker allows appending to
+          working notes, and nothing else
+          
+          [default: read-only]
+
+      --home
+          Act on the configured root tracker (`tisket store root`), wherever the command runs
+
+      --bind <BIND>
+          Where to listen. Omitted, the server speaks on stdin and stdout. Given, it serves over
+          HTTP
+
+  -h, --help
+          Print help (see a summary with '-h')

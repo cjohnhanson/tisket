@@ -10,7 +10,7 @@ This guide assumes that you initialized tisket. See [Getting
 Started](getting-started.md) if you have not.
 
 This page covers operations on individual issues. Follow
-[Run it on your project](https://eng.rip/docs/run-it-on-your-project/)
+[Set up a repository](https://eng.rip/set-up-a-repository/)
 to make issue records part of the coding agent's regular work.
 
 For an issue that crosses branches, use
@@ -26,49 +26,55 @@ starts with a `default` project.
 
 To create a new project:
 
-```
-tisket project create backend
+```console
+$ tisket project create backend
+
 ```
 
 To list every project:
 
-```
-tisket project list
+```console
+$ tisket project list
+backend
+default
+
 ```
 
 ## Creating issues
 
 To create a simple issue in the default project:
 
-```
-tisket issue create "Fix the widget"
+```console
+$ tisket issue create "Fix the widget"
+
 ```
 
 To place it in a specific project:
 
-```
-tisket issue create "Fix the widget" -p backend
+```console
+$ tisket issue create "Fix the login form" -p backend
+
 ```
 
 Every issue gets a 4-character short ID prefix before the slug of the
 title. The prefix is random lowercase alphanumeric text, such as
-`ab12`. The full ID for the example above is something like
-`ab12-fix-the-widget`. Tisket writes the file to
-`.tisket/backend/ab12-fix-the-widget.md`.
+`cd34`. The full ID for the example above is something like
+`cd34-fix-the-login-form`. Tisket writes the file to
+`.tisket/backend/cd34-fix-the-login-form.md`:
+
+```console
+$ tisket issue path fix-the-login-form
+.tisket/backend/cd34-fix-the-login-form.md
+
+```
 
 ### Metadata flags
 
 You can set every metadata field when you create the issue:
 
-```
-tisket issue create "Fix the widget" \
-  --priority 2 \
-  -a cjohnhanson \
-  -l "bug,urgent" \
-  --due 2026-04-01 \
-  -d "x9f2-other-issue" \
-  -s discovery \
-  -b "Detailed description of the problem"
+```console
+$ tisket issue create "Fix the parser" --priority 2 -a cjohnhanson -l "bug,urgent" --due 2026-04-01 -d ab12-fix-the-widget -s discovery -b "Detailed description of the problem"
+
 ```
 
 Flag reference:
@@ -80,6 +86,7 @@ Flag reference:
 | `-a` | `--assignee` | Assignee name |
 | `-l` | `--labels` | Comma-separated labels |
 | `-d` | `--depends-on` | Comma-separated issue IDs this issue depends on |
+| | `--children` | Comma-separated child issue IDs, for an epic |
 | | `--due` | Due date in YYYY-MM-DD format |
 | `-s` | `--status` | Initial status (default: `todo`) |
 | `-b` | `--body` | Inline body text |
@@ -129,8 +136,9 @@ active statuses.
 
 To update an issue's status:
 
-```
-tisket issue edit ab12 -s in_progress
+```console
+$ tisket issue edit ab12 -s in_progress
+
 ```
 
 ### Closing an issue
@@ -139,14 +147,16 @@ Closing moves the file from the project directory into a `.closed/`
 subdirectory. It sets the status to `done`, or to the terminal status
 you give. It also updates the timestamp.
 
-```
-tisket issue close ab12
+```console
+$ tisket issue close ab12
+
 ```
 
 To close as cancelled instead:
 
-```
-tisket issue close ab12 -s cancelled
+```console
+$ tisket issue close cd34 -s cancelled
+
 ```
 
 ### Reopening an issue
@@ -155,17 +165,31 @@ Reopening moves the file back out of `.closed/`. It sets the status to
 `todo`, or to the status you give. It also removes the `.closed/`
 directory if the directory is now empty.
 
-```
-tisket issue reopen ab12
-tisket issue reopen ab12 -s discovery
+```console
+$ tisket issue reopen ab12
+
+$ tisket issue reopen cd34 -s discovery
+
 ```
 
 ## Viewing issues
 
 To show one issue with all of its metadata:
 
-```
-tisket issue show ab12
+```console
+$ tisket issue show ef56
+ef56-fix-the-parser (default)
+
+  Title:    Fix the parser
+  Status:   discovery
+  Priority: 2
+  Assignee: cjohnhanson
+  Due:      2026-04-01
+  Labels:   bug, urgent
+  Depends:  ab12-fix-the-widget
+
+Detailed description of the problem
+
 ```
 
 The command prints the ID, the project, the title, and the status. It
@@ -176,9 +200,13 @@ command lists those branches and the fields that differ.
 
 To extract one field value, which is useful in a script:
 
-```
-tisket issue show ab12 --field status
-tisket issue show ab12 --field assignee
+```console
+$ tisket issue show ef56 --field status
+discovery
+
+$ tisket issue show ef56 --field assignee
+cjohnhanson
+
 ```
 
 Valid field names: `title`, `status`, `priority`, `assignee`, `due_date`,
@@ -186,39 +214,97 @@ Valid field names: `title`, `status`, `priority`, `assignee`, `due_date`,
 
 To get the file path of an issue:
 
-```
-tisket issue path ab12
+```console
+$ tisket issue path ef56
+.tisket/default/ef56-fix-the-parser.md
+
 ```
 
 ### JSON output
 
 Both `show` and `list` support `--format json`:
 
-```
-tisket issue show ab12 --format json
-tisket issue list --format json
+```console
+$ tisket issue show ef56 --format json
+{
+  "assignee": "cjohnhanson",
+  "body": "Detailed description of the problem",
+  "children": [],
+  "closed": false,
+  "depends_on": [
+    "ab12-fix-the-widget"
+  ],
+  "due_date": "2026-04-01",
+  "id": "ef56-fix-the-parser",
+  "labels": [
+    "bug",
+    "urgent"
+  ],
+  "priority": "2",
+  "project": "default",
+  "scratch": "",
+  "status": "discovery",
+  "tags": {},
+  "title": "Fix the parser"
+}
+
+$ tisket issue list --format json -p backend
+[
+  {
+    "assignee": null,
+    "body": "",
+    "children": [],
+    "closed": false,
+    "depends_on": [],
+    "due_date": null,
+    "id": "cd34-fix-the-login-form",
+    "labels": [],
+    "priority": null,
+    "project": "backend",
+    "scratch": "",
+    "status": "discovery",
+    "tags": {},
+    "title": "Fix the login form"
+  }
+]
+
 ```
 
 ## Listing and filtering issues
 
 To list every open issue in every project:
 
-```
-tisket issue list
+```console
+$ tisket issue list
+ID                       STATUS     TITLE
+ab12-fix-the-widget      todo       Fix the widget
+cd34-fix-the-login-form  discovery  Fix the login form
+ef56-fix-the-parser      discovery  Fix the parser
+
 ```
 
 To filter by project, status, or label:
 
-```
-tisket issue list -p backend
-tisket issue list -s todo
-tisket issue list --label bug
+```console
+$ tisket issue list -p backend
+ID                       STATUS     TITLE
+cd34-fix-the-login-form  discovery  Fix the login form
+
+$ tisket issue list -s todo
+ID                   STATUS  TITLE
+ab12-fix-the-widget  todo    Fix the widget
+
+$ tisket issue list --label bug
+ID                   STATUS     TITLE
+ef56-fix-the-parser  discovery  Fix the parser
+
 ```
 
 To list the closed issues instead of the open ones:
 
-```
-tisket issue list --closed
+```console
+$ tisket issue list --closed
+
 ```
 
 ### Selector filtering
@@ -226,9 +312,15 @@ tisket issue list --closed
 For more precise filtering, use `--where` with `namespace:value`
 syntax. You can repeat the flag. An issue must match every selector.
 
-```
-tisket issue list --where label:bug --where status:todo
-tisket issue list --where project:backend
+```console
+$ tisket issue list --where label:bug --where status:discovery
+ID                   STATUS     TITLE
+ef56-fix-the-parser  discovery  Fix the parser
+
+$ tisket issue list --where project:backend
+ID                       STATUS     TITLE
+cd34-fix-the-login-form  discovery  Fix the login form
+
 ```
 
 `label`, `status`, and `project` read the fields of those names. Any
@@ -239,43 +331,63 @@ tag's value.
 
 To change the metadata on an existing issue:
 
-```
-tisket issue edit ab12 --title "New title"
-tisket issue edit ab12 --priority 1
-tisket issue edit ab12 -a someone
-tisket issue edit ab12 --due 2026-05-01
+```console
+$ tisket issue edit ab12 --title "New title"
+
+$ tisket issue edit ab12 --priority 1
+
+$ tisket issue edit ab12 -a someone
+
+$ tisket issue edit ab12 --due 2026-05-01
+
 ```
 
 ### Labels
 
-You can replace every label, add one label, or remove one label:
+You can replace every label, add one label, or remove one label. Each
+command below shows the labels it leaves:
 
-```
-tisket issue edit ab12 -l "bug,p1"          # replace every label
-tisket issue edit ab12 --add-label urgent    # add one label
-tisket issue edit ab12 --remove-label p1     # remove one label
+```console
+$ tisket issue edit ab12 -l "bug,p1"
+
+$ tisket issue show ab12 --field labels
+bug, p1
+
+$ tisket issue edit ab12 --add-label urgent
+
+$ tisket issue show ab12 --field labels
+bug, p1, urgent
+
+$ tisket issue edit ab12 --remove-label p1
+
+$ tisket issue show ab12 --field labels
+bug, urgent
+
 ```
 
 ### Dependencies
 
 To replace the dependency list:
 
-```
-tisket issue edit ab12 -d "x9f2,b3k1"
+```console
+$ tisket issue edit ab12 -d "cd34,ef56"
+
 ```
 
 ### Body
 
 To replace the body entirely:
 
-```
-tisket issue edit ab12 --body "New body content"
+```console
+$ tisket issue edit ab12 --body "New body content"
+
 ```
 
 To append to the existing body:
 
-```
-tisket issue edit ab12 --append "Additional notes from investigation"
+```console
+$ tisket issue edit ab12 --append "Additional notes from investigation"
+
 ```
 
 Tisket does not edit a closed issue. Reopen the issue first.
@@ -284,8 +396,9 @@ Tisket does not edit a closed issue. Reopen the issue first.
 
 To move an issue from its current project to another:
 
-```
-tisket issue move ab12 --project backend
+```console
+$ tisket issue move ab12 --project backend
+
 ```
 
 This works for an open issue and for a closed issue. Tisket moves the
@@ -300,46 +413,65 @@ The scratch notes are working memory. Use them for context, partial
 findings, links, and anything else an agent or a person needs across
 sessions.
 
-To read the scratch notes:
-
-```
-tisket scratch ab12
-tisket scratch ab12 read
-```
-
 To replace the scratch notes:
 
-```
-tisket scratch ab12 write "Current findings: the bug is in the parser"
+```console
+$ tisket scratch ab12 write "Current findings: the bug is in the parser"
+
 ```
 
 To append to the scratch notes:
 
+```console
+$ tisket scratch ab12 append "Also checked the lexer — not the issue"
+
 ```
-tisket scratch ab12 append "Also checked the lexer — not the issue"
+
+To read the scratch notes, with or without `read`:
+
+```console
+$ tisket scratch ab12
+Current findings: the bug is in the parser
+Also checked the lexer — not the issue
+
+$ tisket scratch ab12 read
+Current findings: the bug is in the parser
+Also checked the lexer — not the issue
+
 ```
 
 To clear the scratch notes:
 
-```
-tisket scratch ab12 clear
+```console
+$ tisket scratch ab12 clear
+
 ```
 
 ## Searching issues
 
 Search reads the frontmatter fields and never the body. The pattern is a
 regular expression, matched against the title, the status, the priority,
-the assignee, the due date, the labels, and the dependencies.
+the assignee, the due date, the labels, and the dependencies. The match
+is case-sensitive; start the pattern with `(?i)` to ignore case.
 
-```
-tisket search "parser"
-tisket search "fix.*widget"
+```console
+$ tisket search "parser"
+ID                   STATUS     PROJECT  TITLE           MATCH
+ef56-fix-the-parser  discovery  default  Fix the parser  title
+
+$ tisket search "(?i)fix.*form"
+ID                       STATUS     PROJECT  TITLE               MATCH
+cd34-fix-the-login-form  discovery  backend  Fix the login form  title
+
 ```
 
 To search one project only:
 
-```
-tisket search "parser" -p backend
+```console
+$ tisket search "login" -p backend
+ID                       STATUS     PROJECT  TITLE               MATCH
+cd34-fix-the-login-form  discovery  backend  Fix the login form  title
+
 ```
 
 The search results show the issue ID, the status, the project, the
@@ -358,14 +490,15 @@ open on one branch and closed on another.
 In the list output, a divergent issue shows an asterisk after the
 status:
 
-```
-ab12  in_progress*  Fix the widget
+```text
+ID                   STATUS        TITLE
+ab12-fix-the-widget  in_progress*  Fix the widget
 ```
 
 In the show output, tisket lists each divergent branch with the fields
 that differ:
 
-```
+```text
   Other branches:
     feature/xyz   status, priority
     origin/main
@@ -385,27 +518,37 @@ An epic is an issue that lists its children in the `children:` field.
 Tisket has no separate epic type, and a child can live in another
 tracker.
 
-```
-tisket issue create "epic: context lifecycle management" \
-  -l epic,architecture \
-  -s discovery \
-  --children "8skh,irx9"
+```console
+$ tisket issue create "epic: context lifecycle management" -l epic,architecture -s discovery --children "ef56,cd34"
+
 ```
 
 Add a child later with the same field:
 
-```
-tisket issue edit nbuj --children "8skh,irx9,f4k2"
+```console
+$ tisket issue edit gh78 --children "ef56,cd34,ab12"
+
 ```
 
 `tisket issue show` prints the children with the status of each one and
 the count that is done, so you maintain no list by hand:
 
-```
+```console
+$ tisket issue close ef56
+
+$ tisket issue show gh78
+gh78-epic-context-lifecycle-management (default)
+
+  Title:    epic: context lifecycle management
+  Status:   discovery
+  Labels:   epic, architecture
+
   Children:
-    done      8skh-context-lifecycle-design   Context lifecycle design
-    todo      irx9-skills-go-unused           Skills go unused
-    1/2 done
+    done      ef56-fix-the-parser  Fix the parser
+    discovery cd34-fix-the-login-form  Fix the login form
+    todo      ab12-fix-the-widget  New title
+    1/3 done
+
 ```
 
 A child in another tracker carries its alias: `children: [a:x9k2,
@@ -445,12 +588,14 @@ status on `issue edit`, and it refuses only an edit to a closed issue.
 
 To make an issue ready for pickup, set its status to `todo`:
 
-```
-tisket issue edit ab12 -s todo
+```console
+$ tisket issue edit ab12 -s todo
+
 ```
 
 To record a dependency for the harness to check, add it:
 
-```
-tisket issue edit ab12 -d "x9f2"
+```console
+$ tisket issue edit ab12 -d "cd34"
+
 ```

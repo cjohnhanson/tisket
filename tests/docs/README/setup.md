@@ -1,0 +1,5 @@
+```console
+$ git init -q
+
+```
+

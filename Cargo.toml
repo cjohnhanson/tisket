@@ -86,6 +86,11 @@ diataxis = { version = "0.1", default-features = false, features = ["build"] }
 # fails when the committed page differs. A test-only dependency: the
 # shipped crate and its consumers never compile it.
 usage-lib = { version = "7", default-features = false, features = ["clap", "markdown"] }
+# Run the `console` blocks of README.md and docs/*.md against the built
+# binary (tests/docs.rs), and compare `--help` with its snapshots.
+snapbox = "1.2"
+tempfile = "3"
+trycmd = "1.2"
 
 [[test]]
 name = "cli_reference"

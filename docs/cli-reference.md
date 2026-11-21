@@ -131,6 +131,8 @@ Create a new issue
 
 Tisket makes the filename from a slug of the title. For example, "Fix the widget" becomes `ab12-fix-the-widget.md`. The `ab12` part is a random 4-character `[a-z0-9]` prefix. Tisket rejects a duplicate slug, even with a different prefix.
 
+The command prints nothing. To print the new ID, run `tisket issue show <slug> --field id`.
+
 ### Arguments
 
 #### `<TITLE>`
@@ -275,7 +277,7 @@ Extract a single field value
 
 Valid fields: `title`, `status`, `priority`, `assignee`, `due_date`, `labels`, `depends_on`, `children`, `body`, `scratch`, `id`, `project`.
 
-With `--field`, the command prints only that field value. It adds no formatting and no labels. For a list field (`labels`, `depends_on`, `children`), it separates the values with commas.
+With `--field`, the command prints only that field value. It adds no formatting and no labels. For a list field (`labels`, `depends_on`, `children`), it separates the values with a comma and a space.
 
 #### `-h --help`
 
@@ -476,6 +478,8 @@ Print help (see a summary with '-h')
 Search issues with a regular expression
 
 The command matches against the frontmatter field values: `title`, `status`, `priority`, `assignee`, `due_date`, `labels`, and `depends_on`. It searches the open issues and the closed issues in every project.
+
+The match is case-sensitive. Start the pattern with `(?i)` to ignore case.
 
 Output columns: `ID`, `STATUS`, `PROJECT`, `TITLE`, `MATCH`. The `MATCH` column is a comma-separated list of the fields that matched.
 

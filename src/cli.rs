@@ -130,12 +130,18 @@ pub enum Command {
     #[command(subcommand)]
     Issue(Box<IssueCommand>),
 
+    // Describes Repo::search and Repo::search_issues_in_dir in
+    // src/repo.rs: RegexMatcher::new_line_matcher builds a case-sensitive
+    // matcher, so `(?i)` is the way to ignore case.
     /// Search issues with a regular expression
     ///
     /// The command matches against the frontmatter field values: `title`,
     /// `status`, `priority`, `assignee`, `due_date`, `labels`, and
     /// `depends_on`. It searches the open issues and the closed issues in
     /// every project.
+    ///
+    /// The match is case-sensitive. Start the pattern with `(?i)` to
+    /// ignore case.
     ///
     /// Output columns: `ID`, `STATUS`, `PROJECT`, `TITLE`, `MATCH`. The
     /// `MATCH` column is a comma-separated list of the fields that
@@ -269,12 +275,17 @@ pub enum ConfigScope {
 
 #[derive(Parser)]
 pub enum IssueCommand {
+    // Describes the IssueCommand::Create arm of run in src/cli.rs, which
+    // returns Ok(()) after Repo::create_issue and prints nothing.
     /// Create a new issue
     ///
     /// Tisket makes the filename from a slug of the title. For example,
     /// "Fix the widget" becomes `ab12-fix-the-widget.md`. The `ab12` part
     /// is a random 4-character `[a-z0-9]` prefix. Tisket rejects a
     /// duplicate slug, even with a different prefix.
+    ///
+    /// The command prints nothing. To print the new ID, run
+    /// `tisket issue show <slug> --field id`.
     Create(IssueCreateArgs),
 
     /// List issues
@@ -440,9 +451,12 @@ pub struct IssueShowArgs {
     /// `due_date`, `labels`, `depends_on`, `children`, `body`, `scratch`,
     /// `id`, `project`.
     ///
+    // Describes print_issue_field in src/cli.rs, which joins a list
+    // field with ", ".
     /// With `--field`, the command prints only that field value. It adds
     /// no formatting and no labels. For a list field (`labels`,
-    /// `depends_on`, `children`), it separates the values with commas.
+    /// `depends_on`, `children`), it separates the values with a comma
+    /// and a space.
     #[arg(long)]
     pub field: Option<String>,
 }

@@ -1,0 +1,30 @@
+Show the bundled documentation
+
+The pages are compiled into the binary, so the command works from any directory.
+
+`tisket docs` lists the pages. `tisket docs <slug>` prints one page. `tisket docs search <query>`
+lists the pages that carry the query. `tisket docs --all` prints every page, in one stream.
+
+Usage: tisket docs [OPTIONS] [TOPIC] [QUERY]
+
+Arguments:
+  [TOPIC]
+          Topic slug to show, or "search" to search the docs
+
+  [QUERY]
+          Search query (when topic is "search")
+
+Options:
+  -a, --all
+          Print every page whole, in one stream
+
+      --root <ROOT>
+          Tracker directory. Literal: the directory must hold tisket.yml; no walk, no fallback.
+          Without it, the nearest tisket.yml at or above the cwd is used. With none, reads use the
+          configured root tracker and a write needs --home
+
+      --home
+          Act on the configured root tracker (`tisket store root`), wherever the command runs
+
+  -h, --help
+          Print help (see a summary with '-h')

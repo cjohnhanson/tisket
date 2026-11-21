@@ -1,0 +1,34 @@
+Set up hooks for a coding agent
+
+**Not yet implemented.** The command fails at runtime.
+
+Usage: tisket hooks setup [OPTIONS] <AGENT>
+
+Arguments:
+  <AGENT>
+          Agent to configure (e.g. "claude")
+
+Options:
+      --root <ROOT>
+          Tracker directory. Literal: the directory must hold tisket.yml; no walk, no fallback.
+          Without it, the nearest tisket.yml at or above the cwd is used. With none, reads use the
+          configured root tracker and a write needs --home
+
+  -s, --scope <SCOPE>
+          Configuration scope
+          
+          `local` (.claude/settings.local.json, gitignored), `project` (.claude/settings.json,
+          version controlled), or `user` (~/.claude/settings.json, global).
+
+          Possible values:
+          - local:   .claude/settings.local.json (gitignored)
+          - project: .claude/settings.json (version controlled)
+          - user:    ~/.claude/settings.json (global)
+          
+          [default: local]
+
+      --home
+          Act on the configured root tracker (`tisket store root`), wherever the command runs
+
+  -h, --help
+          Print help (see a summary with '-h')
