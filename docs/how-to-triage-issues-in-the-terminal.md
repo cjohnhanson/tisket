@@ -42,8 +42,8 @@ shown.
 A key from the Key reference table clears a successful action result
 and restores the footer hints. Errors stay until a later action
 reports its own result, or until Esc on the main screen.
-Moving through the list or opening help, the status picker, or the
-working note box does not clear errors.
+Moving through the list, opening help or the status picker, or adding
+a working note does not clear errors.
 The footer wraps an error across up to six rows. A narrow terminal
 can cut off the message. Widen the terminal to read the rest.
 On the main screen, the footer adds "Esc dismisses" after the error.
@@ -116,8 +116,8 @@ the note is empty.
 
 If tisket refuses to save a note, it writes nothing to the issue.
 It keeps the typed note in a private temporary file. The footer gives
-the reason, says "nothing written", and names the file. The file has
-a random name and is readable only by the user.
+the reason, says "nothing written", and names the file. The file is
+named `tisket-<id>-*.md`. Only the user can read it.
 
 ## Edit the body
 
@@ -134,10 +134,11 @@ stopped the program.
 
 If the edited text is not UTF-8, tisket leaves the body unchanged.
 The footer reports the encoding error.
-After a UTF-8 error, or an editor exit error once the text has
-changed, tisket keeps the temporary file and gives its path in the
-footer.
-Each kept file is in `$TMPDIR`, named `tisket-<id>-*.md`.
+After a UTF-8 error, tisket keeps the temporary file.
+It also keeps the file after an editor exit error if the text has
+changed. The footer gives the file's path.
+Each kept file is in the temporary directory (`$TMPDIR`, or `/tmp`
+if it is unset), named `tisket-<id>-*.md`.
 Only the user can read it.
 
 If the editor removes or renames the temporary file, tisket leaves
@@ -150,9 +151,10 @@ saves it as the new body.
 The same rules apply as for `tisket issue edit --body`.
 Tisket refuses to save if the body changed on disk or the issue closed while the editor was open.
 For example, an agent may have appended to the body.
-If a body save is refused for any reason, tisket writes nothing to the issue.
-Tisket keeps the edited text in a private temporary file and names that file in the footer.
-The file has a random name and is readable only by the user.
+If tisket refuses a body save for any reason, it writes nothing to
+the issue. Tisket keeps the edited text in a private temporary file
+and names that file in the footer.
+The file is named `tisket-<id>-*.md`. Only the user can read it.
 A closed issue's body cannot be edited.
 Reopen it with the status picker first.
 

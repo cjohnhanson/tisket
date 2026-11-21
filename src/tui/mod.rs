@@ -133,10 +133,10 @@ fn edit_body(app: &App, id: &str, editor: &str) -> Result<Option<(String, String
 /// way `$EDITOR` is commonly written (`code -w`); a path holding a space
 /// needs a wrapper script.
 ///
-/// The copy holds the user's text, so it is removed only when the text is
-/// unchanged or comes back for the save. On every other outcome, an
-/// editor that exits with an error or text that is not UTF-8, the copy is
-/// kept and the error names it.
+/// The copy holds the user's text. It is kept, and the error names it,
+/// when the text is not UTF-8 or when the editor exits with an error
+/// after changing it. In every other case it is removed. An editor that
+/// deletes the copy leaves nothing to keep.
 fn edit_text(text: &str, editor: &str, dir: &Path, prefix: &str) -> Result<Option<String>> {
     // A trailing newline, so an editor that appends a line does not join
     // it to the last one.
