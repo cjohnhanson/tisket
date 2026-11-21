@@ -193,9 +193,9 @@ compare the current issue file with committed versions on other branches.
 They compare title, status, priority, assignee, due date, labels, and
 dependencies, plus the presence of body and scratch text. They do not
 compare the full text or another worktree's uncommitted files.
-Differences appear as follows:
+The results appear as follows:
 
 - In the `issue list` text output, tisket adds a `*` to the status, such as `todo*`.
-- In the `issue show` text output, an "Other branches" section lists local and remote-tracking branches whose committed tree holds the issue's file, except branches pointing at the current HEAD commit. Each branch name is followed by the compared fields that differ, if any.
+- In `issue show` text output, "Other branches" lists local and remote-tracking branches whose committed trees hold the issue's file at the same path. Branches pointing directly at HEAD are skipped. Symbolic refs such as `origin/HEAD` still appear when they resolve to HEAD. Each branch name is followed by the compared fields that differ, if any.
 
 This comparison only reads and never blocks. Tisket ignores a git failure without a message.

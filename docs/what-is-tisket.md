@@ -154,9 +154,9 @@ the work.
 ## Git-aware divergence detection
 
 When tisket lists or shows an issue, it reads the file from the disk.
-It also reads the same file path from the tree of every other branch.
-This includes local branches and remote branches, but not the current
-HEAD. Tisket then parses each version and compares the content field
+It also reads the same file path from local and remote-tracking
+branches' committed trees. It skips branches whose refs point directly
+at HEAD. Tisket then parses each version and compares the content field
 by field.
 
 A branch can hold a different version of the issue. Tisket marks the

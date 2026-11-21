@@ -240,7 +240,7 @@ Create README.md. It must say that this repository keeps issues beside code and 
 ```
 
 An older branch can still appear under "Other branches" after the merge.
-It stays listed while it holds the file and points to a commit other than HEAD.
+It stays listed while it holds the same file path at a commit other than HEAD, even if the file is identical.
 Do not change the reconciled issue merely to remove the listing.
 
 For future handoffs, include the branch, worktree path, completed

@@ -520,8 +520,9 @@ $ git switch -q main
 
 ```
 
-In the list output, a divergent issue shows an asterisk after the
-status. In the show output, tisket lists each divergent branch with the
+In the list output, an issue shows an asterisk after the status only
+when a compared field differs on another listed branch. The show output
+lists branches holding the same file path, followed by any compared
 fields that differ:
 
 ```console
