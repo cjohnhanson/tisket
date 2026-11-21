@@ -125,12 +125,13 @@ Tisket has a fixed set of statuses:
 | `in_progress` | Someone is working on it now |
 | `blocked` | Waiting for a dependency or an external factor |
 | `paused` | Suspended on purpose |
-| `done` | Completed (terminal) |
-| `cancelled` | Abandoned (terminal) |
+| `done` | Completed |
+| `cancelled` | Abandoned |
 
-`done` and `cancelled` are terminal. Closing an issue moves it to one of
-them. `discovery`, `todo`, `in_progress`, `blocked`, and `paused` are
-active statuses.
+By convention, `done` and `cancelled` are terminal statuses for closed
+issues, and the other five are active statuses for open issues. Tisket
+does not check this. The directory records whether an issue is open or
+closed: a closed issue is in `.closed/`, whatever its status.
 
 ### Changing status
 
@@ -144,8 +145,9 @@ $ tisket issue edit ab12 -s in_progress
 ### Closing an issue
 
 Closing moves the file from the project directory into a `.closed/`
-subdirectory. It sets the status to `done`, or to the terminal status
-you give. It also updates the timestamp.
+subdirectory. It sets the status to `done`, or to the status you give.
+Tisket does not check that the status you give is terminal. It also
+updates the timestamp.
 
 ```console
 $ tisket issue close ab12
@@ -456,6 +458,12 @@ is case-sensitive; start the pattern with `(?i)` to ignore case.
 
 ```console
 $ tisket search "parser"
+ID                   STATUS     PROJECT  TITLE           MATCH
+ef56-fix-the-parser  discovery  default  Fix the parser  title
+
+$ tisket search "PARSER"
+
+$ tisket search "(?i)PARSER"
 ID                   STATUS     PROJECT  TITLE           MATCH
 ef56-fix-the-parser  discovery  default  Fix the parser  title
 

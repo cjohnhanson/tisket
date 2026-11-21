@@ -37,11 +37,13 @@ them with `cat`, or with tisket itself (`tisket issue list`,
 
 ## What CI checks
 
-Three workflows check a change, and `release.yml` publishes a tag.
+Four workflows check a change, and `release.yml` publishes a tag.
 `verify` runs on every push. `gate` runs on a pull request, and `main`
 requires it. `review-gate` runs on a pull request too. It hands the
 sign-off note to `gaff reviews check` under the policy on `main`, so a
-branch cannot weaken the check that judges it.
+branch cannot weaken the check that judges it. `docs` runs on a pull
+request and on a push to `main`, and runs the checks described under
+"Docs tests".
 
 `verify` and `gate` run the commands the local git hooks run:
 
@@ -112,6 +114,27 @@ docs/cli-reference.md from the clap definition.
 In README.md and docs/*.md, put every tisket command in a `console`
 block, except under Install. A `sh`, `text`, or other tagged block never
 runs. Give every fence a language: trycmd runs a fence with none.
+
+The `docs` workflow calls `.github/workflows/family-checks.yml` in the
+diataxis repository, which every tool of the eng.rip family (tundish,
+gaff, tisket, zettel, almanac, diataxis, missouri) shares. It reads
+README.md and docs/, and fails when:
+
+- `tests/docs.rs` is missing, or does not name trycmd, README.md, and
+  docs;
+- a command of any of those tools sits outside a `console` block, except
+  under Install;
+- a fence has no language, or is a `trycmd` fence;
+- the README does not open with `# tisket`, has no paragraph before its
+  first section, has no `## Install` section, or does not end with
+  `## License`;
+- a link to a file or heading in the repository is broken (a push to
+  `main` checks web links too, except the hosts in `.lycheeignore`,
+  which refuse automated requests);
+- typos finds a misspelling.
+
+The scripts and their rules are in the diataxis repository under
+`scripts/family/`; each one prints its rules with `--help`.
 
 ## Running the gates locally
 

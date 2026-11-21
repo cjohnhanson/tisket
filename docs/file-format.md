@@ -33,10 +33,13 @@ tisket uses a fixed set of workflow statuses:
 | Done | `done` | Terminal |
 | Cancelled | `cancelled` | Terminal |
 
-"Active" means that the issue is open. "Pickable" identifies a candidate
-for an agent workflow to inspect. The workflow must check dependencies,
+By convention, an open issue has an active status and a closed issue
+has a terminal status. Tisket does not check this: the directory
+records whether an issue is open or closed, and a closed issue is in
+`.closed/` whatever its status. "Pickable" identifies a candidate for
+an agent workflow to inspect. The workflow must check dependencies,
 ownership, and whether a block or pause has cleared before starting.
-Tisket does not enforce that policy. "Terminal" means that the issue is closed.
+Tisket does not enforce that policy.
 
 Tisket parses the legacy value `backlog` as `todo`.
 

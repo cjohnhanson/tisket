@@ -275,8 +275,10 @@ pub enum ConfigScope {
 
 #[derive(Parser)]
 pub enum IssueCommand {
-    // Describes the IssueCommand::Create arm of run in src/cli.rs, which
-    // returns Ok(()) after Repo::create_issue and prints nothing.
+    // Describes the IssueCommand::Create arm of run_command in src/cli.rs,
+    // which returns Ok(()) after Repo::create_issue and prints nothing on
+    // stdout. From a subdirectory, run prints "tisket: writing to tracker
+    // <root>" on stderr.
     /// Create a new issue
     ///
     /// Tisket makes the filename from a slug of the title. For example,
@@ -284,7 +286,7 @@ pub enum IssueCommand {
     /// is a random 4-character `[a-z0-9]` prefix. Tisket rejects a
     /// duplicate slug, even with a different prefix.
     ///
-    /// The command prints nothing. To print the new ID, run
+    /// The command prints nothing on stdout. To print the new ID, run
     /// `tisket issue show <slug> --field id`.
     Create(IssueCreateArgs),
 
@@ -595,9 +597,14 @@ pub struct IssueCloseArgs {
     #[arg(short, long)]
     pub project: Option<String>,
 
-    /// Terminal status (default: done)
+    // Describes Repo::close_issue in src/repo.rs, which parses any status,
+    // defaults to Status::Done, and moves the file into .closed/ whatever
+    // the status is.
+    /// Status to set on the closed issue (default: done)
     ///
-    /// Usually `done` or `cancelled`.
+    /// Usually `done` or `cancelled`. tisket accepts any status here and
+    /// does not check that it is terminal. The `.closed/` directory, not
+    /// the status, records that the issue is closed.
     #[arg(short, long)]
     pub status: Option<String>,
 }

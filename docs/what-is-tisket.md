@@ -70,7 +70,7 @@ Reproduced locally — the bounds check is missing on line 42.
 
 ## The status lifecycle
 
-**Active statuses** (the issue is open):
+**Active statuses** (by convention, for open issues):
 
 - `discovery` — The issue exists, but the scope is not clear enough to
   start work. Someone is still gathering the requirements, or the
@@ -84,7 +84,7 @@ Reproduced locally — the bounds check is missing on line 42.
   This differs from `blocked`. Nothing external stops the work. The
   pause is a choice.
 
-**Terminal statuses** (the issue is closed):
+**Terminal statuses** (by convention, for closed issues):
 
 - `done` — Someone completed the work.
 - `cancelled` — Someone abandoned the work. The work is unnecessary,
@@ -98,9 +98,10 @@ tisket does not enforce readiness or exclusive ownership.
 
 When you close an issue, the file moves from the project directory
 into a `.closed/` subdirectory. When you reopen the issue, the file
-moves back. The directory structure records the open or closed state,
-not only the frontmatter field. You can therefore count the open
-issues with `ls`.
+moves back. The directory records the open or closed state, not the
+status field. Tisket does not check that a closed issue has a terminal
+status, or that an open issue has an active one. You can therefore
+count the open issues with `ls`.
 
 There is one legacy alias. Tisket parses `backlog` as `todo`.
 

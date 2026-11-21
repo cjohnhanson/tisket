@@ -524,7 +524,11 @@ fn a_wrong_example_after_a_file_fence_fails() {
 }
 
 /// A page reads the user config under its own `HOME`, never the one in
-/// the passwd home directory.
+/// the passwd home directory. The fixtures in
+/// tests/docs/user-config-fixture/ set a `root_store` that no machine
+/// has, so the page fails on every machine when the wrapper stops
+/// passing `--user-config`. They also prove that `home/` and `work/` are
+/// copied.
 #[test]
 fn a_page_reads_no_machine_user_config() {
     if std::env::var_os("TRYCMD").is_some() {
@@ -532,10 +536,17 @@ fn a_page_reads_no_machine_user_config() {
     }
     let guard = tempfile::tempdir().unwrap();
     let scratch = guard.path().canonicalize().unwrap();
-    let page = scratch.join("config.md");
+    let page = scratch.join("user-config-fixture.md");
     std::fs::write(
         &page,
-        "```console\n$ tisket store root\nroot_store: unset\n\n```\n",
+        "```console\n\
+         $ tisket store root\n\
+         root_store: /docs-test-fixture-root ([..]/user-config-fixture/home/.config/tisket/config.yml)\n\
+         \n\
+         $ cat note.txt\n\
+         from the work fixture\n\
+         \n\
+         ```\n",
     )
     .unwrap();
     run_page(&scratch, &page);

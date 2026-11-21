@@ -144,7 +144,7 @@ $ git diff --name-only --diff-filter=U
 
 Resolve the code and issue files together in your editor. Keep one
 issue file for the ID: the project directory for an active issue, or
-its `.closed/` directory for a terminal issue. Closing an issue on one
+its `.closed/` directory for a closed issue. Closing an issue on one
 branch and editing it on another can merge cleanly, cause a content
 conflict in `.closed/`, or cause a modify/delete conflict. Keep one file
 for the ID in the intended location, and remove the obsolete copy.

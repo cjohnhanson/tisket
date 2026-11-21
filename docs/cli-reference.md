@@ -131,7 +131,7 @@ Create a new issue
 
 Tisket makes the filename from a slug of the title. For example, "Fix the widget" becomes `ab12-fix-the-widget.md`. The `ab12` part is a random 4-character `[a-z0-9]` prefix. Tisket rejects a duplicate slug, even with a different prefix.
 
-The command prints nothing. To print the new ID, run `tisket issue show <slug> --field id`.
+The command prints nothing on stdout. To print the new ID, run `tisket issue show <slug> --field id`.
 
 ### Arguments
 
@@ -413,9 +413,9 @@ tisket finds the issue by ID in every project, and refuses when the issue is in 
 
 #### `-s --status <STATUS>`
 
-Terminal status (default: done)
+Status to set on the closed issue (default: done)
 
-Usually `done` or `cancelled`.
+Usually `done` or `cancelled`. tisket accepts any status here and does not check that it is terminal. The `.closed/` directory, not the status, records that the issue is closed.
 
 #### `-h --help`
 
