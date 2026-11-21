@@ -9,11 +9,7 @@ type: how-to
 ## Open a tracker
 
 From the directory containing `tisket.yml`, or any directory below it,
-run:
-
-```sh
-tisket tui
-```
+run `tisket tui`.
 
 `tisket tui` needs an interactive terminal; from a script or with
 output redirected, it refuses to start and suggests `tisket issue list`.
