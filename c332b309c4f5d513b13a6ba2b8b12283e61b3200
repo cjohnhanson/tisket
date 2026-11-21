@@ -1,0 +1,12 @@
+Review record for `tisket tui` and the shared operations layer.
+
+Five independent agents read c332b30, one for each declared review, on
+origin/main ff7b6ab. Each received its criteria, the diff and the
+repository path. All five verdicts are PASS. Minor findings stay in the
+evidence lines below and go to follow-up issues after the merge.
+
+signoff[review-tests] PASS c332b30 33 env-gated mutants over src/tui, src/ops.rs and src/repo.rs: cargo test killed 32, missouri killed the --root config skip; every guard on the edit, note and status write paths, the terminal check halves, the closed-epic rollup and the re-entry report has a named test; help snapshot pinned; missouri 30 passed, 0 failed
+signoff[review-docs] PASS c332b30 followed the how-to on a fixture tracker in tmux, checked each footer and error claim against the binary, compared `tisket tui --help` with docs/cli-reference.md and tests/snapshots/help/tisket-tui.txt; check-fences, check-readme and lychee --offline pass on the pages; minor: no other page links the how-to yet
+signoff[review-code] PASS c332b30 read ops.rs, the tui module and the cli/serve/repo call sites against main; drove every editor exit path, text that is not UTF-8, an editor that removes its file, a body or issue changed mid-edit and a note on a removed issue: each keeps the user's text or names why it cannot; no key-reachable panic down to a 1x1 terminal; CLI and MCP behaviour on main kept
+signoff[review-deps] PASS c332b30 Cargo.lock is main's lock plus 47 TUI packages and matches what cargo resolves from it; cargo-audit finds 0 vulnerabilities on both locks; licences MIT or Apache-2.0; --no-default-features ships none of the new crates; crossterm's tput fallback is unreachable behind the terminal check
+signoff[review-usability] PASS c332b30 drove the TUI in tmux at 80x24, 40x12, 20x5 and through resizes, with and without NO_COLOR, using scripted editors and files changed under the UI; no panic, no lost text, terminal restored on exit; every refused note or edit names a private file holding the text; first success takes one step
