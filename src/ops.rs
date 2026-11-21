@@ -2,8 +2,9 @@
 //!
 //! A front end turns its input into a call here and turns the result
 //! into its own output. The command line, the MCP server, and the
-//! terminal UI share these calls for finding an issue, closing and
-//! reopening it, and appending to its working notes, so a rule written
+//! terminal UI share these calls for finding an issue, checking that it
+//! may be written, setting its status, closing and reopening it,
+//! replacing its body, and appending to its working notes, so a rule written
 //! here holds for each of them. A rule written in a front end holds for
 //! that front end alone, and the next one to be added would need a copy.
 
@@ -311,6 +312,28 @@ mod tests {
         assert!(issue.closed);
         assert_eq!(issue.frontmatter.status, Status::Cancelled);
         assert_eq!(issue.body.trim(), "Old body.");
+    }
+
+    #[test]
+    fn set_closed_status_refuses_an_active_status_and_an_open_issue() {
+        let root = tracker("closed-status-guards");
+        let (repo, _ws) = open(&root);
+        let err = repo
+            .set_closed_status("bbbb-shut", Status::Todo)
+            .unwrap_err();
+        assert!(
+            matches!(err, crate::error::Error::InvalidStatus { .. }),
+            "{err}"
+        );
+        let issue = repo.find_issue("bbbb-shut").unwrap();
+        assert_eq!(issue.frontmatter.status, Status::Done, "nothing written");
+        let err = repo
+            .set_closed_status("aaaa-open", Status::Cancelled)
+            .unwrap_err();
+        assert!(
+            matches!(err, crate::error::Error::IssueNotClosed(_)),
+            "{err}"
+        );
     }
 
     #[test]

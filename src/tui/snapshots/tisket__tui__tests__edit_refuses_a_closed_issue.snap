@@ -25,4 +25,4 @@ expression: draw(&mut app).backend()
 "│                                           ││                                                     │"
 "│                                           ││                                                     │"
 "└───────────────────────────────────────────┘└─────────────────────────────────────────────────────┘"
-" a closed issue's body cannot change; press s to reopen it first                                    "
+" a closed issue's body cannot change; press s to reopen it first  Esc dismisses                     "

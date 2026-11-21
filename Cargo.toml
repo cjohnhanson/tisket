@@ -83,12 +83,16 @@ diataxis = { version = "0.1", default-features = false, features = ["cli"] }
 # wrapped lines that bounds how far the issue pane scrolls.
 ratatui = { version = "0.30", default-features = false, features = ["crossterm", "layout-cache", "unstable-rendered-line-info"], optional = true }
 ratatui-textarea = { version = "0.9", optional = true }
+# The private copy an editor opens, and the file that keeps a body a
+# save refused: a random name, mode 0600, removed on drop unless kept.
+# Already in the tree through gix.
+tempfile = { version = "3", optional = true }
 
 [features]
 default = ["tui"]
 # Off with --no-default-features, for a build that only needs the CLI
 # and the MCP server.
-tui = ["dep:ratatui", "dep:ratatui-textarea"]
+tui = ["dep:ratatui", "dep:ratatui-textarea", "dep:tempfile"]
 
 # The docs pages are generated at build time from the same
 # documentation set the `docs` subcommand reads.

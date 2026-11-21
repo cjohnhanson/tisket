@@ -630,12 +630,16 @@ mod editor {
         assert_eq!(err.to_string(), "set $VISUAL or $EDITOR to edit a body");
     }
 
+    fn files_in(dir: &std::path::Path) -> usize {
+        std::fs::read_dir(dir).unwrap().count()
+    }
+
     #[test]
     fn an_editor_that_changes_nothing_returns_none() {
         let dir = scratch("same");
-        let edited = edit_text("The body.", "true", &dir.join("copy.md")).unwrap();
+        let edited = edit_text("The body.", "true", &dir, "copy-").unwrap();
         assert_eq!(edited, None);
-        assert!(!dir.join("copy.md").exists(), "the copy is removed");
+        assert_eq!(files_in(&dir), 0, "the copy is removed");
     }
 
     #[test]
@@ -645,14 +649,15 @@ mod editor {
         let new = dir.join("new.md");
         std::fs::write(&new, "A new body.\n").unwrap();
         let editor = format!("cp {}", new.display());
-        let edited = edit_text("Old body.", &editor, &dir.join("copy.md")).unwrap();
+        let edited = edit_text("Old body.", &editor, &dir, "copy-").unwrap();
         assert_eq!(edited.as_deref(), Some("A new body."));
+        assert_eq!(files_in(&dir), 1, "only new.md is left");
     }
 
     #[test]
     fn a_failed_editor_changes_nothing_and_names_itself() {
         let dir = scratch("failed");
-        let err = edit_text("Old body.", "false", &dir.join("copy.md")).unwrap_err();
+        let err = edit_text("Old body.", "false", &dir, "copy-").unwrap_err();
         assert_eq!(
             err.to_string(),
             "the editor 'false' exited with code 1; the body is unchanged"
@@ -662,7 +667,7 @@ mod editor {
     #[test]
     fn a_missing_editor_is_named() {
         let dir = scratch("missing");
-        let err = edit_text("Old body.", "no-such-editor-here", &dir.join("copy.md")).unwrap_err();
+        let err = edit_text("Old body.", "no-such-editor-here", &dir, "copy-").unwrap_err();
         assert!(
             err.to_string()
                 .starts_with("could not run the editor 'no-such-editor-here'"),
@@ -673,24 +678,24 @@ mod editor {
     #[test]
     fn the_copy_is_private_and_never_overwrites_a_file() {
         let dir = scratch("private");
-        let path = dir.join("copy.md");
-        std::fs::write(&path, "someone else's file").unwrap();
-        assert!(
-            edit_text("x", "true", &path).is_err(),
-            "an existing name is refused"
-        );
+        let theirs = dir.join("copy-theirs.md");
+        std::fs::write(&theirs, "someone else's file").unwrap();
+        // `true` stands in for an editor; the copy it is given is a new
+        // file under a random name, so the existing one is untouched.
+        assert_eq!(edit_text("x", "true", &dir, "copy-").unwrap(), None);
         assert_eq!(
-            std::fs::read_to_string(&path).unwrap(),
+            std::fs::read_to_string(&theirs).unwrap(),
             "someone else's file"
         );
+        let kept = super::super::keep_private("tisket-test-", "kept").unwrap();
+        assert_eq!(std::fs::read_to_string(&kept).unwrap(), "kept");
         #[cfg(unix)]
         {
             use std::os::unix::fs::PermissionsExt as _;
-            let other = dir.join("other.md");
-            super::super::write_private(&other, "x").unwrap();
-            let mode = std::fs::metadata(&other).unwrap().permissions().mode();
+            let mode = std::fs::metadata(&kept).unwrap().permissions().mode();
             assert_eq!(mode & 0o777, 0o600);
         }
+        std::fs::remove_file(&kept).unwrap();
     }
 }
 
@@ -744,6 +749,69 @@ fn a_body_changed_on_disk_during_the_edit_is_not_overwritten() {
     assert!(text.contains("changed on disk while you edited"), "{text}");
     let kept = text.rsplit("your text is in ").next().unwrap();
     assert_eq!(std::fs::read_to_string(kept).unwrap(), "My edit.");
+}
+
+#[test]
+fn a_body_whose_save_is_refused_is_kept() {
+    // The issue is closed while the editor is open, so the write fails.
+    let root = tracker("closed-mid-edit");
+    let mut app = App::load(&root).unwrap();
+    let opened = "One screen that lists every open issue.";
+    Repo::open(&root)
+        .unwrap()
+        .close_issue("ep01-ship-the-board", Some("done"))
+        .unwrap();
+    app.save_body(opened, "My edit.".into());
+    let Some(Message::Error(text)) = &app.message else {
+        panic!("expected a refusal, got {:?}", app.message);
+    };
+    assert!(text.contains("nothing written"), "{text}");
+    let kept = text.rsplit("your text is in ").next().unwrap();
+    assert_eq!(std::fs::read_to_string(kept).unwrap(), "My edit.");
+}
+
+#[test]
+fn a_saved_body_with_a_reload_warning_is_not_reported_as_refused() {
+    let root = tracker("save-with-warning");
+    let mut app = App::load(&root).unwrap();
+    std::fs::write(
+        root.join(".tisket/default/zz99-broken.md"),
+        "no frontmatter\n",
+    )
+    .unwrap();
+    app.save_body(
+        "One screen that lists every open issue.",
+        "New body.".into(),
+    );
+    let issue = Repo::open(&root)
+        .unwrap()
+        .find_issue("ep01-ship-the-board")
+        .unwrap();
+    assert_eq!(issue.body.trim(), "New body.");
+    let text = format!("{:?}", app.message);
+    assert!(!text.contains("nothing written"), "{text}");
+}
+
+#[test]
+fn an_error_wraps_to_show_whole_and_stays_until_esc() {
+    let mut app = App::load(&tracker("long-error")).unwrap();
+    let path = "/a/long/temporary/directory/holding/tisket-ep01-abcdef.md";
+    app.message = Some(Message::Error(format!(
+        "ep01's body changed on disk while you edited; nothing written; your text is in {path}"
+    )));
+    let screen = draw(&mut app)
+        .backend()
+        .to_string()
+        .replace(['"', '\n', ' '], "");
+    assert!(screen.contains("tisket-ep01-abcdef.md"), "{screen}");
+    assert!(screen.contains("Escdismisses"), "{screen}");
+    press(&mut app, KeyCode::Char('j'));
+    assert!(
+        matches!(app.message, Some(Message::Error(_))),
+        "a move keeps it"
+    );
+    press(&mut app, KeyCode::Esc);
+    assert_eq!(app.message, None);
 }
 
 #[test]

@@ -37,8 +37,10 @@ recently updated issue comes first.
 Press `j` or Down to select the next issue, or `k` or Up to select the
 previous one. The header shows the tracker directory name, the project
 in view or "all projects", "open" or "open and closed", and the count
-shown. The footer shows key hints, the result of the last action, or a
-warning.
+shown.
+The next key replaces footer hints and successful action results.
+Errors stay until Esc dismisses them; moving through the list or pressing other keys does not clear them.
+The footer wraps errors across up to six rows to show long paths and adds "Esc dismisses" after each message.
 
 Press `/` to open the filter line in the footer. Type an ID, title, or
 label to narrow the list as you type; matching is case-insensitive.
@@ -113,11 +115,11 @@ the program and the body is unchanged.
 When the editor exits successfully and the text has changed, tisket
 saves it as the new body.
 The same rules apply as for `tisket issue edit --body`.
-If the body changed on disk while the editor was open, tisket writes
-nothing to the issue.
+Tisket refuses to save if the body changed on disk or the issue closed while the editor was open.
 For example, an agent may have appended to the body.
-Tisket keeps the edited text in a private temporary file and names
-that file in the footer.
+If a body save is refused for any reason, tisket writes nothing to the issue.
+Tisket keeps the edited text in a private temporary file and names that file in the footer.
+The file has a random name and is readable only by the user.
 A closed issue's body cannot be edited.
 Reopen it with the status picker first.
 

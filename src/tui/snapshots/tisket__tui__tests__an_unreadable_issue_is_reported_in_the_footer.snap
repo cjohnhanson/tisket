@@ -25,4 +25,4 @@ expression: draw(&mut app).backend()
 "│                                           ││                                                     │"
 "│                                           ││                                                     │"
 "└───────────────────────────────────────────┘└─────────────────────────────────────────────────────┘"
-" warning: skipping zz99-broken: missing frontmatter delimiter                                       "
+" warning: skipping zz99-broken: missing frontmatter delimiter  Esc dismisses                        "

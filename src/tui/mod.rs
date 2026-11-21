@@ -93,9 +93,13 @@ fn choose_editor(visual: Option<&str>, editor: Option<&str>) -> Result<String> {
 /// meanwhile; `None` when the editor changed nothing.
 fn edit_body(app: &App, id: &str, editor: &str) -> Result<Option<(String, String)>> {
     let body = Repo::open_quiet(&app.root)?.find_issue(id)?.body;
-    let dir = std::env::temp_dir();
-    let path = dir.join(format!("tisket-{id}-{}.md", std::process::id()));
-    Ok(edit_text(&body, editor, &path)?.map(|edited| (body, edited)))
+    let edited = edit_text(
+        &body,
+        editor,
+        &std::env::temp_dir(),
+        &format!("tisket-{id}-"),
+    )?;
+    Ok(edited.map(|edited| (body, edited)))
 }
 
 /// Run the editor on a private copy of the text and read it back.
@@ -105,11 +109,12 @@ fn edit_body(app: &App, id: &str, editor: &str) -> Result<Option<(String, String
 /// checks as any other write. The command is split on whitespace, the
 /// way `$EDITOR` is commonly written (`code -w`); a path holding a space
 /// needs a wrapper script.
-fn edit_text(text: &str, editor: &str, path: &Path) -> Result<Option<String>> {
+fn edit_text(text: &str, editor: &str, dir: &Path, prefix: &str) -> Result<Option<String>> {
     // A trailing newline, so an editor that appends a line does not join
     // it to the last one.
     let original = format!("{}\n", text.trim_end());
-    write_private(path, &original)?;
+    let copy = private_file(dir, prefix, &original)?;
+    let path = copy.path();
     let mut words = editor.split_whitespace();
     let program = words.next().unwrap_or_default();
     let status = std::process::Command::new(program)
@@ -117,7 +122,7 @@ fn edit_text(text: &str, editor: &str, path: &Path) -> Result<Option<String>> {
         .arg(path)
         .status();
     let edited = std::fs::read_to_string(path);
-    let _ = std::fs::remove_file(path);
+    drop(copy);
     let status =
         status.map_err(|e| Error::Refused(format!("could not run the editor '{program}': {e}")))?;
     if !status.success() {
@@ -136,17 +141,22 @@ fn edit_text(text: &str, editor: &str, path: &Path) -> Result<Option<String>> {
     Ok(Some(edited.trim_end().to_string()))
 }
 
-/// Create a file only this user can read, failing if the name exists.
-pub(super) fn write_private(path: &Path, text: &str) -> Result<()> {
+/// A new file in `dir` that only this user can read, under a random name
+/// starting with `prefix`, holding `text`. It is removed when dropped.
+fn private_file(dir: &Path, prefix: &str, text: &str) -> Result<tempfile::NamedTempFile> {
     use std::io::Write as _;
-    let mut options = std::fs::OpenOptions::new();
-    options.write(true).create_new(true);
-    #[cfg(unix)]
-    {
-        use std::os::unix::fs::OpenOptionsExt as _;
-        options.mode(0o600);
-    }
-    let mut file = options.open(path)?;
+    let mut file = tempfile::Builder::new()
+        .prefix(prefix)
+        .suffix(".md")
+        .tempfile_in(dir)?;
     file.write_all(text.as_bytes())?;
-    Ok(())
+    Ok(file)
+}
+
+/// Keep `text` in a private file in the temporary directory, and return
+/// its path.
+pub(super) fn keep_private(prefix: &str, text: &str) -> Result<std::path::PathBuf> {
+    let file = private_file(&std::env::temp_dir(), prefix, text)?;
+    let (_, path) = file.keep().map_err(|e| Error::from(e.error))?;
+    Ok(path)
 }
