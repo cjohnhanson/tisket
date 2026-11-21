@@ -1,0 +1,5 @@
+signoff[review-tests] PASS d549716 mutated the footer-height guard (Filter|Note), both directions of error_paragraph's Normal-only hint guard, set_closed_status's closed guard and render_footer's filter guard; each turned a named test red; 89/89 baseline
+signoff[review-code] PASS d549716 read every Esc arm and both error_paragraph call sites; the hint gate matches the one place Esc clears an error, row count and drawing share one paragraph, no reach across modules
+signoff[review-docs] PASS d549716 checked how-to lines 41-45 against the running binary at 80 columns, grepped docs and src for dismiss and Esc wording, every sentence under 20 words
+signoff[review-deps] PASS d549716 Cargo.toml and Cargo.lock unchanged since round five; cargo audit shows only advisories already pinned on origin/main (rmcp 3.2.0, quinn-udp 0.5.15), none from crates this change adds
+signoff[review-usability] PASS d549716 drove tisket tui on a scratch tracker in tmux at 80 columns: e shows the error with Esc dismisses; s, ? and n keep it without the hint; Esc in the note box does what Esc cancel says; Esc on the main screen clears it
