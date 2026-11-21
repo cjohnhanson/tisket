@@ -54,6 +54,15 @@ fn needs_terminal(stdin_tty: bool, stdout_tty: bool) -> bool {
     !stdin_tty || !stdout_tty
 }
 
+/// The line printed to stderr when the terminal cannot be re-entered
+/// after an edit: the footer message, which can name the file holding
+/// the user's text.
+fn reentry_report(message: Option<&Message>) -> Option<String> {
+    match message? {
+        Message::Error(text) | Message::Info(text) => Some(format!("tisket: {text}")),
+    }
+}
+
 fn event_loop(terminal: &mut DefaultTerminal, app: &mut App) -> Result<()> {
     while !app.quit {
         terminal.draw(|frame| ui::render(app, frame))?;
@@ -73,8 +82,8 @@ fn event_loop(terminal: &mut DefaultTerminal, app: &mut App) -> Result<()> {
             match ratatui::try_init() {
                 Ok(t) => *terminal = t,
                 Err(e) => {
-                    if let Some(Message::Error(text) | Message::Info(text)) = &app.message {
-                        eprintln!("tisket: {text}");
+                    if let Some(report) = reentry_report(app.message.as_ref()) {
+                        eprintln!("{report}");
                     }
                     return Err(e.into());
                 }

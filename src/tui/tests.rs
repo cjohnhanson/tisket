@@ -938,6 +938,20 @@ fn a_closed_epic_lists_its_children_without_a_rollup() {
 }
 
 #[test]
+fn a_lost_terminal_reports_the_footer_message() {
+    use super::reentry_report;
+    assert_eq!(
+        reentry_report(Some(&Message::Error("your text is in /tmp/x.md".into()))).as_deref(),
+        Some("tisket: your text is in /tmp/x.md")
+    );
+    assert_eq!(
+        reentry_report(Some(&Message::Info("saved the body of ep01".into()))).as_deref(),
+        Some("tisket: saved the body of ep01")
+    );
+    assert_eq!(reentry_report(None), None);
+}
+
+#[test]
 fn the_ui_needs_a_terminal_on_both_stdin_and_stdout() {
     use super::needs_terminal;
     assert!(!needs_terminal(true, true));
