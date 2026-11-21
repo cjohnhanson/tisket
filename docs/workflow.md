@@ -487,9 +487,9 @@ title, and the fields that matched.
 
 ## Git-aware divergence detection
 
-When tisket lists or shows an issue, it reads the issue file from every
-other branch in the repository. It compares each version to the version
-on the current branch. Tisket marks the issue as divergent if any
+When tisket lists or shows an issue, it reads the issue file from the
+local and remote-tracking branches, except a branch at HEAD's commit. It
+compares each version to the file on disk. Tisket marks the issue as divergent if any
 compared field differs. The compared fields are title, status, priority,
 assignee, due date, labels, and dependencies, plus whether a body and
 scratch notes are present. The `*` marker does not flag an issue that is

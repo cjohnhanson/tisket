@@ -155,8 +155,8 @@ the work.
 
 When tisket lists or shows an issue, it reads the file from the disk.
 It also reads the same file path from local and remote-tracking
-branches' committed trees. It skips branches whose refs point directly
-at HEAD. Tisket then parses each version and compares the content field
+branches' committed trees. It skips a branch at HEAD's commit, except a
+symbolic ref such as `origin/HEAD`. Tisket then parses each version and compares the content field
 by field.
 
 A branch can hold a different version of the issue. Tisket marks the

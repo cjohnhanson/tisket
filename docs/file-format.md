@@ -195,7 +195,7 @@ dependencies, plus the presence of body and scratch text. They do not
 compare the full text or another worktree's uncommitted files.
 The results appear as follows:
 
-- In the `issue list` text output, tisket adds a `*` to the status, such as `todo*`.
-- In `issue show` text output, "Other branches" lists local and remote-tracking branches whose committed trees hold the issue's file at the same path. Branches pointing directly at HEAD are skipped. Symbolic refs such as `origin/HEAD` still appear when they resolve to HEAD. Each branch name is followed by the compared fields that differ, if any.
+- In the `issue list` text output, tisket adds a `*` to the status, such as `todo*`, when a compared field differs on a listed branch.
+- In `issue show` text output, "Other branches" lists local and remote-tracking branches whose committed trees hold the issue's file at the same path. tisket skips a branch at HEAD's commit. A symbolic ref such as `origin/HEAD` still appears when it resolves to that commit. Each branch name is followed by the compared fields that differ, if any.
 
 This comparison only reads and never blocks. Tisket ignores a git failure without a message.
