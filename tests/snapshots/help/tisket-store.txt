@@ -1,0 +1,17 @@
+Manage the declared trackers
+
+Usage: tisket store [OPTIONS] <COMMAND>
+
+Commands:
+  list  List the trackers this tracker reads
+  sync  Fetch the declared remote trackers into the local cache
+  root  Show or set the root tracker that reads fall back to
+  help  Print this message or the help of the given subcommand(s)
+
+Options:
+      --root <ROOT>  Tracker directory. Literal: the directory must hold tisket.yml; no walk, no
+                     fallback. Without it, the nearest tisket.yml at or above the cwd is used.
+                     With none, reads use the configured root tracker and a write needs --home
+      --home         Act on the configured root tracker (`tisket store root`), wherever the
+                     command runs
+  -h, --help         Print help

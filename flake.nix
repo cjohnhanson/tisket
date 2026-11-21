@@ -62,7 +62,12 @@
               # on a missing file and the package cannot build, while the
               # gate stays green because a runner has the script.
               || (builtins.match ".*/scripts$" path != null)
-              || (builtins.match ".*/scripts/.*" path != null);
+              || (builtins.match ".*/scripts/.*" path != null)
+              # tests/docs.rs runs README.md and compares every --help with
+              # tests/snapshots/help/.
+              || (builtins.match ".*/README\\.md$" path != null)
+              || (builtins.match ".*/snapshots$" path != null)
+              || (builtins.match ".*/snapshots/.*" path != null);
           };
 
           commonArgs = {

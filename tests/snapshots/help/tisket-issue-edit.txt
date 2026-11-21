@@ -1,0 +1,76 @@
+Edit the metadata or the body of an existing issue
+
+The command changes only the options you give and keeps everything else. It does not edit a closed
+issue.
+
+The command updates the `updated` timestamp automatically.
+
+Usage: tisket issue edit [OPTIONS] <ID>
+
+Arguments:
+  <ID>
+          Issue ID: the file name without .md, its 4-character prefix, or its slug
+
+Options:
+      --root <ROOT>
+          Tracker directory. Literal: the directory must hold tisket.yml; no walk, no fallback.
+          Without it, the nearest tisket.yml at or above the cwd is used. With none, reads use the
+          configured root tracker and a write needs --home
+
+      --title <TITLE>
+          New title
+
+      --home
+          Act on the configured root tracker (`tisket store root`), wherever the command runs
+
+  -s, --status <STATUS>
+          New status
+
+      --priority <PRIORITY>
+          New priority: 1 urgent, 2 high, 3 medium, 4 low
+
+  -a, --assignee <ASSIGNEE>
+          New assignee
+
+  -l, --labels <LABELS>
+          New labels (replaces all existing labels)
+          
+          Comma-separated.
+
+      --add-label <ADD_LABEL>
+          Add one label and keep the existing labels
+
+      --remove-label <REMOVE_LABEL>
+          Remove one label and keep the other labels
+
+  -d, --depends-on <DEPENDS_ON>
+          New dependencies (replaces all existing dependencies)
+          
+          Comma-separated.
+
+      --children <CHILDREN>
+          The child issue IDs (replaces all existing children)
+          
+          Comma-separated. An entry can name another tracker: alias:id
+
+      --due <DUE>
+          Due date (YYYY-MM-DD)
+
+      --body <BODY>
+          Replace the entire body below the frontmatter
+
+      --append <APPEND>
+          Append text to the body
+          
+          Adds a blank line first if the body is not empty.
+
+      --tag <KEY=VALUE>
+          Set a tag in key=value form. Repeatable
+          
+          Sets one tag under the `tags` mapping.
+
+      --untag <KEY>
+          Remove a tag by key. Repeatable
+
+  -h, --help
+          Print help (see a summary with '-h')

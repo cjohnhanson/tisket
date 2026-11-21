@@ -33,10 +33,13 @@ tisket uses a fixed set of workflow statuses:
 | Done | `done` | Terminal |
 | Cancelled | `cancelled` | Terminal |
 
-"Active" means that the issue is open. "Pickable" identifies a candidate
-for an agent workflow to inspect. The workflow must check dependencies,
+By convention, an open issue has an active status and a closed issue
+has a terminal status. Tisket does not check this: the directory
+records whether an issue is open or closed, and a closed issue is in
+`.closed/` whatever its status. "Pickable" identifies a candidate for
+an agent workflow to inspect. The workflow must check dependencies,
 ownership, and whether a block or pause has cleared before starting.
-Tisket does not enforce that policy. "Terminal" means that the issue is closed.
+Tisket does not enforce that policy.
 
 Tisket parses the legacy value `backlog` as `todo`.
 
@@ -71,7 +74,7 @@ The filename stem is the issue ID. It has a 4-character random prefix, a hyphen,
 
 ### Structure
 
-```
+```text
 ---
 <YAML frontmatter>
 ---
@@ -134,30 +137,41 @@ The `## Scratch Notes` section is optional and comes at the end of the file. Use
 
 With `--format json`, each issue looks like this:
 
-```json
+```console
+$ tisket issue show ab12 --format json
 {
-  "id": "ab12-fix-the-widget",
-  "project": "default",
-  "title": "Fix the widget",
-  "status": "todo",
-  "priority": "3",
   "assignee": "alice",
-  "due_date": "2025-06-15",
-  "labels": ["bug", "frontend"],
-  "depends_on": ["cd34-other-issue"],
-  "children": ["ef56-a-child-issue"],
-  "tags": { "sprint": 12 },
   "body": "Full body text here.",
+  "children": [
+    "ef56-a-child-issue"
+  ],
+  "closed": false,
+  "depends_on": [
+    "cd34-other-issue"
+  ],
+  "due_date": "2025-06-15",
+  "id": "ab12-fix-the-widget",
+  "labels": [
+    "bug",
+    "frontend"
+  ],
+  "priority": "3",
+  "project": "default",
   "scratch": "Agent notes here.",
-  "closed": false
+  "status": "todo",
+  "tags": {
+    "sprint": 12
+  },
+  "title": "Fix the widget"
 }
+
 ```
 
 Tisket writes a null field as JSON `null`. `tisket issue list --format json` returns an array of these objects.
 
 ## Directory layout
 
-```
+```text
 repo/
   tisket.yml
   .tisket/
@@ -182,6 +196,6 @@ compare the full text or another worktree's uncommitted files.
 Differences appear as follows:
 
 - In the `issue list` text output, tisket adds a `*` to the status, such as `todo*`.
-- In the `issue show` text output, an "Other branches" section lists the branches with fields that differ.
+- In the `issue show` text output, an "Other branches" section lists the branches where the issue differs, with the compared fields that differ. A branch with no fields listed differs only in text that the comparison does not read.
 
 This comparison only reads and never blocks. Tisket ignores a git failure without a message.

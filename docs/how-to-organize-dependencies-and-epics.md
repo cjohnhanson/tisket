@@ -13,35 +13,62 @@ when a parent may close.
 
 Run the examples in an initialized tracker. They create a small docs
 project. Choose different titles if these issues already exist, and
-change the corresponding slug in each `issue show` lookup.
+change the corresponding slug in each command.
 
 ## Record the order of work
 
-Create a dependency, capture its generated ID, then create the issue
-that depends on it:
+Create a dependency and print its generated ID:
 
-```sh
-tisket issue create "Define the setup command" -b 'Choose one supported setup command and record its expected result.'
-setup_id=$(tisket issue show define-the-setup-command --field id)
-tisket issue create "Write the setup instructions" -d "$setup_id" -b 'Document the chosen setup command and verify it in a clean directory.'
-guide_id=$(tisket issue show write-the-setup-instructions --field id)
-tisket issue show "$guide_id"
+```console
+$ tisket issue create "Define the setup command" -b 'Choose one supported setup command and record its expected result.'
+
+$ tisket issue show define-the-setup-command --field id
+ab12-define-the-setup-command
+
+```
+
+Create the issue that depends on it. Replace `ab12-define-the-setup-command`
+with the ID the previous command printed:
+
+```console
+$ tisket issue create "Write the setup instructions" -d ab12-define-the-setup-command -b 'Document the chosen setup command and verify it in a clean directory.'
+
+$ tisket issue show write-the-setup-instructions
+cd34-write-the-setup-instructions (default)
+
+  Title:    Write the setup instructions
+  Status:   todo
+  Depends:  ab12-define-the-setup-command
+
+Document the chosen setup command and verify it in a clean directory.
+
 ```
 
 The second issue lists the first under dependencies. An open
 dependency does not prevent `issue edit -s in_progress`. A person or
 agent must inspect the dependency before starting:
 
-```sh
-tisket issue show "$setup_id" --field status
-tisket issue show "$setup_id"
+```console
+$ tisket issue show define-the-setup-command --field status
+todo
+
+$ tisket issue show define-the-setup-command
+ab12-define-the-setup-command (default)
+
+  Title:    Define the setup command
+  Status:   todo
+
+Choose one supported setup command and record its expected result.
+
 ```
 
 If the required result is absent, keep the dependent issue waiting:
 
-```sh
-tisket issue edit "$guide_id" -s blocked
-tisket scratch "$guide_id" append 'Waiting for the setup command and its expected result before writing the instructions.'
+```console
+$ tisket issue edit write-the-setup-instructions -s blocked
+
+$ tisket scratch write-the-setup-instructions append 'Waiting for the setup command and its expected result before writing the instructions.'
+
 ```
 
 After you finish and verify the dependency, record its evidence and
@@ -55,12 +82,30 @@ existing dependencies, include them in the new comma-separated value.
 
 ## Group the issues under an epic
 
-Create a parent issue that contains both issues:
+Create a parent issue that contains both issues. Use the two IDs from
+your list:
 
-```sh
-tisket issue create "Publish the setup guide" --children "$setup_id,$guide_id" -b 'Deliver verified setup instructions. Review both child results before closing this issue.'
-epic_id=$(tisket issue show publish-the-setup-guide --field id)
-tisket issue show "$epic_id"
+```console
+$ tisket issue list
+ID                                 STATUS   TITLE
+ab12-define-the-setup-command      todo     Define the setup command
+cd34-write-the-setup-instructions  blocked  Write the setup instructions
+
+$ tisket issue create "Publish the setup guide" --children ab12-define-the-setup-command,cd34-write-the-setup-instructions -b 'Deliver verified setup instructions. Review both child results before closing this issue.'
+
+$ tisket issue show publish-the-setup-guide
+ef56-publish-the-setup-guide (default)
+
+  Title:    Publish the setup guide
+  Status:   todo
+
+Deliver verified setup instructions. Review both child results before closing this issue.
+
+  Children:
+    todo      ab12-define-the-setup-command  Define the setup command
+    blocked   cd34-write-the-setup-instructions  Write the setup instructions
+    0/2 done
+
 ```
 
 The output lists each child's status and a count of the children that
@@ -70,12 +115,31 @@ children does not close the parent.
 
 To add another child, retain the existing IDs when replacing the list:
 
-```sh
-tisket issue create "Check the setup guide links" -b 'Open each link in the setup guide and repair broken targets.'
-links_id=$(tisket issue show check-the-setup-guide-links --field id)
-tisket issue edit "$epic_id" --children "$setup_id,$guide_id,$links_id"
-tisket issue show "$epic_id"
-tisket check
+```console
+$ tisket issue create "Check the setup guide links" -b 'Open each link in the setup guide and repair broken targets.'
+
+$ tisket issue show check-the-setup-guide-links --field id
+gh78-check-the-setup-guide-links
+
+$ tisket issue edit publish-the-setup-guide --children ab12-define-the-setup-command,cd34-write-the-setup-instructions,gh78-check-the-setup-guide-links
+
+$ tisket issue show publish-the-setup-guide
+ef56-publish-the-setup-guide (default)
+
+  Title:    Publish the setup guide
+  Status:   todo
+
+Deliver verified setup instructions. Review both child results before closing this issue.
+
+  Children:
+    todo      ab12-define-the-setup-command  Define the setup command
+    blocked   cd34-write-the-setup-instructions  Write the setup instructions
+    todo      gh78-check-the-setup-guide-links  Check the setup guide links
+    0/3 done
+
+$ tisket check
+no problems found
+
 ```
 
 The parent now lists three children. Check their results against the
@@ -87,7 +151,7 @@ to your workflow.
 
 Declare the other tracker in `stores.yml` beside `tisket.yml`:
 
-```yaml
+```yaml {filename="stores.yml"}
 format: 2
 stores:
   - alias: api
@@ -99,9 +163,14 @@ such as `api:ab12`, to the parent's `children` or to a dependency list.
 Replace `ab12` with an ID from that tracker. Keep existing list entries
 when you edit the relationship.
 
-```sh
-tisket store list
-tisket check
+```console
+$ tisket store list
+(this tracker)  [CWD]  4 issue(s)
+api  ../api  0 issue(s)
+
+$ tisket check
+no problems found
+
 ```
 
 Tisket reads the declared tracker but does not edit it through this
@@ -115,5 +184,5 @@ IDs, so also inspect each child with `issue show`. See
 scope and sharing rules.
 
 When notes and skills also span repositories, follow
-[Work across repositories](https://eng.rip/docs/work-across-repositories/)
+[How to share notes, issues, and docs across repositories](https://eng.rip/how-to-share-notes-issues-and-docs-across-repositories/)
 to set up the tracker references.

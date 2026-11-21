@@ -1,0 +1,33 @@
+Close an issue
+
+The command moves the file from `<project>/` to `<project>/.closed/` and sets the status.
+
+Usage: tisket issue close [OPTIONS] <ID>
+
+Arguments:
+  <ID>
+          Issue ID: the file name without .md, its 4-character prefix, or its slug
+
+Options:
+  -p, --project <PROJECT>
+          The project that holds the issue
+          
+          tisket finds the issue by ID in every project, and refuses when the issue is in a
+          different project.
+
+      --root <ROOT>
+          Tracker directory. Literal: the directory must hold tisket.yml; no walk, no fallback.
+          Without it, the nearest tisket.yml at or above the cwd is used. With none, reads use the
+          configured root tracker and a write needs --home
+
+      --home
+          Act on the configured root tracker (`tisket store root`), wherever the command runs
+
+  -s, --status <STATUS>
+          Status to set on the closed issue (default: done)
+          
+          Usually `done` or `cancelled`. tisket accepts any status here and does not check that it
+          is terminal. The `.closed/` directory, not the status, records that the issue is closed.
+
+  -h, --help
+          Print help (see a summary with '-h')

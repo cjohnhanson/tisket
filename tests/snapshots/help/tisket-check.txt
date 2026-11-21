@@ -1,0 +1,30 @@
+Check the issues for broken references and store problems
+
+Report the problems that the declarations create:
+
+- A `depends_on` or `children` entry names another tracker and no issue there. An entry that names
+a missing issue in the same tracker is not reported.
+
+- A declared tracker is not available.
+
+- The children of an epic form a cycle.
+
+- A file could not be read.
+
+- In a `shared: true` tracker, a clone cannot reach a dependency.
+
+The command exits non-zero when it finds any.
+
+Usage: tisket check [OPTIONS]
+
+Options:
+      --root <ROOT>
+          Tracker directory. Literal: the directory must hold tisket.yml; no walk, no fallback.
+          Without it, the nearest tisket.yml at or above the cwd is used. With none, reads use the
+          configured root tracker and a write needs --home
+
+      --home
+          Act on the configured root tracker (`tisket store root`), wherever the command runs
+
+  -h, --help
+          Print help (see a summary with '-h')
