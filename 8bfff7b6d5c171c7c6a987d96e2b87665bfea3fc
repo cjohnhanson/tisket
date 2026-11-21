@@ -1,0 +1,7 @@
+signoff[review-tests] PASS 8bfff7b a mutant that skips the --root guard turned the new unreadable-config assertion red with Permission denied; the unmodified tree passes the full missouri suite, 30 passed, 0 failed
+signoff[review-docs] PASS 8bfff7b swept README, AGENTS.md, CONTRIBUTING.md, docs/ including the generated cli-reference, and the clap help; no doc says --root reads the user config, and the built binary matches the --root help
+signoff[review-code] PASS 8bfff7b resolve_root returns Via::Flag before it reads config for a named root, clap blocks --home with --root, and the registry load cannot fail, so the default config changes only the skipped read
+signoff[review-deps] PASS 8bfff7b not applicable after looking: no Cargo.toml or Cargo.lock change, UserConfig::default() from locked mdstore-core 0.5.0 reads no file, and no process spawn is added
+signoff[review-usability] PASS 8bfff7b built 8bfff7b and ran issue create, list, search and check with --root against chmod-000 and malformed configs, all exit 0, while the same configs without --root refuse and name the file
+
+Minor findings declined: cleanup after a mid-assertion failure (each path starts from a fresh temp state); an mdstore-side lazy config loader (needs a crates.io release, out of scope); the pre-existing "invalid store configuration" prefix on a bad --root target (predates the change).
