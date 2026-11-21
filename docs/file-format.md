@@ -134,23 +134,34 @@ The `## Scratch Notes` section is optional and comes at the end of the file. Use
 
 With `--format json`, each issue looks like this:
 
-```json
+```console
+$ tisket issue show ab12 --format json
 {
-  "id": "ab12-fix-the-widget",
-  "project": "default",
-  "title": "Fix the widget",
-  "status": "todo",
-  "priority": "3",
   "assignee": "alice",
-  "due_date": "2025-06-15",
-  "labels": ["bug", "frontend"],
-  "depends_on": ["cd34-other-issue"],
-  "children": ["ef56-a-child-issue"],
-  "tags": { "sprint": 12 },
   "body": "Full body text here.",
+  "children": [
+    "ef56-a-child-issue"
+  ],
+  "closed": false,
+  "depends_on": [
+    "cd34-other-issue"
+  ],
+  "due_date": "2025-06-15",
+  "id": "ab12-fix-the-widget",
+  "labels": [
+    "bug",
+    "frontend"
+  ],
+  "priority": "3",
+  "project": "default",
   "scratch": "Agent notes here.",
-  "closed": false
+  "status": "todo",
+  "tags": {
+    "sprint": 12
+  },
+  "title": "Fix the widget"
 }
+
 ```
 
 Tisket writes a null field as JSON `null`. `tisket issue list --format json` returns an array of these objects.

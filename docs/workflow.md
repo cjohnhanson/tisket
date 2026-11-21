@@ -487,21 +487,58 @@ assignee, due date, labels, and dependencies, plus whether a body and
 scratch notes are present. The `*` marker does not flag an issue that is
 open on one branch and closed on another.
 
-In the list output, a divergent issue shows an asterisk after the
-status:
+To see it, commit the tracker, then change one issue on two other
+branches: its status and priority on `feature/xyz`, and only its body
+on `notes`:
 
-```text
-ID                   STATUS        TITLE
-ab12-fix-the-widget  in_progress*  Fix the widget
+```console
+$ git add .
+
+$ git commit -q -m "Record the issues"
+
+$ git switch -q -c feature/xyz
+
+$ tisket issue edit ef56 -s in_progress --priority 1
+
+$ git commit -q -am "Start the parser fix"
+
+$ git switch -q -c notes main
+
+$ tisket issue edit ef56 --body "The parser drops the last token."
+
+$ git commit -q -am "Describe the parser bug"
+
+$ git switch -q main
+
 ```
 
-In the show output, tisket lists each divergent branch with the fields
-that differ:
+In the list output, a divergent issue shows an asterisk after the
+status. In the show output, tisket lists each divergent branch with the
+fields that differ:
 
-```text
+```console
+$ tisket issue list -s discovery
+ID                       STATUS      TITLE
+cd34-fix-the-login-form  discovery   Fix the login form
+ef56-fix-the-parser      discovery*  Fix the parser
+
+$ tisket issue show ef56
+ef56-fix-the-parser (default)
+
+  Title:    Fix the parser
+  Status:   discovery
+  Priority: 2
+  Assignee: cjohnhanson
+  Due:      2026-04-01
+  Labels:   bug, urgent
+  Depends:  ab12-fix-the-widget
+
+Detailed description of the problem
+
   Other branches:
     feature/xyz   status, priority
-    origin/main
+    notes
+
 ```
 
 A branch with no listed fields differs in none of the compared fields.

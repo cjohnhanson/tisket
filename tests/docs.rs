@@ -4,8 +4,10 @@
 //! docs/*.md against the built binary with trycmd, and compares the
 //! printed output with the block. Each page runs top to bottom in its own
 //! scratch directory, with `HOME` and the XDG directories in that
-//! directory, so no page reads the machine's user config, store registry,
-//! or git config.
+//! directory, so no page reads the machine's store registry or git config.
+//! tisket reads its user config from the passwd home directory, not
+//! `$HOME`, so the `tisket` wrapper also passes the hidden
+//! `--user-config` flag with a path under the page's `HOME`.
 //!
 //! Every command a page runs starts through a small `/bin/sh` wrapper that
 //! clears the environment (`env -i`) and sets only the variables below.
@@ -245,8 +247,8 @@ fn segments(page: &Path, text: &str) -> Vec<Segment> {
         let info = &bare[ticks..];
         let file = filename(info);
         assert!(
-            file.is_none() || !info.trim().is_empty(),
-            "{}: a file fence needs a language",
+            file.is_none() || !info.trim_start().starts_with('{'),
+            "{}: a file fence needs a language before {{filename=...}}",
             page.display()
         );
         fence = Some((bare[..ticks].to_string(), file, String::new()));
@@ -366,7 +368,10 @@ fn write_wrapper(bin: &Path, name: &str, target: &Path) -> PathBuf {
 }
 
 /// `tisket` in the examples: the built binary with the clean
-/// environment. After `issue create`, each new issue file under
+/// environment, and `--user-config` under the page's `HOME`, because
+/// tisket reads its user config from the passwd home directory. The flag
+/// is global and its last occurrence wins, so a page can still pass its
+/// own. After `issue create`, each new issue file under
 /// `.tisket/` takes the next prefix in `PREFIXES`; the count lives in
 /// `$HOME`, so it runs across the page's blocks.
 fn write_tisket_wrapper(bin: &Path) -> PathBuf {
@@ -378,7 +383,7 @@ fn write_tisket_wrapper(bin: &Path) -> PathBuf {
         &bin.join("tisket"),
         &format!(
             "#!/bin/sh\n\
-             run() {{ {env} {bin} \"$@\"; }}\n\
+             run() {{ {env} {bin} --user-config \"$HOME/.config/tisket/config.yml\" \"$@\"; }}\n\
              case \" $* \" in\n\
              *' issue create '*) ;;\n\
              *) run \"$@\"; exit $? ;;\n\
@@ -500,6 +505,42 @@ fn created_issues_take_pinned_prefixes_and_file_fences_are_written() {
     run_page(&scratch, &page);
 }
 
+/// The commands after a file fence are checked too: a wrong output there
+/// fails the page.
+#[test]
+fn a_wrong_example_after_a_file_fence_fails() {
+    if std::env::var_os("TRYCMD").is_some() {
+        return;
+    }
+    let guard = tempfile::tempdir().unwrap();
+    let scratch = guard.path().canonicalize().unwrap();
+    let page = scratch.join("after.md");
+    std::fs::write(
+        &page,
+        "```text {filename=\"a.txt\"}\nhello\n```\n\n```console\n$ cat a.txt\ngoodbye\n\n```\n",
+    )
+    .unwrap();
+    assert!(std::panic::catch_unwind(|| run_page(&scratch, &page)).is_err());
+}
+
+/// A page reads the user config under its own `HOME`, never the one in
+/// the passwd home directory.
+#[test]
+fn a_page_reads_no_machine_user_config() {
+    if std::env::var_os("TRYCMD").is_some() {
+        return;
+    }
+    let guard = tempfile::tempdir().unwrap();
+    let scratch = guard.path().canonicalize().unwrap();
+    let page = scratch.join("config.md");
+    std::fs::write(
+        &page,
+        "```console\n$ tisket store root\nroot_store: unset\n\n```\n",
+    )
+    .unwrap();
+    run_page(&scratch, &page);
+}
+
 /// A page's commands see none of the test process's environment.
 #[test]
 fn page_commands_run_in_a_clean_environment() {
@@ -508,7 +549,11 @@ fn page_commands_run_in_a_clean_environment() {
     }
     let guard = tempfile::tempdir().unwrap();
     let scratch = guard.path().canonicalize().unwrap();
-    let wrapper = write_wrapper(&scratch, "printenv", Path::new("/usr/bin/printenv"));
+    let printenv = std::env::split_paths(&std::env::var_os("PATH").unwrap_or_default())
+        .map(|dir| dir.join("printenv"))
+        .find(|p| p.is_file())
+        .expect("printenv on PATH");
+    let wrapper = write_wrapper(&scratch, "printenv", &printenv);
     let out = Command::new(&wrapper)
         .env("GIT_DIR", "/elsewhere")
         .env("MDSTORE_REGISTRY", "/elsewhere")
@@ -526,6 +571,15 @@ fn commands_lists_what_trycmd_runs() {
     let page = "```sh\nls\n```\n\n````markdown\n```console\n$ inner\n```\n````\n\n```console\n$ A=1 tisket check\n\n$ git status\nok\n```\n\n```\n$ bare\n```\n\n```trycmd\n$ tagged\n```\n";
     let names: Vec<String> = commands(Path::new("p.md"), page).into_iter().collect();
     assert_eq!(names, ["bare", "git", "tagged", "tisket"]);
+}
+
+/// A fence closes only at its own backticks, so a shorter fence inside a
+/// longer console block does not end it.
+#[test]
+fn a_console_block_ends_at_its_own_backticks() {
+    let page = "````console\n$ first\n```\n$ second\n````\n";
+    let names: Vec<String> = commands(Path::new("p.md"), page).into_iter().collect();
+    assert_eq!(names, ["first", "second"]);
 }
 
 #[test]
@@ -565,4 +619,25 @@ fn a_file_fence_outside_the_working_directory_is_refused() {
     let page = scratch.join("escape.md");
     std::fs::write(&page, "```text {filename=\"../x\"}\nx\n```\n").unwrap();
     run_page(&scratch, &page);
+}
+
+#[test]
+#[should_panic(expected = "outside the working directory")]
+fn a_file_fence_with_an_absolute_path_is_refused() {
+    let guard = tempfile::tempdir().unwrap();
+    let scratch = guard.path().canonicalize().unwrap();
+    let page = scratch.join("absolute.md");
+    let target = scratch.join("escaped.txt");
+    std::fs::write(
+        &page,
+        format!("```text {{filename=\"{}\"}}\nx\n```\n", target.display()),
+    )
+    .unwrap();
+    run_page(&scratch, &page);
+}
+
+#[test]
+#[should_panic(expected = "needs a language")]
+fn a_file_fence_without_a_language_is_refused() {
+    segments(Path::new("p.md"), "```{filename=\"a.txt\"}\nx\n```\n");
 }

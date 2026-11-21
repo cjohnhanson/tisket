@@ -1,5 +1,5 @@
 ```console
-$ git init -q
+$ git init -q -b main
 
 $ tisket init
 
