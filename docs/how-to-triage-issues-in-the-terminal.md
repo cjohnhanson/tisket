@@ -39,9 +39,10 @@ previous one. The header shows the tracker directory name, the project
 in view or "all projects", "open" or "open and closed", and the count
 shown.
 The next key replaces footer hints and successful action results.
-Errors stay until Esc dismisses them or a later action reports its own result.
-Moving through the list, opening help, or opening the status picker does not clear them.
-The footer wraps errors across up to six rows to show long paths and adds "Esc dismisses" after each message.
+Errors stay until a later action reports its own result, or until Esc on the main screen.
+Moving through the list or opening help, the status picker, or a note does not clear them.
+The footer wraps an error across up to six rows, so a long path shows whole.
+On the main screen, the footer adds "Esc dismisses" after the error.
 
 Press `/` to open the filter line in the footer. Type an ID, title, or
 label to narrow the list as you type; matching is case-insensitive.

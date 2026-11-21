@@ -17,7 +17,7 @@ pub fn render(app: &mut App, frame: &mut Frame) {
     // but the filter, which uses the footer for its input.
     let footer_rows = match (&app.message, &app.mode) {
         (Some(Message::Error(text)), mode) if !matches!(mode, Mode::Filter) => {
-            error_paragraph(text)
+            error_paragraph(text, mode)
                 .line_count(frame.area().width)
                 .clamp(1, 6) as u16
         }
@@ -239,14 +239,16 @@ fn section<'a>(lines: &mut Vec<Line<'a>>, title: &'a str, text: &'a str) {
 }
 
 /// An error message, wrapped to the terminal's width so the whole of it
-/// shows, such as the path of a file holding the user's text. Errors
-/// stay until Esc, so the footer says how to dismiss one.
-fn error_paragraph(text: &str) -> Paragraph<'static> {
-    Paragraph::new(Line::from(vec![
-        Span::styled(format!(" {text}"), theme::error()),
-        Span::styled("  Esc dismisses", theme::dim()),
-    ]))
-    .wrap(Wrap { trim: false })
+/// shows, such as the path of a file holding the user's text. An error
+/// stays until Esc on the main screen or a later action's result, so the
+/// main screen says how to dismiss it. In an overlay Esc closes the
+/// overlay, and in the note box it discards the note, so no hint shows.
+fn error_paragraph(text: &str, mode: &Mode) -> Paragraph<'static> {
+    let mut spans = vec![Span::styled(format!(" {text}"), theme::error())];
+    if matches!(mode, Mode::Normal) {
+        spans.push(Span::styled("  Esc dismisses", theme::dim()));
+    }
+    Paragraph::new(Line::from(spans)).wrap(Wrap { trim: false })
 }
 
 fn render_footer(app: &App, frame: &mut Frame, area: Rect) {
@@ -261,7 +263,7 @@ fn render_footer(app: &App, frame: &mut Frame, area: Rect) {
         // An error stays on screen while help, the picker, or a note is
         // open, always wrapped, so a long path shows whole.
         Some(Message::Error(text)) => {
-            frame.render_widget(error_paragraph(text), area);
+            frame.render_widget(error_paragraph(text, &app.mode), area);
             return;
         }
         Some(Message::Info(text)) => Line::raw(format!(" {text}")),

@@ -331,16 +331,24 @@ fn a_long_error_stays_whole_while_the_picker_and_help_are_open() {
     app.message = Some(Message::Error(format!(
         "ep01's body changed on disk while you edited; nothing written; your text is in {path}"
     )));
-    for key in ['s', '?'] {
-        press(&mut app, KeyCode::Char(key));
-        let screen = draw(&mut app)
+    let flat = |app: &mut App| {
+        draw(app)
             .backend()
             .to_string()
-            .replace(['"', '\n', ' '], "");
+            .replace(['"', '\n', ' '], "")
+    };
+    let screen = flat(&mut app);
+    assert!(screen.contains("Escdismisses"), "main screen: {screen}");
+    // In an overlay Esc closes the overlay (and discards a note), so the
+    // footer must not tell the user to press it for the error.
+    for key in ['s', '?', 'n'] {
+        press(&mut app, KeyCode::Char(key));
+        let screen = flat(&mut app);
         assert!(screen.contains("tisket-ep01-abcdef.md"), "{key}: {screen}");
-        assert!(screen.contains("Escdismisses"), "{key}: {screen}");
+        assert!(!screen.contains("Escdismisses"), "{key}: {screen}");
         press(&mut app, KeyCode::Esc);
     }
+    assert!(matches!(app.message, Some(Message::Error(_))));
 }
 
 #[test]
