@@ -273,6 +273,9 @@ impl App {
                 self.reload_or_report();
             }
             Action::Refresh => {
+                // A reload reports its own result: a warning about a file
+                // still unreadable, or "reloaded", never an older warning.
+                self.message = None;
                 self.reload_or_report();
                 if self.message.is_none() {
                     self.message = Some(Message::Info("reloaded".into()));
@@ -386,6 +389,7 @@ impl App {
         }
         // The footer already reports a refusal; nothing else to keep.
         let _ = self.write(
+            &id,
             |repo, ws, id| crate::ops::set_status(repo, ws, id, status),
             |id, change| match change {
                 StatusChange::Closed => format!("closed {id} as {status}"),
@@ -411,11 +415,19 @@ impl App {
                 self.message = Some(Message::Info("the note is empty; nothing added".into()));
                 return;
             }
-            // The footer already reports a refusal.
-            let _ = self.write(
+            // The note box opens only on a selected issue.
+            let Some(id) = self.selected_issue().map(|i| i.id.clone()) else {
+                return;
+            };
+            // A refused write, such as on an issue removed while the box
+            // was open, must not lose the typed note.
+            if let Err(reason) = self.write(
+                &id,
                 |repo, ws, id| crate::ops::append_scratch(repo, ws, id, &text),
                 |id, ()| format!("added a note to {id}"),
-            );
+            ) {
+                self.keep_text(&id, &reason, &text);
+            }
         } else {
             area.input(key);
         }
@@ -427,17 +439,14 @@ impl App {
     /// agent or another terminal changed it meanwhile, and a save would
     /// erase that change. Nothing is written then; the edited text is
     /// kept in a private file the footer names.
-    pub fn save_body(&mut self, opened: &str, body: String) {
-        let Some(id) = self.selected_issue().map(|i| i.id.clone()) else {
-            return;
-        };
-        let now = Repo::open_quiet(&self.root).and_then(|repo| repo.find_issue(&id));
+    pub fn save_body(&mut self, id: &str, opened: &str, body: String) {
+        let now = Repo::open_quiet(&self.root).and_then(|repo| repo.find_issue(id));
         if let Ok(issue) = &now
             && issue.body.trim_end() != opened.trim_end()
         {
             self.reload_or_report();
-            self.keep_body(
-                &id,
+            self.keep_text(
+                id,
                 &format!("{id}'s body changed on disk while you edited"),
                 &body,
             );
@@ -446,17 +455,18 @@ impl App {
         // A refused write, such as on an issue closed while the editor
         // was open, must not lose the edited text either.
         if let Err(reason) = self.write(
+            id,
             |repo, ws, id| crate::ops::set_body(repo, ws, id, &body),
             |id, ()| format!("saved the body of {id}"),
         ) {
-            self.keep_body(&id, &reason, &body);
+            self.keep_text(id, &reason, &body);
         }
     }
 
-    /// Report that nothing was written, and keep the edited text in a
-    /// private file the footer names.
-    fn keep_body(&mut self, id: &str, reason: &str, body: &str) {
-        let message = match super::keep_private(&format!("tisket-{id}-"), body) {
+    /// Report that nothing was written, and keep the user's text, an
+    /// edited body or a note, in a private file the footer names.
+    fn keep_text(&mut self, id: &str, reason: &str, text: &str) {
+        let message = match super::keep_private(&format!("tisket-{id}-"), text) {
             Ok(path) => format!(
                 "{reason}; nothing written; your text is in {}",
                 path.display()
@@ -466,21 +476,19 @@ impl App {
         self.message = Some(Message::Error(message));
     }
 
-    /// Run a write on the selected issue through the shared operations,
-    /// then reload, and report the outcome in the footer. The error is
-    /// the refusal's message when nothing was written; a warning from the
+    /// Run a write on issue `id` through the shared operations, then
+    /// reload, and report the outcome in the footer. The error is the
+    /// refusal's message when nothing was written; a warning from the
     /// reload after a write that succeeded is not a refusal.
     pub fn write<T>(
         &mut self,
+        id: &str,
         op: impl FnOnce(&Repo, &Workspace, &str) -> Result<T>,
         done: impl FnOnce(&str, T) -> String,
     ) -> std::result::Result<(), String> {
-        let Some(id) = self.selected_issue().map(|i| i.id.clone()) else {
-            return Err("no issue is selected".into());
-        };
         let outcome = Repo::open_quiet(&self.root).and_then(|repo| {
             let ws = Workspace::open(&self.root)?;
-            op(&repo, &ws, &id)
+            op(&repo, &ws, id)
         });
         match outcome {
             Ok(value) => {
@@ -488,7 +496,7 @@ impl App {
                 self.reload_or_report();
                 // A warning from the reload outranks the confirmation.
                 if !matches!(self.message, Some(Message::Error(_))) {
-                    self.message = Some(Message::Info(done(&id, value)));
+                    self.message = Some(Message::Info(done(id, value)));
                 }
                 Ok(())
             }

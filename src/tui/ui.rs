@@ -4,7 +4,7 @@ use ratatui::Frame;
 use ratatui::layout::{Constraint, Layout, Rect};
 use ratatui::text::{Line, Span, Text};
 use ratatui::widgets::{
-    Block, Borders, Clear, HighlightSpacing, List, ListItem, ListState, Paragraph, Wrap,
+    Block, BorderType, Borders, Clear, HighlightSpacing, List, ListItem, ListState, Paragraph, Wrap,
 };
 
 use super::app::{App, Focus, Message, Mode, STATUSES};
@@ -85,15 +85,19 @@ fn render_header(app: &App, frame: &mut Frame, area: Rect) {
     frame.render_widget(Paragraph::new(line), area);
 }
 
+/// A pane. The focused one has a thick border as well as its colour, so
+/// the focus shows where NO_COLOR drops colour.
 fn pane(title: &str, focused: bool) -> Block<'_> {
-    Block::new()
+    let block = Block::new()
         .borders(Borders::ALL)
-        .title(format!(" {title} "))
-        .border_style(if focused {
-            theme::focused_border()
-        } else {
-            theme::border()
-        })
+        .title(format!(" {title} "));
+    if focused {
+        block
+            .border_type(BorderType::Thick)
+            .border_style(theme::focused_border())
+    } else {
+        block.border_style(theme::border())
+    }
 }
 
 fn render_list(app: &mut App, frame: &mut Frame, area: Rect) {

@@ -1,8 +1,10 @@
 //! The key map, as one table.
 //!
-//! The table drives the key handling, the help overlay, and the footer,
-//! so no key can work without being listed and no listed key can do
-//! nothing.
+//! The table drives the main screen's key handling and the help overlay,
+//! so no main-screen key can work without being listed and no listed key
+//! can do nothing. The footer's short hint list and the keys inside the
+//! help, the status picker, and the note box are drawn and handled where
+//! those are.
 
 use ratatui::crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 

@@ -50,12 +50,14 @@ fn event_loop(terminal: &mut DefaultTerminal, app: &mut App) -> Result<()> {
         if let Some(Effect::EditBody(id)) = handle_event(app, event::read()?) {
             ratatui::restore();
             let edited = editor_from_env().and_then(|editor| edit_body(app, &id, &editor));
-            *terminal = ratatui::try_init()?;
+            // Save, or keep the text, before taking the terminal back, so
+            // a terminal that cannot be re-entered loses no edit.
             match edited {
-                Ok(Some((opened, body))) => app.save_body(&opened, body),
+                Ok(Some((opened, body))) => app.save_body(&id, &opened, body),
                 Ok(None) => app.message = Some(Message::Info("the body is unchanged".into())),
                 Err(e) => app.message = Some(Message::Error(e.to_string())),
             }
+            *terminal = ratatui::try_init()?;
         }
     }
     Ok(())
@@ -130,8 +132,19 @@ fn edit_text(text: &str, editor: &str, dir: &Path, prefix: &str) -> Result<Optio
             || "was stopped by a signal".to_string(),
             |c| format!("exited with code {c}"),
         );
+        // Some editors exit non-zero after a session that showed an
+        // error, so text changed before the exit is kept, not saved.
+        let kept = match &edited {
+            Ok(text) if text.trim_end() != original.trim_end() => {
+                match keep_private_in(dir, prefix, text.trim_end()) {
+                    Ok(path) => format!("; your text is in {}", path.display()),
+                    Err(e) => format!("; your text could not be kept: {e}"),
+                }
+            }
+            _ => String::new(),
+        };
         return Err(Error::Refused(format!(
-            "the editor '{program}' {how}; the body is unchanged"
+            "the editor '{program}' {how}; the body is unchanged{kept}"
         )));
     }
     let edited = edited?;
@@ -156,7 +169,12 @@ fn private_file(dir: &Path, prefix: &str, text: &str) -> Result<tempfile::NamedT
 /// Keep `text` in a private file in the temporary directory, and return
 /// its path.
 pub(super) fn keep_private(prefix: &str, text: &str) -> Result<std::path::PathBuf> {
-    let file = private_file(&std::env::temp_dir(), prefix, text)?;
+    keep_private_in(&std::env::temp_dir(), prefix, text)
+}
+
+/// Keep `text` in a private file in `dir`, and return its path.
+fn keep_private_in(dir: &Path, prefix: &str, text: &str) -> Result<std::path::PathBuf> {
+    let file = private_file(dir, prefix, text)?;
     let (_, path) = file.keep().map_err(|e| Error::from(e.error))?;
     Ok(path)
 }

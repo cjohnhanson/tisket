@@ -713,6 +713,23 @@ mod editor {
     }
 
     #[test]
+    fn a_failed_editor_that_changed_the_text_keeps_it() {
+        // An editor that writes the file and then exits non-zero, as vi
+        // does after a session with an error message.
+        let dir = scratch("failed-changed");
+        let script = dir.join("editor.sh");
+        std::fs::write(&script, "printf 'My edit.\\n' > \"$1\"\nexit 1\n").unwrap();
+        let editor = format!("sh {}", script.display());
+        let err = edit_text("Old body.", &editor, &dir, "copy-")
+            .unwrap_err()
+            .to_string();
+        assert!(err.contains("exited with code 1"), "{err}");
+        let kept = err.rsplit("your text is in ").next().unwrap();
+        assert_eq!(std::fs::read_to_string(kept).unwrap(), "My edit.");
+        std::fs::remove_file(kept).unwrap();
+    }
+
+    #[test]
     fn a_missing_editor_is_named() {
         let dir = scratch("missing");
         let err = edit_text("Old body.", "no-such-editor-here", &dir, "copy-").unwrap_err();
@@ -751,7 +768,11 @@ mod editor {
 fn an_edited_body_is_saved_when_the_file_is_as_opened() {
     let root = tracker("save-body");
     let mut app = App::load(&root).unwrap();
+    // The save goes to the issue the editor opened, wherever the
+    // selection is by then.
+    press(&mut app, KeyCode::Char('j'));
     app.save_body(
+        "ep01-ship-the-board",
         "One screen that lists every open issue.",
         "A new body.".into(),
     );
@@ -784,7 +805,7 @@ fn a_body_changed_on_disk_during_the_edit_is_not_overwritten() {
             },
         )
         .unwrap();
-    app.save_body(opened, "My edit.".into());
+    app.save_body("ep01-ship-the-board", opened, "My edit.".into());
     let issue = Repo::open(&root)
         .unwrap()
         .find_issue("ep01-ship-the-board")
@@ -810,7 +831,7 @@ fn a_body_whose_save_is_refused_is_kept() {
         .unwrap()
         .close_issue("ep01-ship-the-board", Some("done"))
         .unwrap();
-    app.save_body(opened, "My edit.".into());
+    app.save_body("ep01-ship-the-board", opened, "My edit.".into());
     let Some(Message::Error(text)) = &app.message else {
         panic!("expected a refusal, got {:?}", app.message);
     };
@@ -830,6 +851,7 @@ fn a_saved_body_with_a_reload_warning_is_not_reported_as_refused() {
     )
     .unwrap();
     app.save_body(
+        "ep01-ship-the-board",
         "One screen that lists every open issue.",
         "New body.".into(),
     );
@@ -862,6 +884,146 @@ fn an_error_wraps_to_show_whole_and_stays_until_esc() {
     );
     press(&mut app, KeyCode::Esc);
     assert_eq!(app.message, None);
+}
+
+#[test]
+fn a_note_whose_save_is_refused_is_kept() {
+    // Another writer removes the issue while the note box is open.
+    let root = tracker("note-refused");
+    let mut app = App::load(&root).unwrap();
+    press(&mut app, KeyCode::Char('n'));
+    type_text(&mut app, "important finding");
+    std::fs::remove_file(root.join(".tisket/default/ep01-ship-the-board.md")).unwrap();
+    app.handle_key(KeyEvent::new(KeyCode::Char('s'), KeyModifiers::CONTROL));
+    let Some(Message::Error(text)) = &app.message else {
+        panic!("expected a refusal, got {:?}", app.message);
+    };
+    assert!(text.contains("nothing written"), "{text}");
+    let kept = text.rsplit("your text is in ").next().unwrap();
+    assert_eq!(std::fs::read_to_string(kept).unwrap(), "important finding");
+    std::fs::remove_file(kept).unwrap();
+}
+
+#[test]
+fn the_newest_issue_comes_first_within_a_status() {
+    let root = tracker("newest");
+    issue(
+        root.join(".tisket/default").as_std_path(),
+        "ch03-newer-todo",
+        "title: Newer todo\nstatus: todo\nupdated: \"2000-01-09T00:00:00Z\"\n",
+        "",
+    );
+    let mut app = App::load(&root).unwrap();
+    // In progress, then blocked, then the two todo issues.
+    press(&mut app, KeyCode::Char('j'));
+    assert_eq!(selected_title(&app), "Read keys");
+    press(&mut app, KeyCode::Char('j'));
+    assert_eq!(selected_title(&app), "Newer todo");
+    press(&mut app, KeyCode::Char('j'));
+    assert_eq!(selected_title(&app), "Draw the list");
+}
+
+#[test]
+fn the_status_picker_stops_at_its_first_and_last_rows() {
+    let root = tracker("picker-bounds");
+    let mut app = App::load(&root).unwrap();
+    press(&mut app, KeyCode::Char('s'));
+    for _ in 0..10 {
+        press(&mut app, KeyCode::Char('k'));
+    }
+    press(&mut app, KeyCode::Enter);
+    let status = |root: &Utf8PathBuf| {
+        Repo::open(root)
+            .unwrap()
+            .find_issue("ep01-ship-the-board")
+            .unwrap()
+            .frontmatter
+            .status
+    };
+    assert_eq!(status(&root), Status::Discovery);
+    press(&mut app, KeyCode::Char('s'));
+    for _ in 0..10 {
+        press(&mut app, KeyCode::Char('j'));
+    }
+    press(&mut app, KeyCode::Enter);
+    assert_eq!(status(&root), Status::Cancelled);
+}
+
+#[test]
+fn the_next_key_replaces_an_action_result() {
+    let mut app = App::load(&tracker("info-clears")).unwrap();
+    press(&mut app, KeyCode::Char('r'));
+    assert_eq!(app.message, Some(Message::Info("reloaded".into())));
+    press(&mut app, KeyCode::Char('j'));
+    assert_eq!(app.message, None);
+}
+
+#[test]
+fn status_and_note_keys_do_nothing_without_an_issue() {
+    let root = tracker("none-selected");
+    for name in [
+        "ep01-ship-the-board",
+        "ch01-draw-the-list",
+        "ch02-read-keys",
+    ] {
+        std::fs::remove_file(root.join(format!(".tisket/default/{name}.md"))).unwrap();
+    }
+    std::fs::remove_file(root.join(".tisket/docs/dc01-write-the-guide.md")).unwrap();
+    let mut app = App::load(&root).unwrap();
+    for key in ['s', 'n'] {
+        press(&mut app, KeyCode::Char(key));
+        assert!(matches!(app.mode, Mode::Normal), "{key}");
+    }
+}
+
+#[test]
+fn the_filter_line_stays_one_row_under_an_error() {
+    let mut app = App::load(&tracker("filter-error")).unwrap();
+    app.message = Some(Message::Error("x ".repeat(150)));
+    press(&mut app, KeyCode::Char('/'));
+    let terminal = draw(&mut app);
+    let buffer = terminal.backend().buffer();
+    let last: String = (0..WIDTH)
+        .map(|x| buffer[(x, HEIGHT - 1)].symbol().to_string())
+        .collect();
+    let above: String = (0..WIDTH)
+        .map(|x| buffer[(x, HEIGHT - 2)].symbol().to_string())
+        .collect();
+    assert!(last.contains("filter"), "filter on the last row: {last:?}");
+    assert!(
+        above.contains('─'),
+        "a pane border just above it: {above:?}"
+    );
+}
+
+#[test]
+fn refresh_clears_a_warning_about_a_file_since_fixed() {
+    let root = tracker("warning-fixed");
+    let broken = root.join(".tisket/default/zz99-broken.md");
+    std::fs::write(&broken, "no frontmatter\n").unwrap();
+    let mut app = App::load(&root).unwrap();
+    assert!(matches!(&app.message, Some(Message::Error(t)) if t.contains("zz99-broken")));
+    std::fs::remove_file(&broken).unwrap();
+    press(&mut app, KeyCode::Char('r'));
+    assert_eq!(app.message, Some(Message::Info("reloaded".into())));
+}
+
+#[test]
+fn the_focused_pane_shows_without_colour() {
+    // A thick border marks the focused pane, so the focus shows where
+    // NO_COLOR drops the border colour.
+    let mut app = App::load(&tracker("focus-mark")).unwrap();
+    let corner = |app: &mut App, x: u16| draw(app).backend().buffer()[(x, 1)].symbol().to_string();
+    assert_eq!(corner(&mut app, 0), "┏");
+    let detail_x = (0..WIDTH)
+        .skip(1)
+        .find(|&x| ["┐", "┓"].contains(&corner(&mut app, x).as_str()))
+        .unwrap()
+        + 1;
+    assert_eq!(corner(&mut app, detail_x), "┌");
+    press(&mut app, KeyCode::Tab);
+    assert_eq!(corner(&mut app, 0), "┌");
+    assert_eq!(corner(&mut app, detail_x), "┏");
 }
 
 #[test]

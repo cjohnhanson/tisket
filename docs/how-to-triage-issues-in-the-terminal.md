@@ -38,7 +38,7 @@ Press `j` or Down to select the next issue, or `k` or Up to select the
 previous one. The header shows the tracker directory name, the project
 in view or "all projects", "open" or "open and closed", and the count
 shown.
-The next key replaces footer hints and successful action results.
+The next key from the Key reference table replaces footer hints and successful action results.
 Errors stay until a later action reports its own result, or until Esc on the main screen.
 Moving through the list or opening help, the status picker, or a note does not clear them.
 The footer wraps an error across up to six rows, so a long path shows whole.
@@ -75,6 +75,10 @@ Use `j` and `k` to scroll, or PgDn and PgUp to move a page.
 Use `g` and `G` to reach the top and bottom.
 Press Tab, Shift-Tab, or Enter again to return to the list.
 
+The pane with keyboard control has a thick border; the other has a
+thin border. The borders also show keyboard control with `NO_COLOR`
+set.
+
 ## Change an issue's status
 
 Select an issue and press `s` to open the status picker. Move with
@@ -104,15 +108,24 @@ issue's working notes, like `tisket scratch <id> append`. Press Esc to
 discard it. Saving an empty note writes nothing, and the footer says
 the note is empty.
 
+If tisket refuses to save a note, it writes nothing to the issue.
+It keeps the typed note in a private temporary file. The footer gives
+the reason, says "nothing written", and names the file. The file has
+a random name and is readable only by the user.
+
 ## Edit the body
 
 Select an open issue and press `e`. Tisket opens a private temporary
 copy of its body in the program named by `$VISUAL`, or `$EDITOR` if
 `$VISUAL` is unset. If neither variable is set, the footer says so.
 
-The command is split on spaces, for example `code -w`.
-If the program cannot run or exits with an error, the footer names
-the program and the body is unchanged.
+Tisket splits the editor command on whitespace, for example `code -w`.
+If the program's path contains a space, use a wrapper script.
+If the program cannot run or exits with an error, tisket leaves the
+body unchanged and names the program in the footer.
+If the program exits with an error, the footer also shows its exit code.
+If the text changed before the error, tisket keeps it in a private
+temporary file and names that file in the footer.
 
 When the editor exits successfully and the text has changed, tisket
 saves it as the new body.
@@ -129,7 +142,9 @@ Reopen it with the status picker first.
 
 The UI does not watch files. After an agent or another terminal
 changes an issue, press `r` to reload from disk. Tisket skips any
-issue file it cannot read and names it in the footer.
+issue file it cannot read. Reloading replaces the earlier footer
+message with the names of files still unreadable, or "reloaded" if
+all files are readable.
 
 ## Key reference
 

@@ -1,7 +1,10 @@
 //! The single-binary rule: this crate spawns no external program where a
 //! library exists. No git, curl, aws, gcloud, sh, or kill. The only
-//! spawn permitted is a command the user declared in config, and that
-//! names no program literal in source, which is what this test reads for.
+//! spawn permitted is a command the user declared in config or in
+//! `$VISUAL`/`$EDITOR`, and that names no program literal in source,
+//! which is what this test reads for. A dependency's spawn is outside its
+//! reach: crossterm runs `tput` to size a screen with no terminal, and
+//! `tisket tui` refuses to start without one (tests/tui_terminal.rs).
 
 #[test]
 fn no_source_file_spawns_a_named_program() {
